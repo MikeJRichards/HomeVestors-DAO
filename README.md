@@ -1,59 +1,130 @@
-# `HomeVestors-DAO`
+# HomeVestors DAO - Milestone 1 Documentation
 
-Welcome to your new `HomeVestors-DAO` project and to the Internet Computer development community. By default, creating a new project adds this README and some template files to your project directory. You can edit these template files to customize your project and to include your own code to speed up the development cycle.
+## Overview
 
-To get started, you might want to explore the project directory structure and the default configuration file. Working with this project in your development environment will not affect any production deployment or identity tokens.
+HomeVestors DAO is a transformative, fully decentralized, full-stack solution designed to enhance flexibility and adaptability in the UK’s increasingly challenging buy-to-let property market. Rising mortgage costs and restrictive government policies have made property investment more burdensome and risky, driving many landlords out of the market.
 
-To learn more before you start working with `HomeVestors-DAO`, see the following documentation available online:
+In contrast, HomeVestors DAO empowers investors with dynamic options, providing both flexibility and direct control through governance. Each property functions as its own DAO with a dedicated account, enabling investors to control key decisions like tenant selection, maintenance, and expenses while eliminating time-consuming property management.
 
-- [Quick Start](https://internetcomputer.org/docs/current/developer-docs/setup/deploy-locally)
-- [SDK Developer Tools](https://internetcomputer.org/docs/current/developer-docs/setup/install)
-- [Motoko Programming Language Guide](https://internetcomputer.org/docs/current/motoko/main/motoko)
-- [Motoko Language Quick Reference](https://internetcomputer.org/docs/current/motoko/main/language-manual)
+Our model introduces liquidity through fractionalized property NFTs and our stablecoin, allowing investors to seamlessly buy, sell, leverage, or de-leverage their assets as life’s needs evolve. Whether investors seek full control over property management decisions or prefer a passive approach, HomeVestors DAO adapts to their preferences, unlocking access to property governance that aligns with modern financial and personal realities.
 
-If you want to start working on your project right away, you might want to try the following commands:
+---
 
-```bash
-cd HomeVestors-DAO/
-dfx help
-dfx canister --help
-```
+## System Architecture
 
-## Running the project locally
+### Core Concepts
 
-If you want to test your project locally, you can use the following commands:
+- **Property NFT Collections**: Each property has a dedicated ICRC-7 and ICRC-37 compliant NFT collection representing fractional ownership.
+- **DAO Governance**: Each NFT holder can vote on property-related proposals.
+- **Modular Data Layers**: Properties contain deeply structured metadata across five domains:
+  - Property details
+  - Financials
+  - Administrative
+  - Operational
+  - NFT Marketplace
 
-```bash
-# Starts the replica, running in the background
-dfx start --background
+---
 
-# Deploys your canisters to the replica and generates your candid interface
-dfx deploy
-```
+### System Modules
 
-Once the job completes, your application will be available at `http://localhost:4943?canisterId={asset_canister_id}`.
+The platform is organized into modular, file-based components that separate logic by domain. This structure enhances readability, testability, and scalability as the system grows.
 
-If you have made changes to your backend canister, you can generate a new candid interface with
+- **Property Module**: Coordinates property creation and routes updates to the appropriate module based on the `What` action type.
+- **Administrative Module**: Handles operations related to documents, insurance policies, and notes. Contains its own validation and mutation logic.
+- **Operational Module**: Manages tenants, inspections, and maintenance workflows.
+- **Financials Module**: Controls purchase data, rental income, yield calculations, and valuation tracking. Integrates with the valuation outcall logic.
+- **Details Module**: Encapsulates logic for physical attributes and scoring metrics such as crime, affordability, and school quality.
+- **NFT Module**: Interfaces with ICRC-7/37-compliant NFT collections for minting, ownership tracking, and metadata updates.
+- **User Notifications Module**: Sends on-chain alerts to all holders of property NFTs following any successful update.
+- **PropHelper (Utils)**: A centralized utility module that applies the final, validated `Intent` to the stable `Property` struct. It also:
+  - Updates the property's persistent updates history with a record of who made the change, when it occurred, and what was changed.
+  - Returns the modified struct back to the main actor to make the change permanent.
 
-```bash
-npm run generate
-```
+---
 
-at any time. This is recommended before starting the frontend development server, and will be run automatically any time you run `dfx deploy`.
+## Key Flows
 
-If you are making frontend changes, you can start a development server with
+### Property Creation
 
-```bash
-npm start
-```
+- Triggered via `createProperty()`
+- Requires a new NFT collection canister to be deployed externally.
+- Metadata returned from the NFT canister is used to create the full `Property` struct.
 
-Which will start a server at `http://localhost:8080`, proxying API requests to the replica at port 4943.
+### NFT Metadata Synchronization
 
-### Note on frontend environment variables
+- Every successful update triggers `handleNFTMetadataUpdate()`, which updates the ICRC-7 collection metadata.
+- Ensures that external viewers and marketplaces always reflect accurate property state.
 
-If you are hosting frontend code somewhere without using DFX, you may need to make one of the following adjustments to ensure your project does not fetch the root key in production:
+### Data Retrieval
 
-- set`DFX_NETWORK` to `ic` if you are using Webpack
-- use your own preferred method to replace `process.env.DFX_NETWORK` in the autogenerated declarations
-  - Setting `canisters -> {asset_canister_id} -> declarations -> env_override to a string` in `dfx.json` will replace `process.env.DFX_NETWORK` with the string in the autogenerated declarations
-- Write your own `createActor` constructor
+- `readProperty()` returns sanitized, structured data based on a `Read` selector and property ID.
+- All user-readable information can be extracted without exposing sensitive or internal logic.
+
+---
+
+## Create, Update, and Delete Flow & Logic
+
+The update flow is strictly pattern-driven and modular, following a “What then How” design principle:
+
+1. The `handlePropertyUpdate()` function retrieves the target property and triggers a call to `updateProperty()` in the Property module.
+2. This function switches on the `What` type, routing the action to the relevant domain module.
+3. Inside the domain module, a second switch occurs on the action type — `create`, `update`, or `delete` — defined by the `Actions<CreateArg, (UpdateArg, Nat)>` interface.
+4. Validation uses a unified function that checks each argument and returns either:
+   - A sanitized update, or
+   - A detailed error (e.g., invalid date, empty string, or zero value).
+5. All update arguments are fully nullable, allowing minimal and flexible changes.
+6. A sanitized `Intent` is passed to the PropHelper:
+   - Mutates the relevant part of the `Property` struct immutably.
+   - Ensures consistency and traceability.
+7. After a successful state change:
+   - All current NFT holders are notified.
+   - The update is logged in the immutable history (with what, when, and who).
+
+This ensures:
+
+- A uniform update pattern across all domains.
+- Clear separation of concerns between validation, logic, and mutation.
+- High scalability and ease of adding new modules/actions.
+
+---
+
+## NFT Design and Implementation
+
+Although Milestone 1 only required ICRC-7, HomeVestors DAO integrates both ICRC-7 and ICRC-37 standards to support fractional ownership with advanced access control, approvals, metadata handling, and future governance utility.
+
+### Architecture and Standards
+
+- **ICRC-7 Compliance**:
+  - Minting
+  - Transfer
+  - Burn
+  - Balance queries
+  - Owner queries
+  - Metadata
+  - Pagination
+  - Token enumeration
+
+- **ICRC-37 Extensions**:
+  - `approve`, `transfer_from`, `revoke`
+  - Delegated transfers with related metadata
+
+- **Collection Metadata**:
+  - Stored in `HashMap<Text, Value>`
+  - Includes all ICRC-7 fields + property-specific metadata (valuation, rent, address)
+
+---
+
+## Validation System
+
+To avoid per-method validation repetition, all validation flows through:
+
+```motoko
+validate<T <: BaseArg>(
+  arg: Arg,
+  x: T,
+  authorized: ?Authorized,
+  spender: ?Account,
+  caller: Principal,
+  ctx: TxnContext,
+  count: Nat
+)
