@@ -4,6 +4,9 @@ import Principal "mo:base/Principal";
 import Array "mo:base/Array";
 import Buffer "mo:base/Buffer";
 import Iter "mo:base/Iter";
+import Hash "mo:base/Hash";
+import Blob "mo:base/Blob";
+
 module NFTCollections {
     type CreateFinancialsArg = Types.CreateFinancialsArg;
     type PropertyDetails = Types.PropertyDetails;
@@ -45,6 +48,28 @@ module NFTCollections {
         icrc7_owner_of: query ([Nat]) -> async [ ?Account ];
     };
 
+     public func accountEqual(a : Account, b : Account) : Bool {
+         Principal.equal(a.owner, b.owner) and
+         blobEqual(a.subaccount, b.subaccount)
+     };
+
+       // Helper function to compare optional Blobs
+    public func blobEqual(a : ?Blob, b : ?Blob) : Bool {
+        switch (a, b) {
+          case (null, null) true;
+          case (?a, ?b) Blob.equal(a, b);
+          case _ false;
+        }
+    };
+
+    public func accountHash(account: Account): Hash.Hash {
+        let ownerBlob = Principal.hash(account.owner);
+        let subaccountBlob = switch (account.subaccount) {
+            case null { Blob.hash(Blob.fromArray([])) };
+            case (?sub) { Blob.hash(sub)};
+        };
+        return ownerBlob ^ subaccountBlob;
+    };
 
 
     public func icrc7_owner_of(tokenIds: [Nat], canisterId: Principal): async [?Account]{

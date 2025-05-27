@@ -10,7 +10,12 @@ module {
         administrative: AdministrativeInfo;  // Grouped administrative information
         operational: OperationalInfo;  // Grouped operational information
         nftMarketplace: NFTMarketplace;
-        updates : [What];
+        updates : [Result];
+    };
+
+    public type Result = {
+        #Ok: What;
+        #Err: UpdateError;
     };
 
     public type Update = {
@@ -26,7 +31,30 @@ module {
     };
 
     public type Properties = HashMap.HashMap<Nat, Property>;
-    public type UserNotifications = HashMap.HashMap<Principal, [WhatWithPropertyId]>;
+    public type UsersNotifications = HashMap.HashMap<Account, User>;
+    public type User = {
+        id: Nat;
+        notifications : [Notification];
+        results : [NotificationResult];
+    };
+
+    public type NotificationResult = {
+        #Ok : Notification;
+        #Err: (Nat, UpdateError);
+    };
+
+    public type Notification = {
+        id: Nat;
+        propertyId: Nat;
+        ntype : NotificationType;
+        content: What;
+    };
+
+    public type NotificationType = {
+        #New;
+        #Read;
+        #Deleted;
+    };
 
  //   // PropertyDetails Structure
    public type PropertyDetails = {
@@ -453,6 +481,9 @@ module {
         #LocationDetails;
         #Financials;
         #MonthlyRent;
+        #UpdateResults;
+        #UpdatedState;
+        #UpdateErrors;
     };
 
     public type ReadResult = {
@@ -523,6 +554,7 @@ module {
         #LocationDetails: LocationDetails;
         #Financials: Financials;
         #MonthlyRent: Nat;
+        #UpdateResults : [Result];
     };
     
     public type Intent<T> = {

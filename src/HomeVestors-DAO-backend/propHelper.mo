@@ -5,6 +5,8 @@ import Text "mo:base/Text";
 import Nat "mo:base/Nat";
 import Principal "mo:base/Principal";
 import Blob "mo:base/Blob";
+import Buffer "mo:base/Buffer";
+import Iter "mo:base/Iter";
 
 module PropertiesHelper {
    type Property = Types.Property;
@@ -19,6 +21,7 @@ module PropertiesHelper {
    type InspectionRecord = Types.InspectionRecord;
    type Read = Types.Read;
    type ReadResult = Types.ReadResult;
+   type Result = Types.Result;
    type ReadUnsanitized = Types.ReadUnsanitized;
    type GetPropertyResult = Types.GetPropertyResult;
    type UpdateResult = Types.UpdateResult;
@@ -113,7 +116,7 @@ module PropertiesHelper {
     };
     
     public func addPropertyEvent(action: What, property: Property):  Property{
-        {property with updates = Array.append(property.updates, [action])};
+        {property with updates = Array.append(property.updates, [#Ok(action)])};
     };
 
     public func updateProperty<C,U>(update: Update, property: Property, action: What): UpdateResult {
@@ -186,9 +189,28 @@ module PropertiesHelper {
             case(#AdditionalDetails){#AdditionalDetails(p.details.additional)};
             case(#Financials){ #Financials(p.financials)};
             case(#MonthlyRent){#MonthlyRent(p.financials.monthlyRent)};
+            case(#UpdateResults){#UpdateResults(p.updates)};
+            case(#UpdatedState){#UpdateResults(handleUpdateResults(p.updates, true))};
+            case(#UpdateErrors){#UpdateResults(handleUpdateResults(p.updates, false))}
         };
 
         return sanitizeResult(result);
+    };
+
+    func handleUpdateResults(arr: [Result], updatedState: Bool): [Result]{
+        let results = Buffer.Buffer<Result>(0);
+        for(result in arr.vals()){
+            switch(result, updatedState){
+                case(#Ok(n), true){
+                    results.add(#Ok(n));
+                };
+                case(#Err(n), false){
+                    results.add(#Err(n));
+                };
+                case(_, _){};
+            };
+        };
+        Iter.toArray(results.vals());
     };
 
     func handleArray<T>(arr: [(Nat, T)], result: ReadUnsanitized): ReadResult {

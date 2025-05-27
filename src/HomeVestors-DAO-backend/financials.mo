@@ -131,7 +131,6 @@ module {
     };
 
     public func fetchValuation(postcode: Text, transform: query ({context : Blob; response : IC.http_request_result;}) -> async IC.http_request_result) : async Result.Result<What, UpdateError> {
-        ExperimentalCycles.add<system>(100_000_000_000);
         let validPostcode = Text.replace(postcode, #char ' ', "");
         let url = "https://valuation-fly.fly.dev/valuation?postcode="#validPostcode;
 
@@ -147,6 +146,12 @@ module {
           };
         };
 
+        // First HTTP outcall (ignored result)
+        ExperimentalCycles.add<system>(100_000_000_000);
+        let _ = await IC.http_request(req);
+
+        // Second HTTP outcall (actual result)
+        ExperimentalCycles.add<system>(100_000_000_000);
         let res = await IC.http_request(req);
 
         let bodyText = switch (Text.decodeUtf8(res.body)) {

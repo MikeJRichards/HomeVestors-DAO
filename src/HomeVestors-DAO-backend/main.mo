@@ -24,11 +24,16 @@ actor {
   type ReadResult = Types.ReadResult;
   type Read = Types.Read;
   type MintResult = Types.MintResult;
+  type Account = Types.Account;
+  type User = Types.User;
+  type Notification = Types.Notification;
+  type NotificationType =  Types.NotificationType;
+  type NotificationResult = Types.NotificationResult;
 
   var properties : Properties = HashMap.HashMap<Nat, Property>(0, Nat.equal, PropHelper.natToHash);
-  var userNotifications = HashMap.HashMap<Principal, [WhatWithPropertyId]>(0, Principal.equal, Principal.hash);
+  var userNotifications = HashMap.HashMap<Account, User>(0, NFT.accountEqual, NFT.accountHash);
   stable var stableProperties : [(Nat, Property)] = [];
-  stable var stableUserNotifications : [(Principal, [WhatWithPropertyId])] = [];
+  stable var stableUserNotifications : [(Account, User)] = [];
   var id = 0;
 
   public func createProperty(nftCollection: Principal, nftQuantity: Nat): async [?MintResult] {
@@ -56,11 +61,12 @@ actor {
       case(#Ok(updatedProperty)){
         properties.put(action.propertyId, updatedProperty);
         let updatedNotifications = await UserNotifications.addUserNotification(action, userNotifications, updatedProperty.nftMarketplace.collectionId);
-        userNotifications := HashMap.fromIter(updatedNotifications.vals(), 0, Principal.equal, Principal.hash);
+        userNotifications := HashMap.fromIter(updatedNotifications.vals(), 0, NFT.accountEqual, NFT.accountHash);
         ignore NFT.handleNFTMetadataUpdate(action.what, updatedProperty);
         return #Ok(updatedProperty);
       };
       case(#Err(e)){
+        properties.put(action.propertyId, {property with updates = Array.append(property.updates, [#Err(e)])});
         return #Err(e);
       }
     };
@@ -112,6 +118,27 @@ actor {
     };
     return Iter.toArray(results.vals());
   };
+
+  /////////////////////////////////////////
+  //////User Notifications 
+  //////////////////////////////////////////
+  public func getUserNotification(account: Account): async [Notification]{
+    UserNotifications.getUserNotifications(account, userNotifications);
+  };
+
+  public func getUserNotificationResults(account: Account): async [NotificationResult]{
+    UserNotifications.getUserNotificationsResults(account, userNotifications);
+  };
+
+  public func getUserNotificationsOfType(account: Account, ntype: NotificationType): async [Notification]{
+    UserNotifications.getUserNotificationType(account, userNotifications, ntype);
+  };
+
+  public func updateNotificationType(account: Account, ntype: NotificationType, id: Nat): async NotificationResult {
+    let (result, updatedUserNotifications) = UserNotifications.changeNotificationType(id, ntype, account, userNotifications);
+    userNotifications := updatedUserNotifications;
+    return result;
+  };
      
   system func preupgrade(){
     stableProperties := Iter.toArray(properties.entries());
@@ -120,7 +147,7 @@ actor {
 
   system func postupgrade(){
     properties := HashMap.fromIter(stableProperties.vals(), 0, Nat.equal, PropHelper.natToHash);
-    userNotifications := HashMap.fromIter(stableUserNotifications.vals(), 0, Principal.equal, Principal.hash);
+    userNotifications := HashMap.fromIter(stableUserNotifications.vals(), 0, NFT.accountEqual, NFT.accountHash);
   }
 
 };
