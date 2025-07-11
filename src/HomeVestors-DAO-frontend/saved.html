@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+
+
+<head>
+ <meta charset="UTF-8" />
+ <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
+ <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+ <title>IC Hello Starter</title>
+
+
+ <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+ <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+ <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer" />
+ <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<link rel="stylesheet" href="./src/styles/All.css">
+ <link rel="stylesheet" href="./src/styles/saved.css">
+</head>
+
+
+<body>
+ <nav>
+   <a class="logo" href="./index.html">
+     <img id="logo" src="assets/FullLogo_Transparent_NoBuffer (4).png" alt="Logo">
+     <h1 class="hvd-title"><span class="hvdao">H</span><span class="other">ome</span><span class="hvdao">V</span><span class="other">estors</span> <span class="hvdao">DAO</span></h1>
+   </a>
+    <div id="nav_end">
+     <div class="nav_menu">
+       <a class="nav_headings" href="./AboutUs.html">About Us</a>
+       <a class="nav_headings" href="./MarketPlace.html">Market Place</a>
+       <a class="nav_headings" href="./MyHomes.html">My Homes</a>
+       <a class="nav_headings" href="./MyProposals.html">My Proposals</a>
+     </div>
+     <button id="connect_btn">Connect</button>
+     <a id="NavWallet" class="fa-solid fa-wallet nav_headings active" href="./Balance.html"><i class="fa-solid fa-wallet" id="wallet_cp"></i></a>
+     <i id="hamburger" class="fas fa-bars"></i>
+   </div>
+ </nav>
+
+
+  <!-- Mobile dropdown menu -->
+   <div id="mobile_nav_menu" class="mobile-hidden">
+       <a href="">About Us</a>
+       <a href="">Market Place</a>
+       <a href="">My Homes</a>
+       <a href="">My Proposals</a>
+       <a href=""><button class="btn">Connect</button></a>
+   </div>
+
+
+
+
+ <!-- MAIN PAGE -->
+ <div  id="mainpage">
+   <div id="mp-header" >
+     <div id="mp-header-toggle">
+     <button id="newPropertiesBtn" class="mp-header-toggle-btn active">New Properties</button>
+     <button id="investorMarketplaceBtn" class="mp-header-toggle-btn">Investor Marketplace</button>
+     </div>
+   </div>
+
+
+     <section id="npSaved-section">
+         <div id="savedCardsContainer">
+             <div id="pro-card1"  class="property-card">
+                 <div id="prop-img1" class="image-carousel">
+                   <img class="carousel-image active" src="./assets/houseimg.jpg" alt="Property Image">
+                   <img class="carousel-image" src="image2.jpg" alt="Property Image">
+                   <img class="carousel-image" src="image3.jpg" alt="Property Image">
+                    
+                   <button class="mp-carousel-arrow left">&#10094;</button>  <!-- Left arrow -->
+                   <button class="mp-carousel-arrow right">&#10095;</button> <!-- Right arrow -->
+                   <div class="sold-stamp">SOLD</div>
+                 </div>
+            
+                 <div id="prop-info1"  class="propertyInfo">
+                   <div class="infoBar-container">
+                     <div class="delete-btn-container">
+                         <button id="delete-btn"><i id="delete" class="fa-solid fa-times"></i></button>
+                     </div>
+
+
+                     <div class="priceInfo-container">
+                       <p class="priceInfo">Â£200,000</p>
+                       <p class="priceInfo">Â£220 per NFT</p>
+                     </div>
+                   </div>
+                   <div class="infoblock">
+                     <div data-role="location" class="np-location" >
+                       <p data-role="addressLine2" class="street">Rose Street,</p>
+                       <p data-role="location" class="city">Sheffield,</p>
+                       <p data-role="outcode"> S1</p>
+                     </div>
+                     <p>Welcome to this beautifully presented 3-bedroom semi-detached house, located in a sought-after neighborhood. This spacious home features a bright and airy...</p>
+                     <div id="progress-container" >
+                       <div id="nft-progress">
+                         <div class="progress-bar">
+                           <div class="progress-fill" style="width: 80.0%;">
+                           </div>
+                         </div>
+                         <div class="progress-labels">
+                           <span><strong>Sold:</strong> <span id="nfts-sold">800</span>/1000</span>
+                         </div>
+                       </div>
+                     </div>
+                   </div>
+                
+                   <div class="buyBtn-container">
+                     <button class="buyBtn">Buy NFTs</button>
+                   </div>
+                 </div>
+             </div>
+      
+             <div id="pro-card2"  class="property-card">
+                 <div id="prop-img2" class="image-carousel">
+                   <img class="carousel-image active" src="./assets/Princes-Sheffield-22-2.jpg" alt="Property Image">
+                   <img class="carousel-image" src="image2.jpg" alt="Property Image">
+                   <img class="carousel-image" src="image3.jpg" alt="Property Image">
+                    
+                   <button class="mp-carousel-arrow left">&#10094;</button>  <!-- Left arrow -->
+                   <button class="mp-carousel-arrow right">&#10095;</button> <!-- Right arrow -->
+                 </div>
+            
+                 <div id="prop-info2"  class="propertyInfo">
+                   <div class="infoBar-container">
+                     <div class="delete-btn-container">
+                         <button id="delete-btn"><i id="delete" class="fa-solid fa-times"></i></button>
+                     </div>
+                    
+                     <div class="priceInfo-container">
+                       <p class="priceInfo">Â£200,000</p>
+                       <p class="priceInfo">Â£220 per NFT</p>
+                     </div>
+                   </div>
+                
+                   <div class="infoblock">
+                     <div data-role="location" class="np-location" >
+                       <p data-role="addressLine2" class="street">Rose Street,</p>
+                       <p data-role="location" class="city">Sheffield,</p>
+                       <p data-role="outcode"> S1</p>
+                     </div>
+                     <p>Welcome to this beautifully presented 3-bedroom semi-detached house, located in a sought-after neighborhood. This spacious home features a bright and airy...</p>
+                     <div id="progress-container" >
+                       <div id="nft-progress">
+                         <div class="progress-bar">
+                           <div class="progress-fill" style="width: 80.0%;">
+                           </div>
+                         </div>
+                         <div class="progress-labels">
+                           <span><strong>Sold:</strong> <span id="nfts-sold">800</span>/1000</span>
+                         </div>
+                       </div>
+                     </div>
+                   </div>
+                
+                   <div class="buyBtn-container">
+                     <button class="buyBtn">Buy NFTs</button>
+                   </div>
+                 </div>
+             </div>
+         </div>
+     </section>
+    
+     <section id="impSaved-section">
+         <div id="imp-savedCardsContainer">
+             <div id="nftAdvert-grid">
+               <div class="nftAdvert-card">
+                 <div class="image-container">
+                     <div class="delete-btn-container">
+                       <button id="delete-btn"><i id="delete" class="fa-solid fa-times close-btn"></i></button>
+                     </div>
+                     <img class="thumbnailAdvert" src="./assets/Princes-Sheffield-22-2.jpg" alt="">
+                     <div class="sold-stamp">SOLD</div>
+                 </div>
+                 <div data-role="location" class="location" >
+                   <p data-role="addressLine2" class="street">Rose Street,</p>
+                   <p data-role="location" class="city">Sheffield,</p>
+                   <p data-role="outcode"> S1</p>
+                 </div>
+                 <p class="text-p principal" >Seller: 1023643642... </p>
+                 <div id="nft-info">
+                   <div class="container-advert-buyBtns" >
+                     <p class="text-p ButtonDetails" >Number Available: 10 </p>
+                     <p id="imp-nftprice">Â£220 </p>
+                     <button class="advert-buyBtns">Buy Now</button>
+                     <p class="text-p ButtonDetails" id="auctionDetails" >Current Auction Price </p>
+                     <p id="imp-nftprice">Â£220 </p>
+                     <button class="advert-buyBtns">Place Bid</button>
+                     <p class="text-p highestbidder" >Highest Bidder: 1023643642... </p>
+                     <p class="text-p win" >You're the Highest Bidder! </p>
+                     <p class="text-p" id="auctionTiming" >Auction closes: 12/12/25 </p>
+                   </div>
+                 </div>
+                
+               </div>
+            
+               <div class="nftAdvert-card">
+                 fill in the info
+               </div>
+               <div class="nftAdvert-card">
+                 fill in the info
+               </div>
+               <div class="nftAdvert-card">
+                 fill in the info
+               </div>
+               <div class="nftAdvert-card">
+                 fill in the info
+               </div>
+               <div class="nftAdvert-card">
+                 fill in the info
+               </div>
+               <div class="nftAdvert-card">
+                 fill in the info
+               </div>
+               <div class="nftAdvert-card">
+                 fill in the info
+               </div>
+               <div class="nftAdvert-card">
+                 fill in the info
+               </div>
+               <div class="nftAdvert-card">
+                 fill in the info
+               </div>
+               <div class="nftAdvert-card">
+                 fill in the info
+               </div>
+               <div class="nftAdvert-card">
+                 fill in the info
+               </div>
+               <div class="nftAdvert-card">
+                 fill in the info
+               </div>
+               <div class="nftAdvert-card">
+                 fill in the info
+               </div>
+               <div class="nftAdvert-card">
+                 fill in the info
+               </div>
+               <div class="nftAdvert-card">
+                 fill in the info
+               </div>
+             </div>
+         </div>
+     </section>
+ </div>
+
+
+ <!-- Buy Now Modal -->
+ <div id="buyNowModal" class="modal hidden">
+   <div class="modal-content">
+     <span class="close" onclick="closeModal('buyNowModal')">&times;</span>
+     <h2>Buy NFT</h2>
+     <p>Select quantity:</p>
+     <input type="number" id="buyQuantity" value="1" min="1" onchange="updateTotal()" />
+     <p>Total Cost: <span id="totalCost">Îž 0</span></p>
+     <button class="modal-btns" onclick="handleBuyNow()">Complete Transaction</button>
+   </div>
+ </div>
+
+
+ <!-- Place Bid Modal -->
+ <div id="placeBidModal" class="modal hidden">
+   <div class="modal-content">
+     <span class="close" onclick="closeModal('placeBidModal')">&times;</span>
+     <h2>Place a Bid</h2>
+     <p class="text-p" >Current highest bid: Â£345</p>
+     <input type="number" id="bidAmount" placeholder="Enter bid amount (Îž)" />
+     <button class="modal-btns" onclick="handlePlaceBid()">Place Bid</button>
+     <p class="text-p highestbidder" >Highest Bidder: 1023643642... </p>
+     <p class="text-p win" >You're the Highest Bidder! </p>
+   </div>
+ </div>
+
+
+ <!-- FOOTER-->
+ <footer>
+   <div class="footer-social">
+     <a href="https://x.com/yourhandle" aria-label="Twitter"><i class="fab fa-x-twitter"></i></a>
+     <a href="https://facebook.com/yourpage" aria-label="Facebook"><i class="fab fa-facebook"></i></a>
+     <a href="https://instagram.com/yourpage" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+     <a href="https://oc.app/yourchat" aria-label="OpenChat"><i class="fas fa-comments"></i></a>
+     <a href="https://github.com/yourrepo" aria-label="GitHub"><i class="fab fa-github"></i></a>
+   </div>
+    <div class="footer-content">
+     <div class="footer-left">
+       <div id="footer-logo-div">
+         <img id="footer-logo" src="assets/FullLogo_Transparent_NoBuffer (4).png" alt="logo">
+         <p><strong><span class="hvdao">H</span>ome<span class="hvdao">V</span>estors <span class="hvdao">DAO</span></strong></p>
+       </div>
+       <p>Â© 2025 HomeVestors DAO. All rights reserved.</p>
+     </div>
+      <div class="footer-links">
+       <a href="/whitepaper.pdf">Whitepaper</a>
+       <a href="/faqs.html">FAQs</a>
+       <!-- Add more if needed -->
+     </div>
+    </div>
+    <div class="footer-disclaimer">
+     <p>Participation in governance is required to receive any rental rewards.</p>
+     <p>NFTs do not represent ownership or passive income rights.</p>
+   </div>
+ </footer>
+
+
+
+ <script src="./src/main.js" type="module"></script>
+<script src="./src/scripts/saved.js" type="module"></script>
+</body>
+</html>
+
+
+

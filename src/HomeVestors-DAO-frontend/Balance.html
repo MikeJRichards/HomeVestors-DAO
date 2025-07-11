@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+
+
+<head>
+ <meta charset="UTF-8" />
+ <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
+ <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+ <title>IC Hello Starter</title>
+
+
+ <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+ <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+ <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+
+
+
+
+
+<link rel="stylesheet" href="./src/styles/All.css">
+ <link rel="stylesheet" href="./src/styles/Balance.css">
+</head>
+
+
+<body>
+ <nav>
+   <a class="logo" href="./index.html">
+     <img id="logo" src="assets/FullLogo_Transparent_NoBuffer (4).png" alt="Logo">
+     <h1 class="hvd-title"><span class="hvdao">H</span><span class="other">ome</span><span class="hvdao">V</span><span class="other">estors</span> <span class="hvdao">DAO</span></h1>
+   </a>
+    <div id="nav_end">
+     <div class="nav_menu">
+       <a class="nav_headings" href="./AboutUs.html">About Us</a>
+       <a class="nav_headings" href="./markeplace.html">Market Place</a>
+       <a class="nav_headings" href="./MyHomes.html">My Homes</a>
+       <a class="nav_headings" href="./MyProposals.html">My Proposals</a>
+     </div>
+    
+     <div id="wallet-nav-container" class="hidden">
+      <a class="wallet-nav" href="./Balance.html"><i class="fa-solid fa-wallet" id="wallet_navbar"></i></a>
+    </div>
+     <i id="hamburger" class="fas fa-bars"></i>
+   </div>
+ </nav>
+
+
+ <!-- Mobile dropdown menu -->
+   <div id="mobile_nav_menu" class="mobile-hidden">
+       <a href="./AboutUs.html">About Us</a>
+       <a href="./marketplace.html">Market Place</a>
+       <a href="./MyHomes.html">My Homes</a>
+       <a href="./MyProposals.html">My Proposals</a>
+       <a href="./Balance.html"><button class="btn">Connect</button></a>
+   </div> 
+
+
+ <!-- MAIN PAGE-->   
+ <div id="mainpage">
+
+
+<!-- BALANCE PAGE -->
+<section class="balance_page">
+
+
+ <div class="page_content">
+  
+   <!-- Toggle -->
+   
+   <div id="toggle-line" role="tablist">
+     <button role="tab" id="show-nfts" aria-selected="true" class="mp-header-toggle-btn active">NFTs</button>
+     <button role="tab" id="show-tokens" aria-selected="false" class="mp-header-toggle-btn">Tokens</button>
+     <button role="tab" id="show-listings" aria-selected="false" class="mp-header-toggle-btn">Your Listings <span>(0)</span></button>
+     <button role="tab" id="show-bids" aria-selected="false" class="mp-header-toggle-btn">Your Bids (0)</button>
+   </div>
+  
+   <!-- NFT cards -->
+   <div class="balance-card-container" id="nft-section">
+   </div>
+   
+  <!-- Token Cards-->
+   <div class="section_token hidden" id="token-section">
+     <div class="token_card" id="ckUSDC">
+       <div class="token_id">
+         <img class="token_img" src="assets/ckUSDC.svg" alt="YIN">
+         <div class="token_name">
+           <h3 class="token_symbol">ckUSDC</h3>
+           <h4 class="token_tide">Chain Key USDC </h4>
+         </div>
+       </div>
+       <hr class="token_divider">
+       <div class="balance_token">
+         <i class="fa-solid fa-wallet" id="wallet-tokencard"></i>
+         <h4 class="balance_token_figure" id="ckUSDCBalance">1234</h4>
+        </div>
+         <div class="receive-address hidden">
+            <span class="label">Your address:</span>
+            <span class="address-text">aaaaa-bbbbb-ccccc-ddddd</span>
+            <button class="copy-btn">
+              <i class="fa-regular fa-copy"></i>
+            </button>
+          </div>
+       <div class="send-recieve">
+         <button class="balance_button" id="sendCKUSDC">SEND</button>
+         <button class="balance_button">RECIEVE</button>
+       </div>
+     </div>
+
+
+     <div class="token_card" id="ICP">
+       <div class="token_id">
+         <img class="token_img" src="assets/icp-logo.svg" alt="YIN">
+         <div class="token_name">
+           <h3 class="token_symbol">ICP</h3>
+           <h4 class="token_tide">Internet Computer</h4>
+         </div>
+       </div>
+       <hr class="token_divider">
+       <div class="balance_token">
+         <i class="fa-solid fa-wallet" ></i>
+         <h4 class="balance_token_figure" id ="icpBalance">1234</h4>
+        </div>
+        <div class="receive-address hidden">
+           <span class="label">Your address:</span>
+           <span class="address-text">lllllllllllllllllllllaaaaa-bbbbb-ccccc-ddddd</span>
+           <button class="copy-btn">
+             <i class="fa-regular fa-copy"></i>
+           </button>
+         </div>
+       <div class="send-recieve">
+         <button class="balance_button" id="sendICP">SEND</button>
+         <button class="balance_button">RECIEVE</button>
+       </div>
+     </div>
+   </div>
+
+
+   <!-- Listings-->
+   <div class="balance-card-container hidden" id="listings-section">
+    <div id="auctionListingsLive"></div>
+    <div id="buyNowListingsLive"></div>
+   </div>
+
+
+   <!-- Bids-->
+   <div class="balance-card-container hidden" id="bids-section">
+    <div class="nft_card" id="nft1" class="hidden">
+       <img class="nft_img" id="nft1_img"   src="assets/houseimg.jpg" alt="nft1">
+       <div class="location-container" >
+         <div data-role="location" class="location" >
+           <p data-role="addressLine2" class="street">Rose Street,</p>
+           <p data-role="location" class="city">Sheffield,</p>
+         </div>
+         <p data-role="outcode" class="outcode" > S1</p>
+       </div>
+       <div class="bp-info-block">
+         <p class="text-p bp-info"><span class="bp-bold-text bp-info" >Auction ID:</span> 12</p>
+         <p class="text-p bp-info"><span class="bp-bold-text bp-info" >Current Price:</span> </p>
+         <p class="text-p bp-info"><span class="bp-bold-text bp-info" >Current Winner:</span> </p>
+         <p class="text-p bp-info"><span class="bp-bold-text bp-info" >Next Min Bid Amount:</span> No</p>
+         <p class="text-p bp-info"><span class="bp-bold-text bp-info" >reserve Meet:</span> No</p>
+         <p class="text-p bp-info"><span class="bp-bold-text bp-info" >Listing Live:</span> No</p>
+         <p class="text-p bp-info"><span class="bp-bold-text bp-info" >Bid Amount:</span> 12</p>
+         <p class="text-p bp-info"><span class="bp-bold-text bp-info" >Bid Time:</span> £200</p>
+         <p class="text-p bp-info"><span class="bp-bold-text bp-info" >Times you've Bid:</span> £200</p>
+         <p class="text-p bp-info"><span class="bp-bold-text bp-info" >Total Bids:</span> £200</p>
+       </div>
+       <div class="nft-btns">
+        
+       </div>
+     </div>
+
+
+   </div>
+ </div>
+</section>
+
+
+<!-- Sell Modal -->
+<div id="SellModal" class="modal hidden">
+ <div class="modal-content">
+   <span class="close" id="closeSend">&times;</span>
+   <h2>Sell NFT</h2>
+   <div class="modal-fields">
+     <p>Select quantity:</p>
+     <input type="number" id="sellQuantitySellModal" value="" min="1" max="20" autofocus >
+   </div>
+   <label for="" class="filter">
+     <p>Sales Method:</p>
+     <div class="filter-checkbox" >Buy Now <input type="checkbox" id = "buyNowCheckbox" checked="true"></div>
+     <div class="filter-checkbox" >Auction <input type="checkbox" id = "auctionCheckBox"></div>
+   </label>
+
+   <div id="buynowData" class="modal-fields">
+     <p>Buy Now:</p>
+     <input type="number" id="BuyNowPrice"  value="" placeholder="Enter Price (£)" >
+   </div>
+
+   <div id="auctionData" class="hidden">
+    <div  class="modal-fields">
+       <p>Buy Now Price</p>
+       <input type="number" id="AuctionBuyNowPrice"  value="" placeholder="Auction buy now price" >
+     </div> 
+    <div  class="modal-fields">
+       <p>Starting Price:</p>
+       <input type="number" id="startingPrice"  value="" placeholder="Enter Price (£)" >
+     </div>
+     <div  class="modal-fields">
+       <p>Reserve Price:</p>
+       <input type="number" id="reservePrice"  value="" placeholder="Enter Price (£)" >
+     </div>
+     <div class="modal-fields">
+       <label for="auctionLength">Auction Length:</label>
+       <select id="auctionLength" name="auctionLength" >
+         <option value="" id="disabledValue" disabled selected>Select</option>
+         <option value="24h">24 hrs</option>
+         <option value="48h">48 hrs</option>
+         <option value="1w">1 week</option>
+         <option value="2w">2 weeks</option>
+       </select>
+     </div>
+   </div>
+   <button class="modal-btns" id="listForSale">Complete NFT Listing</button>
+   <p id="listingResult"> Hellow </p>
+ </div>
+</div>
+
+  <div id="sendModal" class="send-modal hidden">
+    <div class="send-modal-content">
+      <span class="close" id="closeSend">&times;</span>
+      <img id="sendTokenIcon" class="send-token-icon" src="assets/ckUSDC.svg" alt="Token Icon" />
+      <h2 class="send-title">Send <span id="tokenName">Token</span></h2>
+  
+      <label for="recipient" class="send-label">Recipient Principal</label>
+      <input type="text" id="recipient" class="send-input" placeholder="aaaaa-bbbbb-ccccc-ddddd" />
+  
+      <label for="amount" class="send-label">Amount</label>
+      <input type="number" id="amount" class="send-input" placeholder="0.00" min="0" step="any" />
+  
+      <button class="send-submit">Send</button>
+      <p id="sendResult"></p>
+    </div>
+  </div>
+
+
+<!-- FOOTER-->
+<footer>
+   <div class="footer-social">
+     <a href="https://x.com/yourhandle" aria-label="Twitter"><i class="fab fa-x-twitter"></i></a>
+     <a href="https://facebook.com/yourpage" aria-label="Facebook"><i class="fab fa-facebook"></i></a>
+     <a href="https://instagram.com/yourpage" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+     <a href="https://oc.app/yourchat" aria-label="OpenChat"><i class="fas fa-comments"></i></a>
+     <a href="https://github.com/yourrepo" aria-label="GitHub"><i class="fab fa-github"></i></a>
+   </div>
+    <div class="footer-content">
+     <div class="footer-left">
+       <div id="footer-logo-div">
+         <img id="footer-logo" src="assets/FullLogo_Transparent_NoBuffer (4).png" alt="logo">
+         <p><strong><span class="hvdao">H</span>ome<span class="hvdao">V</span>estors <span class="hvdao">DAO</span></strong></p>
+       </div>
+       <p>© 2025 HomeVestors DAO. All rights reserved.</p>
+     </div>
+      <div class="footer-links">
+       <a href="/whitepaper.pdf">Whitepaper</a>
+       <a href="/faqs.html">FAQs</a>
+       <!-- Add more if needed -->
+     </div>
+    </div>
+    <div class="footer-disclaimer">
+     <p>Participation in governance is required to receive any rental rewards.</p>
+     <p>NFTs do not represent ownership or passive income rights.</p>
+   </div>
+ </footer>
+
+ <script src="./src/main.js" type="module"></script>
+<script src="./src/scripts/Balance.js" type="module"></script>
+</body>
+
+
+</html>
+

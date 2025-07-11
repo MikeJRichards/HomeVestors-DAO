@@ -1,0 +1,618 @@
+#propertypage{
+ box-sizing: border-box;
+ }
+
+
+/* Image Carousel */
+#top-container {
+ width: 90%; /* Relative width with max-width */
+ max-width: 80rem; /* ~1280px if 1rem = 16px */
+ margin: 2rem auto 0rem auto;
+ padding: 0 1.25rem; /* 20px if root = 16px */
+ }
+#property-image-carousel {
+ width: 100%;
+ position: relative;
+ }
+.carousel-container {
+ display: flex;
+ gap: 0.625rem; /* 10px */
+ position: relative;
+ height: 31.25rem; /* 500px */
+ max-height: 70vh; /* Viewport height limit */
+ }
+.main-image-container {
+ flex: 0 0 70%;
+ height: 100%;
+ position: relative;
+ overflow: hidden;
+ border-radius: 0.5rem 0 0 0.5rem; /* 8px */
+ }
+
+
+#mainImage {
+ width: 100%;
+ height: 100%;
+ object-fit: cover;
+}
+
+
+.thumbnail-container {
+ flex: 0 0 calc(30% - 0.625rem); /* Account for gap */
+ display: flex;
+ flex-direction: column;
+ gap: 0.625rem; /* 10px */
+ height: 100%;
+}
+
+
+.thumbnail {
+ width: 100%;
+ height: calc(50% - 0.3125rem); /* Half minus half gap */
+ object-fit: cover;
+ cursor: pointer;
+ border-radius: 0 0.5rem 0 0;
+ transition: opacity 0.3s ease;
+}
+
+
+
+
+.thumbnail:last-child {
+ border-radius: 0 0 0.5rem 0;
+}
+
+
+ /* Arrow Styling */
+ .pp-carousel-arrow {
+     position: absolute;
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     line-height: 1;
+     top: 50%;
+     transform: translateY(-50%);
+     background-color: var(--transpBase);
+     border: none;
+     font-size: 2.5rem;
+     width: 3.5rem; /* 40px */
+     height: 3.5rem;
+     cursor: pointer;
+     z-index: 2;
+     border-radius: 0.5rem;
+     color: var(--HVDcolourPop);
+     transition: all 0.3s ease;
+ }
+  .pp-carousel-arrow.left {
+     left: 1.25rem;
+ }
+  .pp-carousel-arrow.right {
+     right: 1.25rem;
+ }
+  /* Responsive Breakpoints */
+ @media (max-width: 64rem) {
+     .carousel-container {
+     height: 25rem;
+     }
+ }
+  @media (max-width: 48rem) {
+     .carousel-container {
+     flex-direction: column;
+     height: auto;
+     max-height: none;
+     gap: 0.5rem;
+     }
+      .main-image-container {
+     flex: 1;
+     height: 18.75rem;
+     border-radius: 0.5rem 0.5rem 0 0;
+     }
+      .thumbnail-container {
+     flex-direction: row;
+     flex: 1;
+     height: 6.25rem;
+     width: 100%;
+     }
+      .thumbnail {
+     height: 100%;
+     border-radius: 0;
+     }
+      .thumbnail:first-child {
+     border-radius: 0 0 0 0.5rem;
+     }
+      .thumbnail:last-child {
+     border-radius: 0 0 0.5rem 0;
+     }
+      .pp-carousel-arrow.left {
+     left: 0.5rem;
+     }
+      .pp-carousel-arrow.right {
+     right: 0.5rem;
+     }
+ }
+  @media (max-width: 30rem) {
+     .main-image-container {
+     height: 15rem;
+     }
+     
+     .thumbnail-container {
+     height: 5rem;
+     }
+    
+     .pp-carousel-arrow {
+     width: 2rem;
+     height: 2rem;
+     font-size: 1.25rem;
+     }
+ }
+
+
+
+
+
+
+/* MAIN BODY */
+
+
+ /* Header */
+   #pp-info-header {
+     border-bottom: 1px solid var(--borderLine);
+     padding: 0 9rem;
+     display: flex;
+     flex-direction: column;
+     gap: 0;
+     }
+
+
+   #pp-header-top {
+     display: flex;
+     justify-content: space-between;
+     align-items: center;
+     padding:0 1rem;
+     }
+   #pp-save{
+     display: flex;
+     gap: 0.8rem;
+     align-items: center;
+     font-family: 'Open Sans', sans-serif;
+   }
+   #pp-save-heart, #pp-save {
+     color: var(--mainText);
+     font-size: 1.2rem;
+     font-weight: 400;
+     }
+   #pp-save:hover #pp-save-label {
+     transform: scale(1.02);
+     font-weight: 600;
+     transition: all 0.2s ease-in-out;
+     }
+   #pp-save:hover #pp-save-heart{
+     color: rgba(255, 0, 0, 0.827);
+     font-weight: bolder;
+     transition: ease-in-out 0.2s;
+     }
+   .pp-priceInfo {
+     font-size: 2.5rem;
+     color: var(--HVDbase);
+     line-height: 0;
+     margin-bottom: 1.5rem;
+     font-family: 'Open Sans', sans-serif;
+     font-weight: 900;
+     }
+   #pp-priceInfo-unit {
+     font-size: 1.5rem ;
+     font-weight: 800;
+   }
+  
+  
+   .added-launched {
+     font-family: 'Open Sans', sans-serif;
+     font-size: 0.8rem ;
+     color: var(--lightText);
+   }
+
+
+   #launched {display: none;}
+
+
+   .location {
+     display: flex;
+     gap: 0.5rem;
+     padding-left: 1rem;
+     line-height: 0;
+     font-size: 1.2rem;
+     font-family: 'Open Sans', sans-serif;
+     font-weight: 600;
+     }
+  
+   #pp-header-bottom {
+     display: flex;
+     justify-content: space-between;
+   }
+   #infoicons-container{
+     display: flex;
+     gap: 2rem;
+   }
+   .infoicons {
+     display: flex;
+     gap: 1rem;
+     align-items: center;
+     padding-left: 1rem;
+     font-size: 1rem;
+   }
+
+
+    #pp-mainpage{
+     display: flex;
+   }
+ #pp-fullinfo-section {
+   background-color: var(--hoverBase);
+   width:75%;
+   border-width: 2px solid transparent;
+   display: flex;
+   flex-direction: column;
+   padding:  2rem 6rem;
+   box-sizing: border-box;
+   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.267);
+   } 
+ .info-container {
+   margin-bottom: 3rem;
+ }
+
+
+  
+#Pp-toggle {
+display: flex;
+gap: 1rem;
+justify-content: center;
+margin-bottom: 3rem;
+}
+#newProperties-header-right {
+display: flex;
+}
+
+
+.toggle-btn {
+color: var(--lightText);
+padding: 0.5rem 1rem;
+font-family: 'Open Sans', sans-serif;
+font-size: 1rem;
+font-weight: 500;
+width: 8rem;
+border-radius: 8px;
+border: 0px;
+background-color: var(--hover);
+cursor: pointer;
+transition: all 0.2s ease;
+ }
+.toggle-btn:hover {
+background-color: var(--lightHVDpop);
+font-weight: 600;
+color: var(--lightText);
+ }
+.toggle-btn.active {
+background-color: var(--HVDcolourPop);
+color: var(--mainText);
+font-weight: 600;
+ }
+.info-subtitle {
+ font-family: 'Open Sans', sans-serif;
+ text-transform: uppercase;
+ color: var(--HVDbase);
+ font-size: 1.2rem;
+ padding:0;
+ margin: 0;
+ }
+.info-layout {
+ display: flex;
+ flex-direction: column;
+ gap: -1rem;
+ }
+#physical-subcontainer {
+ display: grid;
+ grid-template-columns: 1fr 1fr 1fr 1fr;
+ gap: 2rem;
+ }
+#additional-subcontainer {
+ display: grid;
+ grid-template-columns: 1fr 1fr 1fr 1fr;
+ gap: 2rem;
+ }
+#ValueMetrics {
+ border-top: solid 1px var(--transpBase);
+ padding-top: 3rem;
+
+
+}
+#ValueMetrics-head {
+ margin-bottom: 0rem;
+ font-size: 1.5rem;
+ font-weight: 900;
+ display: none;
+}
+
+
+#financials-subcontainer {
+ display: grid;
+ grid-template-columns: 1fr 1fr 1fr 1fr;
+ gap: 2rem;
+ }
+#financials-breakdown {
+display: flex;
+justify-content: center;
+gap: 2rem;
+ }
+.financials-cards {
+ display: flex;
+ flex-direction: column;
+ align-items: center;
+ box-shadow: 0 2px 10px rgba(0, 0, 0, 0.326);
+ padding: 3rem 2rem;
+ border-radius: 8px;
+ background-color: white;
+ }
+.financials-cards:hover {
+ transform: translateY(-3px);
+ }
+#financials-breakdown-subcontainer {
+ display: grid;
+ grid-template-columns: 3fr 1fr;
+ gap: 1rem 6rem;
+ }
+#disclaimer-container {
+margin: -3rem 2rem 3rem 2rem;
+ }
+#disclaimer {
+ color: var(--lightText);
+ font-family: 'Open Sans', sans-serif;
+ }
+.finance_table_head {
+ color: var(--HVDbase);
+ }
+.finance-divider {
+ grid-column: 1 / -1;
+ border-top: 1px solid var(--HVDcolourPop);
+ margin: 0;
+ }
+.TableTitle-container{
+ display: flex;
+ justify-content: center;
+ }
+.TableTitle{
+ margin-bottom: 2rem;
+ color: var(--HVDcolourPop);
+   font-weight: 900;
+ }
+
+
+#propertydetails {
+ width: 10rem;
+ }
+  
+/* NFT INFO */    
+   #container-nft-info {
+     width:25%;
+     box-sizing: border-box;
+     display: flex;
+     justify-content: center;
+     padding-top: 1.5rem;
+     }
+   #nft-info {
+     border: #3A6A99 solid 2px;
+     background-color: white;
+     border-radius: 8px;
+     padding: 2rem;
+     height: fit-content;
+     width: 70%;
+     position: sticky;
+     top: 6rem;
+     }
+   #nftprice {
+     font-size: 2rem;
+     color: var(--HVDbase);
+     line-height: 0;
+     font-family: 'Open Sans', sans-serif;
+     font-weight: 900;
+   }
+   #nft-progress {
+     margin-top: 2rem;
+     width: 100%;
+   }
+  
+   .progress-labels {
+     display: flex;
+     justify-content: space-between;
+     font-size: 0.95rem;
+     margin-bottom: 0.25rem;
+     color: var(--mainText);
+   }
+  
+   .progress-bar {
+     height: 1.2rem;
+     width: 100%;
+     background-color: var(--hoverBase);
+     border-radius: 8px;
+     overflow: hidden;
+     box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+   }
+  
+   .progress-fill {
+     height: 100%;
+     background-color: var(--HVDcolourPop);
+     width: 0%;
+     transition: width 0.4s ease-in-out;
+   }
+  
+   #container-buyBtn {
+     display: flex;
+     justify-content: center;
+     flex-direction: column;
+     align-items: center;
+     }
+   .buyBtn {
+     background-color: var(--HVDbase);
+     color: white;
+     font-size: 1.2rem;
+     width: 160px;
+     height: 48px;
+     font-weight: 600;
+     font-size: 1.1rem;
+     border-radius: 8px;
+     outline: 2px;
+     padding: 0.75rem;
+     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.326);
+     align-items: center;
+     cursor: pointer;
+     margin: 1rem;
+     }
+   .buyBtn:hover {
+     transition: ease-in-out 0.2s;
+     transform: scale(1.05);
+     cursor: pointer;
+     font-weight: 900;
+     color: var(--mainText);
+     background-image: linear-gradient(45deg, var(--HVDcolourPop), var(--lightHVDpop), var(--hover));
+     }
+  
+   #sold-replacementBtn{
+     background-color: var(--HVDbase);
+     color: white;
+     font-size: 1.2rem;
+     width: 160px;
+     height: 48px;
+     font-weight: 600;
+     font-size: 1.1rem;
+     border-radius: 8px;
+     outline: 2px;
+     padding: 0.75rem;
+     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.326);
+     align-items: center;
+     margin: 1rem;
+   }
+  
+   
+   #progressStatement {
+     display: flex;
+     justify-content: center;
+     }
+   #display-launched {
+     color: var(--lightText);
+     display: none;
+     }
+   #display-legalspending {
+     color: var(--lightText);
+     }
+
+
+
+
+
+
+   /* Modals */
+   .highestbidder {
+     margin: 0 1rem 1rem 1rem;
+     color: var(--lightText);
+     display: none;
+     }
+   .win {
+     color: var(--HVDcolourPop);
+     margin: 0 1rem 1rem 1rem;
+     display: noe;
+     }
+ .modal {
+     position: fixed;
+     top: 0;
+     left: 0;
+     width: 100%;
+     height: 100%;
+     background-color: rgba(0,0,0,0.6);
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     z-index: 1000;
+   }
+  
+   .modal-content {
+     background: white;
+     padding: 2rem;
+     border-radius: 10px;
+     max-width: 400px;
+     width: 100%;
+     position: relative;
+     text-align: center;
+   }
+  
+   .modal .close {
+     position: absolute;
+     right: 1rem;
+     top: 1rem;
+     font-size: 1.5rem;
+     cursor: pointer;
+     color: var(--HVDbase);
+     }
+
+
+ .modal .close:hover {
+     color: var(--HVDcolourPop);
+     }
+  
+   .modal-btns {background-color: var(--HVDbase);
+     color: white;
+     font-size: 1.2rem;
+     width: 240px;
+     height: 48px;
+     font-weight: 600;
+     font-size: 1.1rem;
+     border-radius: 8px;
+     outline: 2px;
+     padding: 0.75rem;
+     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.326);
+     align-items: center;
+     cursor: pointer;
+     margin-top: 1.5rem;
+     margin-bottom: 0.5rem;
+     }
+   .modal-btns:hover {
+     transition: ease-in-out 0.2s;
+     transform: scale(1.05);
+     cursor: pointer;
+     font-weight: 900;
+     color: var(--mainText);
+     background-image: linear-gradient(45deg, var(--HVDcolourPop), var(--lightHVDpop), var(--hover));
+     }
+ 
+
+
+
+
+
+
+
+
+   #mainpage-propertydetails-section {
+     display: noe;
+     }
+   #mainpage-location-section {
+     display: none;
+     }
+   #mainpage-financials-section {display: none;}
+  
+
+
+    :root{
+     --background: #f2fefb;
+     --hover:#d9fbf3;
+     --mainText: #0F1D2A;
+     --lightText: #0f1d2aba;
+     --HVDcolourPop: #00E4B0;
+     --HVDbase:  #3A6A99;
+     --lightHVDpop: #A7F6D6;
+     --heroSubFont: #8C9299;
+     --lightHVDbase: #9DB5CC;
+     --hoverBase: #E2E9F0;
+     --transpBase:#3a6999a2;
+     --borderLine: #e0e0e0;
+   }
+
+
+ 

@@ -6,7 +6,7 @@
   "scripts": {
     "setup": "npm i && dfx canister create HomeVestors-DAO-backend && dfx generate HomeVestors-DAO-backend && dfx deploy",
     "start": "vite --port 3000",
-    "prebuild": "dfx generate",
+    "prebuild": "dfx generate HomeVestors-DAO-backend",
     "build": "tsc && vite build",
     "format": "prettier --write \"src/**/*.{json,js,jsx,ts,tsx,css,scss}\""
   },

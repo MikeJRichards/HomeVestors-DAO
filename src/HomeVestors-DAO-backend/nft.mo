@@ -6,12 +6,13 @@ import Buffer "mo:base/Buffer";
 import Iter "mo:base/Iter";
 import Hash "mo:base/Hash";
 import Blob "mo:base/Blob";
+import Nat64 "mo:base/Nat64";
+import Time "mo:base/Time";
 
 module NFTCollections {
     type CreateFinancialsArg = Types.CreateFinancialsArg;
     type PropertyDetails = Types.PropertyDetails;
     type Account = Types.Account;
-    type AccountRecord = Types.AccountRecord;
     type TokenRecord = Types.TokenRecord;
     type Value = Types.Value;
     type PhysicalDetails = Types.PhysicalDetails;
@@ -21,8 +22,12 @@ module NFTCollections {
     type Properties = Types.Properties;
     type MintArg = Types.MintArg;
     type MintResult = Types.MintResult;
+    type TransferFromArg = Types.TransferFromArg;
+    type TransferArg = Types.TransferArg;
+    type TransferResult = Types.TransferResult;
+    type TransferFromResult = Types.TransferFromResult;
 
-    type NFTActor = actor {
+    public type NFTActor = actor {
         // INITIATION
         initiateMetadata: shared (Nat) -> async ();
         mintNFT: shared ([MintArg]) -> async [?MintResult];
@@ -46,6 +51,91 @@ module NFTCollections {
         // ACCOUNT DATA
         icrc7_balance_of: query ([Account]) -> async [Nat];
         icrc7_owner_of: query ([Nat]) -> async [ ?Account ];
+        icrc7_tokens_of: query (Account, ?Nat, ?Nat) -> async [Nat];
+
+        icrc37_transfer_from: shared ([TransferFromArg]) -> async [ ?TransferFromResult ];
+        icrc7_transfer: shared ([TransferArg]) -> async [ ?TransferResult ];
+        verify_icrc7_transfer: shared ([TransferArg]) -> async [?TransferResult]; 
+        verifyTransferFrom: shared ([TransferFromArg]) -> async [ ?TransferFromResult ];
+
+        clearState: shared () -> async ();
+    };
+
+    public func clearNFTState(canisterId: Principal): async (){
+        let nftActor : NFTActor = actor(Principal.toText(canisterId));
+        return await nftActor.clearState();
+    };
+
+    public func createTransferFromArg(from:Account, to:Account, token_id: Nat): TransferFromArg {
+        {
+            spender_subaccount = null;
+            from;
+            to;
+            token_id;
+            memo = null;
+            created_at_time = ?Nat64.fromIntWrap(Time.now());
+        };
+    };
+
+    public func tokensOf(canisterId: Principal, acc: Account, prev: ?Nat, take: ?Nat): async [Nat]{
+        let nftActor : NFTActor = actor(Principal.toText(canisterId));
+        return await nftActor.icrc7_tokens_of(acc, prev, take);
+    };
+
+    type ReadOutcome<T> = Types.ReadOutcome<T>;
+    public func tokensOfToValue(canisterId: Principal, acc: Account, prev: ?Nat, take: ?Nat): async ReadOutcome<[Nat]>{
+        let nftActor : NFTActor = actor(Principal.toText(canisterId));
+        let arr = await nftActor.icrc7_tokens_of(acc, prev, take);
+        if(arr.size() == 0) #Err(#EmptyArray) else #Ok(arr);
+    };
+
+    public func transferFrom(canisterId: Principal, from: Account, to: Account, token_id: Nat): async ?TransferFromResult {
+        let arg = createTransferFromArg(from, to, token_id);
+        let nftActor : NFTActor = actor(Principal.toText(canisterId));
+        let results = await nftActor.icrc37_transfer_from([arg]);
+        results[0];
+    };
+
+    public func transferFromBulk(canisterId: Principal, transferFromArgs: [TransferFromArg]): async [?TransferFromResult] {
+        let nftActor : NFTActor = actor(Principal.toText(canisterId));
+        await nftActor.icrc37_transfer_from(transferFromArgs);
+    };
+
+    public func transferBulk(canisterId: Principal, transferArg: [TransferArg]): async [?TransferFromResult] {
+        let nftActor : NFTActor = actor(Principal.toText(canisterId));
+        await nftActor.icrc7_transfer(transferArg);
+    };
+
+
+    public func verifyTransferFrom(canisterId: Principal, from: Account, to: Account, token_id: Nat): async ?TransferFromResult {
+        let arg = createTransferFromArg(from, to, token_id);
+        let nftActor : NFTActor = actor(Principal.toText(canisterId));
+        let results = await nftActor.verifyTransferFrom([arg]);
+        results[0];
+    };
+
+    public func createTransferArg(token_id:Nat, from_subaccount: ?Blob, to: Account): TransferArg {
+        {
+            token_id;
+            from_subaccount;
+            memo = null;
+            created_at_time = null;
+            to;
+        };
+    };
+
+    public func transfer(canisterId: Principal, from_subaccount: ?Blob, to: Account, token_id: Nat): async ?TransferResult {
+        let arg : TransferArg = createTransferArg(token_id, from_subaccount, to);
+        let nftActor : NFTActor = actor(Principal.toText(canisterId));
+        let results = await nftActor.icrc7_transfer([arg]);
+        results[0];
+    };
+
+    public func verifyTransfer(canisterId: Principal, from_subaccount: ?Blob, to: Account, token_id: Nat): async ?TransferResult {
+        let arg : TransferArg = createTransferArg(token_id, from_subaccount, to);
+        let nftActor : NFTActor = actor(Principal.toText(canisterId));
+        let results = await nftActor.verify_icrc7_transfer([arg]);
+        results[0];
     };
 
      public func accountEqual(a : Account, b : Account) : Bool {
@@ -111,7 +201,7 @@ module NFTCollections {
         let NFT : NFTActor = actor(Principal.toText(nftCollection));
         await NFT.initiateMetadata(propertyId);
         let mintArgs = Buffer.Buffer<MintArg>(quantity);
-        for(i in Iter.range(0, quantity)){
+        for(i in Iter.range(0, quantity - 1)){
             let mintArg : MintArg = {
                 meta = [];
                 from_subaccount = null;
@@ -204,6 +294,9 @@ module NFTCollections {
             };
             case (#MonthlyRent(_)) {
                 createFinancialMetadata(null, ?property.financials.monthlyRent);
+            };
+            case (#Description(_)) {
+                [("description", #Text(property.details.misc.description))]
             };
             case (#Valuations(_)) {
                 switch(PropHelper.getElementByKey(property.financials.valuations, property.financials.valuationId)){

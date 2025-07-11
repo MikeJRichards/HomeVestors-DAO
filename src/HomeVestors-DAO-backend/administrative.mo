@@ -5,24 +5,22 @@ import Text "mo:base/Text";
 import Time "mo:base/Time";
 import Option "mo:base/Option";
 import Principal "mo:base/Principal";
+import UnstableTypes "Tests/unstableTypes";
 
 module {
     type AdministrativeInfo = Types.AdministrativeInfo;
-    type InsurancePolicy = Types.InsurancePolicy;
-    type UpdateError = Types.UpdateError;
-    type Property = Types.Property;
-    type InsurancePolicyUArg = Types.InsurancePolicyUArg;
-    type AdministrativeIntentResult = Types.AdministrativeIntentResult;
+    type Handler<C, U, T> = UnstableTypes.Handler<C, U, T>;
     type InsurancePolicyCArg = Types.InsurancePolicyCArg;
-    type Actions<C, U> = Types.Actions<C, U>;
-    type UpdateResult = Types.UpdateResult;
-    type DocumentUArg = Types.DocumentUArg;
-    type Document = Types.Document;
-    type Note = Types.Note;
+    type InsurancePolicyUArg = Types.InsurancePolicyUArg;
+    type InsurancePolicyUnstable = UnstableTypes.InsurancePolicyUnstable;
     type DocumentCArg = Types.DocumentCArg;
+    type DocumentUArg = Types.DocumentUArg;
+    type DocumentUnstable = UnstableTypes.DocumentUnstable;
     type NoteCArg = Types.NoteCArg;
     type NoteUArg = Types.NoteUArg;
-    type What = Types.What;
+    type NoteUnstable = UnstableTypes.NoteUnstable;
+    type PropertyUnstable = UnstableTypes.PropertyUnstable;
+    type UpdateError = Types.UpdateError;
 
     public func createAdministrativeInfo(): AdministrativeInfo {
         {
@@ -34,251 +32,124 @@ module {
             notes = [];
         }
     };
-    
-    func validateInsurance(insurance: InsurancePolicy): Result.Result<InsurancePolicy, UpdateError>{
-        if(Text.equal(insurance.policyNumber, "")) return #err(#InvalidData{field = "policy Number"; reason = #EmptyString;});
-        if(Text.equal(insurance.provider, "")) return #err(#InvalidData{field = "policy Provider"; reason = #EmptyString;});
-        if(Option.get(insurance.endDate, Time.now()) < Time.now()) return #err(#InvalidData{field = "Insurance End Date"; reason = #CannotBeSetInThePast;});
-        if(insurance.premium <= 0) return #err(#InvalidData{field = "Insurance Premium"; reason = #CannotBeZero});
-        if(insurance.nextPaymentDate < Time.now()) return #err(#InvalidData{field = "Next Payment Date"; reason = #CannotBeSetInThePast;});
-        if(Text.equal(insurance.contactInfo, "")) return #err(#InvalidData{field = "Contact Info"; reason = #EmptyString;});
-        return #ok(insurance);
-    };
 
-    func mutateInsurance(arg: InsurancePolicyUArg, insurance: InsurancePolicy): InsurancePolicy {
-        {
-            insurance with
-            policyNumber       = PropHelper.get(arg.policyNumber, insurance.policyNumber);
-            provider           = PropHelper.get(arg.provider, insurance.provider);
-            startDate          = PropHelper.get(arg.startDate, insurance.startDate);
-            premium            = PropHelper.get(arg.premium, insurance.premium);
-            paymentFrequency   = PropHelper.get(arg.paymentFrequency, insurance.paymentFrequency);
-            nextPaymentDate    = PropHelper.get(arg.nextPaymentDate, insurance.nextPaymentDate);
-            contactInfo        = PropHelper.get(arg.contactInfo, insurance.contactInfo);
-            endDate            = PropHelper.getNullable(arg.endDate, insurance.endDate);
+    public func createInsuranceHandler(): Handler<InsurancePolicyCArg, InsurancePolicyUArg, InsurancePolicyUnstable> {
+      {
+        map = func(p: PropertyUnstable) = p.administrative.insurance;
+
+        getId = func(p: PropertyUnstable) = p.administrative.insuranceId;
+
+        incrementId = func(p: PropertyUnstable) = p.administrative.insuranceId += 1;
+
+        mutate = func(arg: InsurancePolicyUArg, insurance: InsurancePolicyUnstable): InsurancePolicyUnstable {
+            insurance.policyNumber       := PropHelper.get(arg.policyNumber, insurance.policyNumber);
+            insurance.provider           := PropHelper.get(arg.provider, insurance.provider);
+            insurance.startDate          := PropHelper.get(arg.startDate, insurance.startDate);
+            insurance.premium            := PropHelper.get(arg.premium, insurance.premium);
+            insurance.paymentFrequency   := PropHelper.get(arg.paymentFrequency, insurance.paymentFrequency);
+            insurance.nextPaymentDate    := PropHelper.get(arg.nextPaymentDate, insurance.nextPaymentDate);
+            insurance.contactInfo        := PropHelper.get(arg.contactInfo, insurance.contactInfo);
+            insurance.endDate            := PropHelper.getNullable(arg.endDate, insurance.endDate);
+            insurance;
         };
-    };
 
-    func createUpdatedInsurance(arg: InsurancePolicyUArg, property: Property, id: Nat): AdministrativeIntentResult {
-        switch(PropHelper.getElementByKey(property.administrative.insurance, id)){
-            case(?insurance){
-                let updatedInsurance = mutateInsurance(arg, insurance);
-                switch(validateInsurance(updatedInsurance)){case(#err(e)) return #Err(e); case(_) {}};
-                return #Ok(#Insurance (#Update (updatedInsurance, id)));
-            };
-            case(null){
-                return #Err(#InvalidElementId)
-            };
+        create = func(arg: InsurancePolicyCArg, id: Nat, caller: Principal): InsurancePolicyUnstable {
+            {
+                var id;
+                var policyNumber = arg.policyNumber;  // Unique policy number
+                var provider = arg.provider;  // Insurance provider
+                var startDate = arg.startDate;  // Start date of the policy
+                var endDate = arg.endDate;  // End date of the policy (None if active)
+                var premium = arg.premium;  // Premium cost
+                var paymentFrequency = arg.paymentFrequency;  // Whether paid weekly, monthly, or annually
+                var nextPaymentDate = arg.nextPaymentDate;  // Date of the next payment
+                var contactInfo = arg.contactInfo;  //
+            }
         };
-    };
 
-    public func createInsurance(arg: InsurancePolicyCArg, property: Property): AdministrativeIntentResult {        
-        let newId = property.administrative.insuranceId + 1;
-        let newInsurance = {arg with id = newId};
-        switch(validateInsurance(newInsurance)){
-            case(#err(e)) return #Err(e); 
-            case(_) return #Ok(#Insurance (#Create (newInsurance, newId)));
-        };
-    };
-
-
-
-    public func deleteInsurance(property: Property, id: Nat): AdministrativeIntentResult {
-        switch(PropHelper.getElementByKey(property.administrative.insurance, id)){
-            case(null){return #Err(#InvalidElementId)};
-            case(_){return #Ok(#Insurance(#Delete(id)))}
+        validate = func(maybeInsurance: ?InsurancePolicyUnstable): Result.Result<InsurancePolicyUnstable, UpdateError> {
+            let insurance = switch(maybeInsurance){case(null) return #err(#InvalidElementId); case(?insurance) insurance};
+            if(Text.equal(insurance.policyNumber, "")) return #err(#InvalidData{field = "policy Number"; reason = #EmptyString;});
+            if(Text.equal(insurance.provider, "")) return #err(#InvalidData{field = "policy Provider"; reason = #EmptyString;});
+            if(Option.get(insurance.endDate, Time.now()) < Time.now()) return #err(#InvalidData{field = "Insurance End Date"; reason = #CannotBeSetInThePast;});
+            if(insurance.premium <= 0) return #err(#InvalidData{field = "Insurance Premium"; reason = #CannotBeZero});
+            if(insurance.nextPaymentDate < Time.now()) return #err(#InvalidData{field = "Next Payment Date"; reason = #CannotBeSetInThePast;});
+            if(Text.equal(insurance.contactInfo, "")) return #err(#InvalidData{field = "Contact Info"; reason = #EmptyString;});
+            return #ok(insurance);
         }
+      }
     };
 
-    public func writeInsurance(action: Actions<InsurancePolicyCArg, (InsurancePolicyUArg, Nat)>, property: Property): UpdateResult {
-        let result = switch(action){
-            case(#Create(arg)){
-                createInsurance(arg, property);
-            };
-            case(#Update(arg, id)){
-                createUpdatedInsurance(arg, property, id);
-            };
-            case(#Delete(id)){
-                deleteInsurance(property, id);
-            };
+    public func createDocumentHandler(): Handler<DocumentCArg, DocumentUArg, DocumentUnstable> {
+      {
+        map = func(p: PropertyUnstable) = p.administrative.documents;
+
+        getId = func(p: PropertyUnstable) = p.administrative.documentId;
+
+        incrementId = func(p: PropertyUnstable) = p.administrative.documentId += 1;
+
+        mutate = func(arg: DocumentUArg, document: DocumentUnstable): DocumentUnstable {
+            document.title           := PropHelper.get(arg.title, document.title);
+            document.description     := PropHelper.get(arg.description, document.description);
+            document.url             := PropHelper.get(arg.url, document.url);
+            document.documentType    := PropHelper.get(arg.documentType, document.documentType);
+            document;
         };
 
-        applyAdministrativeUpdate(result, property, #Insurance(action));
-    };
-
-
-
-    func createUpdatedDocument(arg: DocumentUArg, property: Property, id: Nat): AdministrativeIntentResult {
-        switch(PropHelper.getElementByKey(property.administrative.documents, id)){
-            case(?document){
-                let updatedDocument = mutateDocument(arg, document);
-                switch(validateDocument(updatedDocument)){case(#err(e)) return #Err(e); case(_) {}};
-                return #Ok(#Documents (#Update (updatedDocument, id)));
-            };
-            case(null){
-                return #Err(#InvalidElementId)
-            };
+        create = func(arg: DocumentCArg, id: Nat, caller: Principal): DocumentUnstable {
+            {
+                var id;
+                var uploadDate = Time.now();
+                var title = arg.title;
+                var description = arg.description;
+                var documentType = arg.documentType;
+                var url = arg.url;
+             }
         };
-    };
 
-    func validateDocument(doc: Document): Result.Result<Document, UpdateError>{
-        if(Text.equal(doc.title, "")) return #err(#InvalidData{field = "title"; reason = #EmptyString;});
-        if(Text.equal(doc.description, "")) return #err(#InvalidData{field = "description"; reason = #EmptyString;});
-        if(Text.equal(doc.url, "")) return #err(#InvalidData{field = "URL"; reason = #EmptyString;});
-        if(doc.uploadDate > Time.now()) return #err(#InvalidData{field = "Upload Date"; reason = #CannotBeSetInTheFuture;});
-        return #ok(doc);
-    };
-
-    func mutateDocument(arg: DocumentUArg, document: Document): Document {
-        {
-            document with
-            title           = PropHelper.get(arg.title, document.title);
-            description     = PropHelper.get(arg.description, document.description);
-            url             = PropHelper.get(arg.url, document.url);
-            documentType    = PropHelper.get(arg.documentType, document.documentType);
-        };
-    };
-
-     public func createDocument(arg: DocumentCArg, property: Property): AdministrativeIntentResult {        
-        let newId = property.administrative.documentId + 1;
-        let newDocument : Document = {
-            arg with 
-            id = newId;
-            uploadDate = Time.now();
-        };
-        switch(validateDocument(newDocument)){
-            case(#err(e)) return #Err(e); 
-            case(_) return #Ok(#Documents (#Create (newDocument, newId)));
-        };
-    };
-
-    public func deleteDocument(property: Property, id: Nat): AdministrativeIntentResult {
-        switch(PropHelper.getElementByKey(property.administrative.documents, id)){
-            case(null){return #Err(#InvalidElementId)};
-            case(_){return #Ok(#Documents(#Delete(id)))}
+        validate = func(maybeDoc: ?DocumentUnstable): Result.Result<DocumentUnstable, UpdateError> {
+            let doc = switch(maybeDoc){case(null) return #err(#InvalidElementId); case(?doc) doc};
+            if(Text.equal(doc.title, "")) return #err(#InvalidData{field = "title"; reason = #EmptyString;});
+            if(Text.equal(doc.description, "")) return #err(#InvalidData{field = "description"; reason = #EmptyString;});
+            if(Text.equal(doc.url, "")) return #err(#InvalidData{field = "URL"; reason = #EmptyString;});
+            return #ok(doc);
         }
+      }
     };
 
-    public func writeDocument(action: Actions<DocumentCArg, (DocumentUArg, Nat)>, property: Property): UpdateResult {
-        let result = switch(action){
-            case(#Create(arg)){
-                createDocument(arg, property);
-            };
-            case(#Update(arg, id)){
-                createUpdatedDocument(arg, property, id);
-            };
-            case(#Delete(id)){
-                deleteDocument(property, id);
-            };
+    public func createNoteHandler(): Handler<NoteCArg, NoteUArg, NoteUnstable> {
+      {
+        map = func(p: PropertyUnstable) = p.administrative.notes;
+
+        getId = func(p: PropertyUnstable) = p.administrative.notesId;
+
+        incrementId = func(p: PropertyUnstable) = p.administrative.notesId += 1;
+
+        mutate = func(arg: NoteUArg, note: NoteUnstable): NoteUnstable {
+          note.title   := PropHelper.get(arg.title, note.title);
+          note.content := PropHelper.get(arg.content, note.content);
+          note.date    := PropHelper.getNullable(arg.date, note.date);
+          note;
         };
 
-        applyAdministrativeUpdate(result, property, #Document(action));
-    };
-
-    func validateNote(note: Note): Result.Result<Note, UpdateError>{
-        if(Text.equal(note.title, "")) return #err(#InvalidData{field = "title"; reason = #EmptyString;});
-        if(Text.equal(note.content, "")) return #err(#InvalidData{field = "content"; reason = #EmptyString;});
-        if(Option.get(note.date, Time.now()) > Time.now()) return #err(#InvalidData{field = "Upload Date"; reason = #CannotBeSetInTheFuture;});
-        if(Principal.isAnonymous(note.author)) return #err(#InvalidData{field= "author"; reason = #Anonymous;});
-        return #ok(note);
-    };
-
-    func mutateNote(arg: NoteUArg, note: Note): Note {
-        {
-            note with
-            title   = PropHelper.get(arg.title, note.title);
-            content = PropHelper.get(arg.content, note.content);
-            date    = PropHelper.getNullable(arg.date, note.date);
+        create = func(arg: NoteCArg, id: Nat, caller: Principal): NoteUnstable {
+          {
+            var author = caller;
+            var content = arg.content;
+            var date = arg.date;
+            var id = id;
+            var title = arg.title;
+          }
         };
-    };
 
-    func createUpdatedNote(arg: NoteUArg, property: Property, id: Nat): AdministrativeIntentResult {
-        switch(PropHelper.getElementByKey(property.administrative.notes, id)){
-            case(?note){
-                let updatedNote = mutateNote(arg, note);
-                switch(validateNote(updatedNote)){case(#err(e)) return #Err(e); case(_) {}};
-                return #Ok(#Notes (#Update (updatedNote, id)));
-            };
-            case(null){
-                return #Err(#InvalidElementId)
-            };
-        };
-    };
-
-     public func createNote(arg: NoteCArg, property: Property, caller: Principal): AdministrativeIntentResult {        
-        let newId = property.administrative.notesId + 1;
-        let newNote: Note = {
-            arg with 
-            id = newId;
-            author = caller;
-        };
-        switch(validateNote(newNote)){
-            case(#err(e)) return #Err(e); 
-            case(_) return #Ok(#Notes (#Create (newNote, newId)));
-        };
-    };
-
-    public func deleteNote(property: Property, id: Nat): AdministrativeIntentResult {
-        switch(PropHelper.getElementByKey(property.administrative.notes, id)){
-            case(null){return #Err(#InvalidElementId)};
-            case(_){return #Ok(#Notes(#Delete(id)))}
+        validate = func(maybeNote: ?NoteUnstable): Result.Result<NoteUnstable, UpdateError> {
+          let note = switch (maybeNote) {case (?n) n; case (null) return #err(#InvalidElementId);};
+          if (Text.equal(note.title, "")) return #err(#InvalidData { field = "title"; reason = #EmptyString });
+          if (Text.equal(note.content, "")) return #err(#InvalidData { field = "content"; reason = #EmptyString });
+          if (Option.get(note.date, Time.now()) > Time.now()) return #err(#InvalidData { field = "Upload Date"; reason = #CannotBeSetInTheFuture });
+          if (Principal.isAnonymous(note.author)) return #err(#InvalidData { field = "author"; reason = #Anonymous });
+          #ok(note);
         }
+      }
     };
-
-    public func writeNote(action: Actions<NoteCArg, (NoteUArg, Nat)>, property: Property, caller: Principal): UpdateResult {
-        let result = switch(action){
-            case(#Create(arg)){
-                createNote(arg, property, caller);
-            };
-            case(#Update(arg, id)){
-                createUpdatedNote(arg, property, id);
-            };
-            case(#Delete(id)){
-                deleteNote(property, id);
-            };
-        };
-
-        applyAdministrativeUpdate(result, property, #Note(action));
-    };
-
-    public func applyAdministrativeUpdate<C,U>(intent: AdministrativeIntentResult, property: Property, action: What): UpdateResult {
-        let admin = switch(intent){
-            case(#Ok(#Insurance(action))){
-                {
-                    property.administrative with
-                    insuranceId = PropHelper.updateId(action, property.administrative.insuranceId);
-                    insurance = PropHelper.performAction(action, property.administrative.insurance);
-                };
-            };
-            case(#Ok(#Documents(action))){
-                {
-                    property.administrative with
-                    documentId = PropHelper.updateId(action, property.administrative.documentId);
-                    documents = PropHelper.performAction(action, property.administrative.documents);
-                };
-            };
-            case(#Ok(#Notes(action))){
-                {
-                    property.administrative with
-                    notesId = PropHelper.updateId(action, property.administrative.notesId);
-                    notes = PropHelper.performAction(action, property.administrative.notes);
-                };
-            };
-            case(#Err(e)){
-                return #Err(e)
-            };  
-        };
-        PropHelper.updateProperty(#Administrative(admin), property, action);
-    };
-
-
-
-
-    
-
-
-
-
-
-
 }

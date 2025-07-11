@@ -1,4 +1,5 @@
 import Types "types";
+import UnstableTypes "./Tests/unstableTypes";
 import PropHelper "propHelper";
 import Float "mo:base/Float";
 import Result "mo:base/Result";
@@ -9,22 +10,26 @@ import ExperimentalCycles "mo:base/ExperimentalCycles";
 import Int "mo:base/Int";
 import Blob "mo:base/Blob";
 import Text "mo:base/Text";
+import Nat "mo:base/Nat";
 
 
 module {
-    type Financials = Types.Financials;
-    type InvestmentDetails = Types.InvestmentDetails;
-    type ValuationRecord = Types.ValuationRecord;
     type CreateFinancialsArg = Types.CreateFinancialsArg;
+    type InvestmentDetails = Types.InvestmentDetails;
+    type Financials = Types.Financials;
+    type Handler<C, U, T> = UnstableTypes.Handler<C,U,T>;
+    type ValuationRecordCArg = Types.ValuationRecordCArg; 
+    type ValuationRecordUArg = Types.ValuationRecordUArg; 
+    type ValuationRecordUnstable = UnstableTypes.ValuationRecordUnstable;
+    type SimpleHandler<T> = UnstableTypes.SimpleHandler<T>;
     type Property = Types.Property;
     type UpdateResult = Types.UpdateResult;
     type UpdateError = Types.UpdateError;
-    type ValuationRecordUArg = Types.ValuationRecordUArg; 
-    type ValuationRecordCArg = Types.ValuationRecordCArg; 
     type FinancialIntentResult = Types.FinancialIntentResult;
-    type Actions<C,U> = Types.Actions<C,U>;
     type What = Types.What;
-    type Reason = Types.Reason;
+    type PropertyUnstable = UnstableTypes.PropertyUnstable;
+    type FinancialsArg = Types.FinancialsArg;
+    
 
      func createInvestmentDetails (arg: CreateFinancialsArg): InvestmentDetails {
         return {
@@ -47,56 +52,66 @@ module {
         }
     };
 
-    func validateValuation(v: ValuationRecord): Result.Result<ValuationRecord, UpdateError> {
-        if (v.value <= 0) return #err(#InvalidData{field = "value"; reason = #CannotBeZero});
-        return #ok(v);
-    };
+   
 
-    func mutateValuation(arg: ValuationRecordUArg, v: ValuationRecord): ValuationRecord {
-        {
-            v with
-            value = PropHelper.get(arg.value, v.value);
-            method = PropHelper.get(arg.method, v.method);
-        }
-    };
+   public func createValuationHandler(): Handler<ValuationRecordCArg, ValuationRecordUArg, ValuationRecordUnstable> {
+      {
+        map = func(p: PropertyUnstable) = p.financials.valuations;
 
-    func createUpdatedValuation(arg: ValuationRecordUArg, property: Property, id: Nat): FinancialIntentResult {
-        switch (PropHelper.getElementByKey(property.financials.valuations, id)) {
-            case (null) return #Err(#InvalidElementId);
-            case (?v) {
-                let updated = mutateValuation(arg, v);
-                switch (validateValuation(updated)) {
-                    case (#err(e)) return #Err(e);
-                    case (_) return #Ok(#Valuation(#Update(updated, id)));
-                }
-            }
-        }
-    };
+        getId = func(p: PropertyUnstable) = p.financials.valuationId;
 
-    public func createValuation(arg: ValuationRecordCArg, property: Property, caller: Principal): FinancialIntentResult {
-        let newId = property.financials.valuationId + 1;
-        let newValuation = {arg with id = newId; date = Time.now(); appraiser = caller};
-        switch (validateValuation(newValuation)) {
-            case (#err(e)) return #Err(e);
-            case (_) return #Ok(#Valuation(#Create(newValuation, newId)));
-        }
-    };
+        incrementId = func(p: PropertyUnstable) = p.financials.valuationId += 1;
 
-    public func deleteValuation(property: Property, id: Nat): FinancialIntentResult {
-        switch (PropHelper.getElementByKey(property.financials.valuations, id)) {
-            case (null) return #Err(#InvalidElementId);
-            case (_) return #Ok(#Valuation(#Delete(id)));
-        }
-    };
-
-    public func writeValuation(action: Actions<ValuationRecordCArg, (ValuationRecordUArg, Nat)>, property: Property, caller: Principal): UpdateResult {
-        let result = switch (action) {
-            case (#Create(arg)) createValuation(arg, property, caller);
-            case (#Update(arg, id)) createUpdatedValuation(arg, property, id);
-            case (#Delete(id)) deleteValuation(property, id);
+        mutate = func(arg: ValuationRecordUArg, v: ValuationRecordUnstable): ValuationRecordUnstable {
+            v.value := PropHelper.get(arg.value, v.value);
+            v.method := PropHelper.get(arg.method, v.method);
+            v;
         };
 
-        applyFinancialUpdate(result, property, #Valuations(action));
+        create = func(arg: ValuationRecordCArg, id: Nat, caller: Principal): ValuationRecordUnstable {
+            {
+                var id; 
+                var value = arg.value;
+                var method = arg.method;
+                var date = Time.now(); 
+                var appraiser = caller
+            };
+        };
+
+        validate = func(maybeValuation: ?ValuationRecordUnstable): Result.Result<ValuationRecordUnstable, UpdateError> {
+            let v = switch(maybeValuation){case(null) return #err(#InvalidElementId); case(?valuation) valuation};
+            if (v.value <= 0) return #err(#InvalidData{field = "value"; reason = #CannotBeZero});
+            return #ok(v);
+        }
+      }
+    };
+               
+    public func monthlyRentHandler(): SimpleHandler<Nat> {
+      {
+        validate = func(val: Nat): Result.Result<Nat, UpdateError> {
+            if(val <= 0) return #err(#InvalidData{field = "Monthly Rent"; reason = #CannotBeZero;});
+            #ok(val);
+        };
+
+        apply = func(val: Nat, p: PropertyUnstable) {
+            p.financials.monthlyRent := val;
+            p.financials.yield := Float.fromInt(val * 12) / Float.fromInt(p.financials.currentValue);
+        }
+      }
+    };
+
+    public func currentValueHandler(): SimpleHandler<FinancialsArg> {
+      {
+        validate = func(arg: FinancialsArg): Result.Result<FinancialsArg, UpdateError> {
+           if(arg.currentValue <= 0) return #err(#InvalidData{field = "current value"; reason = #CannotBeZero;});
+            #ok(arg);
+        };
+
+        apply = func(arg: FinancialsArg, p: PropertyUnstable) {
+            p.financials.currentValue := arg.currentValue;
+            p.financials.pricePerSqFoot := arg.currentValue / p.details.physical.squareFootage;
+        }
+      }
     };
 
     public func applyFinancialUpdate<C, U>(intent: FinancialIntentResult, property: Property, action: What): UpdateResult {
@@ -130,7 +145,91 @@ module {
         PropHelper.updateProperty(#Financials(financials), property, action);
     };
 
-    public func fetchValuation(postcode: Text, transform: query ({context : Blob; response : IC.http_request_result;}) -> async IC.http_request_result) : async Result.Result<What, UpdateError> {
+    public func createURL(property: Property): Text {
+        let propertyId = Nat.toText(property.id);
+
+        let postcode = Text.replace(property.details.location.postcode, #char ' ', "");
+        let internal_area = if(property.details.physical.squareFootage < 300) Nat.toText(300) else Nat.toText(property.details.physical.squareFootage);
+        let bedrooms = Nat.toText(property.details.physical.beds);
+        let bathrooms = Nat.toText(property.details.physical.baths);
+
+        // 🟢 Simple logic to pick enums (these can be improved later)
+        let construction_date = if (property.details.physical.yearBuilt < 1914) {
+          "pre_1914"
+        } else if (property.details.physical.yearBuilt <= 2000) {
+          "1914_2000"
+        } else {
+          "2000_onwards"
+        };
+
+        let property_type = "semi-detached_house"; // 🟢 Default for now
+        let finish_quality = "average";       // 🟢 Default for now
+        let outdoor_space = "garden";         // 🟢 Default for now
+        let off_street_parking = "0";         // 🟢 Default for now
+
+        let url = "https://property-valuations.fly.dev"
+          # "?property_id=" # propertyId
+          # "&postcode=" # postcode
+          # "&internal_area=" # internal_area
+          # "&property_type=" # property_type
+          # "&construction_date=" # construction_date
+          # "&bedrooms=" # bedrooms
+          # "&bathrooms=" # bathrooms
+          # "&finish_quality=" # finish_quality
+          # "&outdoor_space=" # outdoor_space
+          # "&off_street_parking=" # off_street_parking;
+        return url;
+    };
+
+    public func fetchValuation(property: Property, transform: query ({context : Blob; response : IC.http_request_result;}) -> async IC.http_request_result) : async Result.Result<What, UpdateError> {
+  
+    let url = createURL(property);
+    let req : IC.http_request_args = {
+      url = url;
+      method = #get;
+      headers = [];
+      body = null;
+      max_response_bytes = ?3000;
+      transform = ?{
+        function = transform;
+        context = Blob.fromArray([]);
+      };
+    };
+
+    // First HTTP outcall (ignored result)
+    ExperimentalCycles.add<system>(100_000_000_000);
+    let _ = await IC.http_request(req);
+
+    // Second HTTP outcall (actual result)
+    ExperimentalCycles.add<system>(100_000_000_000);
+    let res = await IC.http_request(req);
+
+    let bodyText = switch (Text.decodeUtf8(res.body)) {
+        case (?text) text;
+        case null return #err(#InvalidData{field = "valuation"; reason = #FailedToDecodeResponseBody});
+      };
+
+      let parsed = switch (JSON.parse(bodyText)) {
+        case (#ok(val)) val;
+        case (#err(_)) return #err(#InvalidData{field = "valuation"; reason = #JSONParseError});
+      };
+
+      let estimate = switch (JSON.get(parsed, "estimate")) {
+        case (?#number(#int(n))) Int.abs(n);
+        case (?#number(#float(n))) Int.abs(Float.toInt(n));
+        case (_) return #err(#InvalidData{field = "valuation"; reason = #CannotBeNull});
+      };
+
+
+    let valuation = {
+      value = estimate;
+      method = #Online;
+    };
+
+    return #ok(#Valuations(#Create(valuation)));
+};
+
+public func fetchValuationOG(postcode: Text, transform: query ({context : Blob; response : IC.http_request_result;}) -> async IC.http_request_result) : async Result.Result<What, UpdateError> {
         let validPostcode = Text.replace(postcode, #char ' ', "");
         let url = "https://valuation-fly.fly.dev/valuation?postcode="#validPostcode;
 
@@ -177,6 +276,7 @@ module {
 
         return #ok(#Valuations(#Create(valuation)));
     };
+
 
 
 

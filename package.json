@@ -14,5 +14,10 @@
   "type": "module",
   "workspaces": [
     "src/HomeVestors-DAO-frontend"
-  ]
+  ],
+  "dependencies": {
+    "@civic/auth": "^0.9.0",
+    "@dfinity/agent": "^2.4.1",
+    "@dfinity/auth-client": "^2.4.1"
+  }
 }

@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+
+
+<head>
+ <meta charset="UTF-8" />
+ <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
+ <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+ <title>IC Hello Starter</title>
+
+
+ <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+ <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+ <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer" />
+ <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+
+
+
+<link rel="stylesheet" href="./src/styles/All.css">
+ <link rel="stylesheet" href="./src/styles/MarketPlace.css">
+</head>
+
+
+<body>
+ <nav>
+   <a class="logo" href="./index.html">
+     <img id="logo" src="assets/FullLogo_Transparent_NoBuffer (4).png" alt="Logo">
+     <h1 class="hvd-title"><span class="hvdao">H</span><span class="other">ome</span><span class="hvdao">V</span><span class="other">estors</span> <span class="hvdao">DAO</span></h1>
+   </a>
+    <div id="nav_end">
+     <div class="nav_menu">
+       <a class="nav_headings" href="./AboutUs.html">About Us</a>
+       <a class="nav_headings" href="./MarketPlace.html">Market Place</a>
+       <a class="nav_headings" href="./MyHomes.html">My Homes</a>
+       <a class="nav_headings" href="./MyProposals.html">My Proposals</a>
+     </div>
+     <button id="connect_btn" class="hidden">Connect</button>
+     <a  id="NavWallet" class="nav_headings active hidden" href="./Balance.html"><i class="fa-solid fa-wallet" id="wallet_cp"></i></a>
+     <i id="hamburger" class="fas fa-bars"></i>
+   </div>
+ </nav>
+
+
+ <!-- Mobile dropdown menu -->
+   <div id="mobile_nav_menu" class="mobile-hidden">
+       <a href="./AboutUs.html">About Us</a>
+       <a href="./MarketPlace.html">Market Place</a>
+       <a href="./MyHomes.html">My Homes</a>
+       <a href="./MyProposals.html">My Proposals</a>
+       <a href="#"><button class="btn">Connect</button></a>
+   </div>
+
+
+
+
+<!-- MAIN PAGE -->
+<div  id="mainpage">
+ <div id="mp-header" >
+   <div id="mp-header-toggle">
+     <button id="newPropertiesBtn" class="mp-header-toggle-btn active">New Properties</button>
+     <button id="investorMarketplaceBtn" class="mp-header-toggle-btn">Investor Marketplace</button>
+   </div>
+
+
+   <a href="" id="saved"> <span id="saved-label">Saved </span>
+     <i id="saved-heart" class="fa-regular fa-heart"></i>
+   </a>
+ </div>
+
+
+ <!-- New Properties -->
+ <section id="newProperties">
+   <!-- Header -->
+   <div id="newProperties-header">
+     
+     <div id="newProperties-toggle">
+       <button class="IMPhead-KYC-btn" id="kycBtn1"> KYC</button>
+       <button id="allBtn" class="toggle-btn  active"> All</button>
+       <button id="availableBtn" class="toggle-btn"> Available</button>
+       <button id="soldBtn" class="toggle-btn"> Sold</button>
+     </div>
+<pre id="userOutput"></pre>
+
+     <div id="newProperties-header-right">
+       <button id="filters-btn" class="header-btns" >
+         Filters
+         <i  id="filter-icon" class="fa-solid fa-chevron-down sort-icon"></i></button>
+       </button>
+      
+       <div class="sort-container">
+         <button id="sort-btn" class="sort-btn header-btns"> 
+           Sort: <span id="sortValue">Highest Price</span>
+           <i class="fa-solid fa-chevron-down sort-icon"></i>
+         </button>
+         <div class="sort-dropdown">
+           <div class="sort-option" data-value="Highest Price">Highest Price</div>
+           <div class="sort-option" data-value="Lowest Price">Lowest Price</div>
+           <div class="sort-option" data-value="Newest">Newest</div>
+           <div class="sort-option" data-value="Oldest">Oldest</div>
+         </div>
+       </div>
+     </div>
+
+
+   </div>
+
+
+   <!-- Filters -->
+       <div id="filtersBar" class="filters-bar hidden">
+         <div class="fb-form-container" >
+           <div class="fb-contentcontainer fb-left">
+             <div class="filter-flex">
+               <span class="filter-labels">Location:</span>
+               <select name="" id="">
+                 <option value="">All</option>
+                 <option value="">Manchester</option>
+                 <option value="">Leeds</option>
+                 <option value="">Liverpool</option>
+               </select>
+             </div>
+             <div class="filter-flex">
+               <span class="filter-labels">Property Price:</span>
+               <label for=""><input type="text">min</label>
+               <label for=""><input type="text">max</label>
+             </div>
+             <div class="filter-flex">
+               <span class="filter-labels">NFT Price:</span>
+               <label for=""><input type="text">min</label>
+               <label for=""><input type="text">max</label>
+             </div>
+           </div>
+           <div class="fb-contentcontainer fb-right">
+             <div class="filter-flex">
+               <span class="filter-labels">Property Type:</span>
+               <label for="" class="filter">
+                 Detached <input type="checkbox">
+                 Semi-detached <input type="checkbox">
+                 Terraced <input type="checkbox">
+               </label>
+             </div>
+             <div class="filter-flex">
+               <span class="filter-labels">Bedrooms:</span>
+               <label for="" class="filter">
+                 1 <input type="checkbox">
+                 2 <input type="checkbox">
+                 3 <input type="checkbox">
+                 4 <input type="checkbox">
+                 5 <input type="checkbox">
+               </label>
+             </div>
+           </div>
+         </div>
+
+
+         <div id="filters-btn-container" >
+           <button id="filters-clear" class="filtersbar-btns" >Clear all Filters</button>
+           <button id="filters-done" class="filtersbar-btns"> Done </button>
+         </div>
+
+
+       </div>
+   <!-- Body -->
+   <div class="main-body-container">
+
+
+     <div class="main-body" id="property-container" >
+     </div>
+
+
+     <!-- Right Side -->
+     <div class="container-right">
+       <div id="right-content">
+          
+         <div class="right-contentbox" id="rc-top">
+           <h3>Invest in real property, powered by Web3.
+               Fractional. Liquid. Permissionless.</h3>
+         </div>
+
+
+         <div class="right-contentbox" id="rc-2">
+           <p><b>Value Listed:</b> <span class="small-right">£...</span></p>
+           <p><b>NFTs Sold:</b> <span class="small-right">...</span></p>
+           <p><b>Properties Launched:</b> <span class="small-right">...</span></p>
+         </div>
+        
+         <div class="right-contentbox" id="rc-3">
+           <h4 class="h3" id="hp-h3-s5"> Find Out More</h4>
+           <div id="hp-cta-btns">
+             <button id="hp-btn3" class="btn">FAQs</button>             
+             <button id="hp-btn4" class="btn">Whitepaper</button>  
+           </div>
+         </div>
+
+
+       </div>
+     </div>
+
+
+    
+   </div>
+ </section>
+
+
+ <!--Investor market place-->
+
+
+ <section id="investorMarketplace" class = "hidden">
+  <!-- Header -->
+   <div id="imp-header">
+     <button class="IMPhead-KYC-btn" id="kycBtn2">KYC</button>
+     <div id="imp-header-right">
+       <button id="imp-filters-btn" class="header-btns" >
+         Filters
+         <i  id="filter-icon" class="fa-solid fa-chevron-down sort-icon"></i></button>
+       </button>
+ 
+       <div class="sort-container">
+         <button id="imp-sort-btn" class="sort-btn header-btns">
+           Sort: <span id="sortValue">Highest Price</span>
+           <i class="fa-solid fa-chevron-down sort-icon"></i>
+         </button>
+         <div class="sort-dropdown">
+           <div class="sort-option" data-value="Highest Price">Highest Price</div>
+           <div class="sort-option" data-value="Lowest Price">Lowest Price</div>
+           <div class="sort-option" data-value="Newest">Newest</div>
+           <div class="sort-option" data-value="Oldest">Oldest</div>
+           <div class="sort-option" data-value="rentalyield">Highest Rental Yield</div>
+           <div class="sort-option" data-value="Auction Time">Time Until Auction</div>
+         </div>
+       </div>
+     </div>
+   </div>
+   <!-- Filters -->
+   <div id="imp-filtersBar" class="filters-bar hidden">
+     <div class="fb-form-container" >
+       <div class="fb-contentcontainer fb-left">
+         <div class="filter-flex">
+           <span class="filter-labels">Location:</span>
+           <select name="" id="">
+             <option value="">All</option>
+             <option value="">Manchester</option>
+             <option value="">Leeds</option>
+             <option value="">Liverpool</option>
+           </select>
+         </div>
+         <div class="filter-flex">
+           <span class="filter-labels">Property Price:</span>
+           <label for=""><input type="text">min</label>
+           <label for=""><input type="text">max</label>
+         </div>
+         <div class="filter-flex">
+           <span class="filter-labels">NFT Price:</span>
+           <label for=""><input type="text">min</label>
+           <label for=""><input type="text">max</label>
+         </div>
+       </div>
+       <div class="fb-contentcontainer fb-right">
+         <div class="filter-flex">
+           <span class="filter-labels">Property Type:</span>
+           <label for="" class="filter">
+             Detached <input type="checkbox">
+             Semi-detached <input type="checkbox">
+             Terraced <input type="checkbox">
+           </label>
+         </div>
+         <div class="filter-flex">
+           <span class="filter-labels">Bedrooms:</span>
+           <label for="" class="filter">
+             1 <input type="checkbox">
+             2 <input type="checkbox">
+             3 <input type="checkbox">
+             4 <input type="checkbox">
+             5 <input type="checkbox">
+           </label>
+         </div>
+         <div class="filter-flex">
+           <span class="filter-labels">Sales Type:</span>
+           <label for="" class="filter">
+             Buy Now <input type="checkbox">
+             Auction <input type="checkbox">
+           </label>
+         </div>
+         <div class="filter-flex">
+           <span class="filter-labels">Auction Status</span>
+           <label for="" class="filter">
+             Ending soon (within 24hrs) <input type="checkbox">
+           </label>
+         </div>
+       </div>
+     </div>
+
+
+     <div id="filters-btn-container" >
+       <button id="filters-clear" class="filtersbar-btns" >Clear all Filters</button>
+       <button id="filters-done" class="filtersbar-btns"> Done </button>
+     </div>
+
+
+   </div>
+  
+
+
+   <!-- imp-BUY Body -->
+   <div class="main-body-container" id="buy-investorMarketplace">
+     <div class="imp-main-body" id="listings">
+       <div id="nftAdvert-grid"></div>
+       <!-- PAGINATION -->
+       <div id="pagination-container" >
+      
+         <div id="pagination-wrapper" class="hidden">
+           <div></div>
+           <div id="pagination-controls">
+             <button class="pagination-btn" onclick="changePage(currentPage - 1)"><i  id="filter-icon" class="fa-solid fa-chevron-left sort-icon pagination-left"></i></button>
+             <div id="pagination-numbers">
+               <a class="pagenumbers" href="">1</a>
+               <a class="pagenumbers" href="">2</a>
+               <a class="pagenumbers" href="">3</a>
+               <a class="pagenumbers" href="">4</a>
+               <a class="pagenumbers" href="">5</a>
+               <a class="pagenumbers" href="">6</a>
+               <a class="pagenumbers" href="">7</a>
+               <a class="pagenumbers" href="">8</a>
+               <a class="pagenumbers" href="">9</a>
+               <a class="pagenumbers" href="">10</a>
+             </div>
+             <button class="pagination-btn" onclick="changePage(currentPage + 1)"><i  id="filter-icon" class="fa-solid fa-chevron-right sort-icon pagination-right"></i></button>
+           </div>
+           <div class="items-per-page">
+             Items Per Page
+             <select id="itemsPerPage" onchange="changeItemsPerPage()">
+               <option value="60" selected>60</option>
+               <option value="30">30</option>
+               <option value="12">12</option>
+             </select>
+           </div>
+         </div>
+       </div>
+     </div>
+  
+     <!-- Right Side -->
+     <div class="container-right">
+       <div id="right-content">
+
+
+         <div class="right-contentbox" id="rc-top">
+           <h3>Invest in real property, powered by Web3.
+             Fractional. Liquid. Permissionless.</h3>
+         </div>
+
+
+         <div class="right-contentbox" id="rc-2">
+           <p><b>Value Listed:</b> <span class="small-right">£...</span></p>
+           <p><b>NFTs Sold:</b> <span class="small-right">...</span></p>
+           <p><b>Properties Launched:</b> <span class="small-right">...</span></p>
+         </div>
+      
+         <div class="right-contentbox" id="rc-3">
+             <h4 class="h3" id="hp-h3-s5"> Find Out More</h4>
+             <div id="hp-cta-btns">
+               <button id="hp-btn3" class="btn">FAQs</button>             <button id="hp-btn4" class="btn">Whitepaper</button>  
+             </div>
+         </div>
+
+
+       </div>
+     </div>
+   </div>
+
+
+ </section>
+</div>
+
+
+
+
+
+
+<!-- Buy Now Modal -->
+<div id="buyNowModal" class="modal hidden">
+ <div class="modal-content">
+   <span class="close" id="closeBuyNowModal">&times;</span>
+   <h2>Buy NFT</h2>
+   <p>Select quantity:</p>
+   <input type="number" id="buyQuantity" value="1" min="1"/>
+   <p>Total Cost: <span id="totalCost" data-role="totalCost">_</span></p>
+   <button class="modal-btns" id="buyNowBtn">Complete Transaction</button>
+ </div>
+</div>
+
+
+<!-- Place Bid Modal -->
+<div id="placeBidModal" class="modal hidden">
+ <div class="modal-content">
+   <span class="close" id="closePlaceBidModal">&times;</span>
+   <h2>Place a Bid</h2>
+   <p class="text-p" >Current highest bid: <span id="highestBid"></span></p>
+   <div id="buyNowDiv">
+     <p class="text-p" >Buy Now Price: <span id="BuyNow"></span></p>
+     <button class="modal-btns" id="BuyNowBtn">Buy Now</button>
+   </div>
+   <p class="text-p" >Minimum bid: <span id="MinBid"></span></p>
+   <input type="number" id="bidAmount" placeholder="Enter bid amount (Îž)" />
+   <button class="modal-btns" id="placeBid">Place Bid</button>
+   <p class="text-p highestbidder" id="highestBidder">Highest Bidder: 1023643642... </p>
+ </div>
+</div>
+
+
+<div id="SellModal" class="modal hidden">
+ <div class="modal-content">
+   <span class="close" id="closeSend">&times;</span>
+   <h2>Sell NFT</h2>
+   <div class="modal-fields">
+     <p>Select quantity:</p>
+     <input type="number" id="sellQuantitySellModal" value="" min="1" max="20" autofocus >
+   </div>
+   <label for="" class="filter">
+     <p>Sales Method:</p>
+     <div class="filter-checkbox" >Buy Now <input type="checkbox" id = "buyNowCheckbox" checked="true"></div>
+     <div class="filter-checkbox" >Auction <input type="checkbox" id = "auctionCheckBox"></div>
+   </label>
+
+   <div id="buynowData" class="modal-fields">
+     <p>Buy Now:</p>
+     <input type="number" id="BuyNowPrice"  value="" placeholder="Enter Price (£)" >
+   </div>
+
+   <div id="auctionData" class="hidden">
+    <div  class="modal-fields">
+       <p>Buy Now Price</p>
+       <input type="number" id="AuctionBuyNowPrice"  value="" placeholder="Auction buy now price" >
+     </div> 
+    <div  class="modal-fields">
+       <p>Starting Price:</p>
+       <input type="number" id="startingPrice"  value="" placeholder="Enter Price (£)" >
+     </div>
+     <div  class="modal-fields">
+       <p>Reserve Price:</p>
+       <input type="number" id="reservePrice"  value="" placeholder="Enter Price (£)" >
+     </div>
+     <div class="modal-fields">
+       <label for="auctionLength">Auction Length:</label>
+       <select id="auctionLength" name="auctionLength" >
+         <option value="" id="disabledValue" disabled selected>Select</option>
+         <option value="24h">24 hrs</option>
+         <option value="48h">48 hrs</option>
+         <option value="1w">1 week</option>
+         <option value="2w">2 weeks</option>
+       </select>
+     </div>
+   </div>
+   <button class="modal-btns" id="listForSale">Complete NFT Listing</button>
+   <p id="listingResult"> Hellow </p>
+ </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+<!-- FOOTER-->
+ <footer>
+   <div class="footer-social">
+     <a href="https://x.com/yourhandle" aria-label="Twitter"><i class="fab fa-x-twitter"></i></a>
+     <a href="https://facebook.com/yourpage" aria-label="Facebook"><i class="fab fa-facebook"></i></a>
+     <a href="https://instagram.com/yourpage" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+     <a href="https://oc.app/yourchat" aria-label="OpenChat"><i class="fas fa-comments"></i></a>
+     <a href="https://github.com/yourrepo" aria-label="GitHub"><i class="fab fa-github"></i></a>
+   </div>
+    <div class="footer-content">
+     <div class="footer-left">
+       <div id="footer-logo-div">
+         <img id="footer-logo" src="assets/FullLogo_Transparent_NoBuffer (4).png" alt="logo">
+         <p><strong><span class="hvdao">H</span>ome<span class="hvdao">V</span>estors <span class="hvdao">DAO</span></strong></p>
+       </div>
+       <p>© 2025 HomeVestors DAO. All rights reserved.</p>
+     </div>
+      <div class="footer-links">
+       <a href="/whitepaper.pdf">Whitepaper</a>
+       <a href="/faqs.html">FAQs</a>
+       <!-- Add more if needed -->
+     </div>
+    </div>
+    <div class="footer-disclaimer">
+     <p>Participation in governance is required to receive any rental rewards.</p>
+     <p>NFTs do not represent ownership or passive income rights.</p>
+   </div>
+ </footer>
+
+ <script src="./src/main.js" type="module"></script>
+<script src="./src/scripts/MarketPlace.js" type="module"></script>
+<script src="./src/scripts/IMPMarketplace.js" type="module"></script>
+
+</body>
+
+
+</html>
+

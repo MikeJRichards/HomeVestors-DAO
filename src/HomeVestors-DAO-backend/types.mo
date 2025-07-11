@@ -1,18 +1,6 @@
 import HashMap "mo:base/HashMap";
 
 module {
-    //public type HashMap.HashMap<A,B> = HashMap.HashMap<A,B>;
-    // Main Property Structure
-    public type Property = {
-        id: Nat;  // Unique identifier for the property
-        details: PropertyDetails;  // Grouped details about the property, including description
-        financials: Financials;  // Financial details, including investment, valuation, and income
-        administrative: AdministrativeInfo;  // Grouped administrative information
-        operational: OperationalInfo;  // Grouped operational information
-        nftMarketplace: NFTMarketplace;
-        updates : [Result];
-    };
-
     public type Result = {
         #Ok: What;
         #Err: UpdateError;
@@ -34,8 +22,10 @@ module {
     public type UsersNotifications = HashMap.HashMap<Account, User>;
     public type User = {
         id: Nat;
+        kyc: Bool;
         notifications : [Notification];
         results : [NotificationResult];
+        saved: [(Nat, [Nat])];
     };
 
     public type NotificationResult = {
@@ -56,14 +46,29 @@ module {
         #Deleted;
     };
 
- //   // PropertyDetails Structure
+    public type Property = {
+        id: Nat;  // Unique identifier for the property
+        details: PropertyDetails;  // Grouped details about the property, including description
+        financials: Financials;  // Financial details, including investment, valuation, and income
+        administrative: AdministrativeInfo;  // Grouped administrative information
+        operational: OperationalInfo;  // Grouped operational information
+        nftMarketplace: NFTMarketplace;
+        updates : [Result];
+    };
+
    public type PropertyDetails = {
        location: LocationDetails;  // Location-specific details, including property name
        physical: PhysicalDetails;  // Physical characteristics of the property
        additional: AdditionalDetails;  // Additional property-related details
-       description: Text;  // General description of the property
+       misc: Miscellaneous;
    };
-//
+
+   public type Miscellaneous = {
+        description: Text;
+        imageId: Nat;
+        images: [(Nat, Text)];
+   };
+
     public type LocationDetails = {
         name: Text;  // Name of the property
         addressLine1: Text;  // Street address
@@ -111,12 +116,6 @@ module {
         sqrFoot: Nat;
         monthlyRent: Nat;
     };
-
-     public type AccountRecord = {
-       balance: Nat;
-       owned_tokens: [Nat];
-       transfers: [TransactionEvent]; // 👈 New field
-     };
  
     public type TokenRecord = {
       owner: Account;
@@ -143,26 +142,10 @@ module {
         #GenericError : {error_code : Nat; message : Text};
         #GenericBatchError : {error_code : Nat; message : Text};
     };
-    
-    public type RevokeCollectionApprovalError = BaseError or {
-        #ApprovalDoesNotExist;
-    };
-
-    public type ApproveCollectionError = BaseError or  {
-        #InvalidSpender;
-    };
 
     public type StandardError = BaseError or {
         #Unauthorized;
         #NonExistingTokenId;
-    };
-
-    public type RevokeTokenApprovalError = StandardError or  {
-        #ApprovalDoesNotExist;
-    };
-
-    public type ApproveTokenError = StandardError or {
-        #InvalidSpender;
     };
 
     public type TransferError = StandardError or {
@@ -184,13 +167,6 @@ module {
        #Mint;
        #TransferFrom;
     };
-//
-     public type TransactionEvent = {
-       token_id: Nat;
-       counterparty: ?Account;
-       transaction: TransactionType;
-       timestamp: Int;
-     };
 
     public type Value = {
         #Blob : Blob; 
@@ -207,16 +183,8 @@ module {
        initialMaintenanceReserve: Nat;
        purchasePrice: Nat;
    };
-//
- //   public type PropertyStatus = {
- //       #PreCompletion;
- //       #Active;
- //       #Frozen;
- //       #Selling;
- //       #Other;  // Add any other relevant statuses as needed
- //   };
-//
- //   // AdministrativeInfo Structure
+
+    // AdministrativeInfo Structure
     public type AdministrativeInfo = {
         documentId: Nat;
         insuranceId: Nat;
@@ -232,9 +200,9 @@ module {
         maintenanceId: Nat;
         inspectionsId: Nat;
         tenants: [(Nat, Tenant)];  // Tenants in the property
-        maintenance: [(Nat, MaintenanceRecord)];  // Maintenance tasks
-        inspections: [(Nat, InspectionRecord)];  // Inspection records
-    };
+      maintenance: [(Nat, MaintenanceRecord)];  // Maintenance tasks
+      inspections: [(Nat, InspectionRecord)];  // Inspection records
+  };
 
     // Supporting Structures
     public type InsurancePolicyUArg = {
@@ -302,7 +270,7 @@ module {
        //etc
        #Other : Text;
    };
-    // InspectionRecord Structure
+//    // InspectionRecord Structure
     public type InspectionRecordUArg = {
         inspectorName: ?Text;  // Name of the inspector or inspection company
         date: ?Int;  // Date of the inspection
@@ -324,7 +292,7 @@ module {
         appraiser: Principal;  // Name of the appraiser or firm that conducted the valuation
     };
 
-    // ValuationRecord Structure
+//    // ValuationRecord Structure
     public type ValuationRecordUArg = {
         value: ?Nat;  // Assessed value of the property
         method: ?ValuationMethod;  // Method used for the valuation
@@ -449,46 +417,10 @@ module {
         #Completed;
     };
     
-    // Account Structure
+//    // Account Structure
     public type Account = {
         owner: Principal;
         subaccount: ?Blob;
-    };
-
-    public type Read = {
-        #AllInsurance;
-        #InsuranceById : Nat;
-        #AllDocuments;
-        #DocumentById: Nat;
-        #AllNotes;
-        #NoteById: Nat;
-        #LastNote;
-        #AllValuations;
-        #ValuationById : Nat;
-        #LastValuation;
-        #AllTenants;
-        #CurrentTenant;
-        #TenantById: Nat;
-        #TenantPaymentHistory: Nat;
-        #AllMaintenance;
-        #MaintenanceById: Nat;
-        #LastMaintenance;
-        #AllInspections;
-        #InspectionById: Nat;
-        #LastInspection;
-        #PhysicalDetails;
-        #AdditionalDetails;
-        #LocationDetails;
-        #Financials;
-        #MonthlyRent;
-        #UpdateResults;
-        #UpdatedState;
-        #UpdateErrors;
-    };
-
-    public type ReadResult = {
-        #Ok: ReadUnsanitized;
-        #Err: ReadErrors;
     };
 
     public type GetPropertyResult = {
@@ -502,9 +434,30 @@ module {
         #OverWritingData;
         #InvalidData : {field: Text; reason: Reason};
         #GenericError;
+        #ListingExpired;
         #InvalidType;
-        #CannotUpdateLiveAuction;
+        #ImmutableLiveAuction;
+        #Transfer: ?GenericTransferError;
+        #Unauthorized;
+        #InsufficientBid : {minimum_bid: Nat}
     };
+
+    public type GenericTransferError = TransferFromError or {
+        #BadFee : {expected_fee: Nat};
+        #InsufficientFunds: {balance: Nat};
+        #TemporarilyUnavailable;
+        #BadBurn  : { min_burn_amount : Nat };
+        #InsufficientAllowance  : { allowance : Nat };
+        #GenericBatchError : { error_code : Nat; message : Text };
+        #InvalidRecipient;                                        // ← Missing
+        #NonExistingTokenId; 
+    };
+
+    public type GenericTransferResult = {
+        #Ok: Nat;
+        #Err: GenericTransferError;
+    };
+    
 
     public type Reason = {
         #EmptyString;
@@ -519,42 +472,137 @@ module {
         #Anonymous;
         #FailedToDecodeResponseBody;
         #JSONParseError;
+        #BuyerAndSellerCannotMatch;
     };
 
     public type ReadErrors = {
         #InvalidPropertyId;
         #InvalidElementId;
+        #Filtered;
+        #ArrayIndexOutOfBounds;
+        #DidNotMatchConditions;
         #EmptyArray;
         #Vacant
     };
 
-    public type ReadUnsanitized = {
-        #AllInsurance: [(Nat, InsurancePolicy)];
-        #Insurance : ?InsurancePolicy;
-        #AllDocuments: [(Nat, Document)];
-        #Document : ?Document;
-        #AllNotes: [(Nat, Note)];
-        #Note : ?Note;
-        #LastNote: ?Note;
-        #AllValuations: [(Nat, ValuationRecord)];
-        #Valuation : ?ValuationRecord;
-        #LastValuation: ?ValuationRecord;
-        #AllTenants: [(Nat, Tenant)];
-        #Tenant : ?Tenant;
-        #CurrentTenant: ?Tenant;
-        #TenantPaymentHistory: ?[Payment];
-        #AllMaintenance: [(Nat, MaintenanceRecord)];
-        #Maintenance: ?MaintenanceRecord;
-        #LastMaintenance :?MaintenanceRecord;
-        #AllInspections: [(Nat, InspectionRecord)];
-        #Inspection: ?InspectionRecord;
-        #LastInspection: ?InspectionRecord;
-        #PhysicalDetails: PhysicalDetails;
-        #AdditionalDetails: AdditionalDetails;
-        #LocationDetails: LocationDetails;
-        #Financials: Financials;
-        #MonthlyRent: Nat;
-        #UpdateResults : [Result];
+    type Selected = ?[Int]; //if null = all, if negative - taken from end, if positive = these specific ids
+    type ScopedProperties = {propertyId: Nat; ids: Selected};
+    type ScopedNestedProperties = {propertyId: Nat; ids: Selected; elements: Selected};
+    public type ListingConditionals = {account: ?Account; listingType: ?[MarketplaceOptions]; ltype: {#Seller; #Winning; #Purchased; #PreviousBids;}};
+
+    public type BaseRead = {
+        #Ids: Selected; //These ids from all properties, 
+        #Properties: Selected; //All ids from these properties
+        #Scoped: [ScopedProperties]; //These ids for this property
+    };
+
+    public type ConditionalBaseRead<T> = {
+        base: BaseRead;
+        conditionals: T;
+    };
+
+    public type NestedRead = BaseRead or {
+        #NestedScoped: [ScopedNestedProperties];
+    };
+
+    public type NestedConditionalRead<T> = {
+        nested: NestedRead;
+        conditionals: T;
+    };
+
+    public type Read2 = {
+        #Images: BaseRead;
+        #Document: BaseRead;
+        #Note: BaseRead;
+        #Insurance: BaseRead;
+        #Valuation: BaseRead;
+        #Tenants: BaseRead;
+        #Maintenance: BaseRead;
+        #Inspection: BaseRead;
+        #PaymentHistory: NestedRead;
+        #Physical: Selected; 
+        #Additional: Selected; 
+        #Location: Selected; 
+        #Misc: Selected; 
+        #Financials: Selected; 
+        #MonthlyRent: Selected;
+        #UpdateResults : {selected: Selected; conditional: {#All; #Err; #Ok}};
+        #Listings: ConditionalBaseRead<ListingConditionals>;
+        #Refunds: NestedConditionalRead<{#All; #Ok; #Err}>;
+        #CollectionIds: Selected;
+    };
+
+    public type ReadArg = {
+        properties: Properties;
+        filterProperties: ?FilterProperties;
+    };
+
+    public type FilterProperties = {
+        location: ?Text;
+        nftPriceMin: ?Nat;
+        nftPriceMax: ?Nat;
+        houseValueMin: ?Nat;
+        houseValueMax: ?Nat;
+        typeOfProperty: ?{#Terraced; #Semi; #Detached};
+        beds: ?[Nat];
+        saved: ?Account;
+        monthlyRentMin: ?Float;
+    };
+
+    public type PropertyResult<T> = {
+      propertyId: Nat;
+      result: {
+        #Ok: [ElementResult<T>];
+        #Err: ReadErrors; //invalid property etc
+      };
+    };
+
+    public type ReadOutcome<T> = {
+        #Ok: T; 
+        #Err: ReadErrors;
+    };
+
+    public type ElementResult<T> = {
+      id: Nat; //element id
+      value: {
+        #Ok: T; //in the case of nested element - they contain their own id - therefore id above is always of parent
+        #Err: ReadErrors; // e.g. #EmptyArray, #InvalidElementId, etc.
+      };
+    };
+
+    public type ReadHandler<T> = {
+        toEl: Property -> [(Nat, T)]; //if elements are nested this returns top elements id, then array of nested elements either in form [(Nat, NestedType)] or [NestType] - if later struct includes id 
+        filter: ?(((Nat, T), ?[Int]) -> (Nat, T)); //for filtering nested elements
+        cond: T -> ReadOutcome<T>; //for filtering top level elements
+    };
+
+    public type SimpleReadHandler<T> = {
+        toEl: Property -> T;
+        cond: T -> ReadOutcome<T>;
+    };
+
+
+    public type ReadResult = {
+        #Image: [PropertyResult<Text>];
+        #Document: [PropertyResult<Document>];
+        #Note: [PropertyResult<Note>];
+        #Insurance: [PropertyResult<InsurancePolicy>];
+        #Valuation: [PropertyResult<ValuationRecord>];
+        #Tenants: [PropertyResult<Tenant>];
+        #Maintenance: [PropertyResult<MaintenanceRecord>];
+        #Inspection: [PropertyResult<InspectionRecord>];
+        #PaymentHistory: [PropertyResult<[Payment]>];
+        #Physical: [ElementResult<PhysicalDetails>]; 
+        #Additional: [ElementResult<AdditionalDetails>]; 
+        #Location: [ElementResult<LocationDetails>]; 
+        #Misc: [ElementResult<Miscellaneous>]; 
+        #Financials: [ElementResult<Financials>]; 
+        #MonthlyRent: [ElementResult<Nat>];
+        #UpdateResults: [ElementResult<[Result]>];
+        #Listings : [PropertyResult<Listing>];
+        #Refunds: [PropertyResult<[Refund]>];
+        #NFTs: [ElementResult<[Nat]>];
+        #CollectionIds : [ElementResult<Principal>];
     };
     
     public type Intent<T> = {
@@ -587,18 +635,8 @@ module {
         #PhysicalDetails : PhysicalDetails;
         #AdditionalDetails : AdditionalDetails;
         #NFTMarketplace: MarketplaceAction;
-    };
-
-    public type OperationalIntentAction = {
-        #Maintenance: Intent<MaintenanceRecord>;
-        #Tenant: Intent<Tenant>;
-        #Inspection: Intent<InspectionRecord>;
-    };
-
-    public type AdministrativeIntentAction = {
-        #Insurance: Intent<InsurancePolicy>;
-        #Documents: Intent<Document>;
-        #Notes: Intent<Note>;
+        #Images: Actions<Text, (Text, Nat)>;
+        #Description : Text;
     };
 
     public type FinancialIntentAction = {
@@ -612,8 +650,6 @@ module {
         #Err: UpdateError;
     };
 
-    public type AdministrativeIntentResult = IntentResult<AdministrativeIntentAction>;
-    public type OperationalIntentResult = IntentResult<OperationalIntentAction>;
     public type FinancialIntentResult = IntentResult<FinancialIntentAction>;
 
     public type UpdateResult = {
@@ -621,7 +657,11 @@ module {
         #Err : UpdateError;
     };
 
-    /////////////////////////////////
+    public type UpdateResultNat = {
+        #Ok: Nat; 
+        #Err : UpdateError;
+    };
+
     //Marketplace structs
     public type NFTMarketplace = {
         collectionId: Principal;
@@ -630,7 +670,20 @@ module {
         royalty : Nat;
     };
 
+    public type Ref = {
+        id: Nat;
+        from: Account;
+        to: Account;
+        amount: Nat;
+        attempted_at: Int;
+        result: GenericTransferResult;
+    };
+
     public type Listing = {
+        #LaunchedProperty: Launch;
+        #LaunchFixedPrice: FixedPrice;
+        #CancelledLaunch: CancelledFixedPrice;
+        #SoldLaunchFixedPrice: SoldFixedPrice;
         #LiveFixedPrice: FixedPrice;
         #SoldFixedPrice: SoldFixedPrice;
         #CancelledFixedPrice: CancelledFixedPrice;
@@ -639,7 +692,43 @@ module {
         #CancelledAuction: CancelledAuction;
     };
 
+    public type Launch = {
+        id: Nat;
+        seller: Account;
+        caller: Principal;
+        tokenIds: [Nat];
+        args: [(Nat, Listing)];
+        maxListed: Nat;
+        listedAt: Int;
+        price: Nat;
+        quoteAsset: AcceptedCryptos;
+    };
+
+    public type LaunchArg = {
+        transferType: {#TransferFrom; #Transfer};
+        maxListed: ?Nat;
+        price: Nat;
+        endsAt: ?Int;
+        from_subaccount: ?Blob;
+        seller_subaccount: ?Blob;
+        quoteAsset: ?AcceptedCryptos;
+    };
+
+    public type MarketplaceOptions = {
+        #PropertyLaunch;
+        #SoldLaunchFixedPrice;
+        #LaunchFixedPrice;
+        #CancelledLaunch;
+        #LiveFixedPrice;
+        #SoldFixedPrice;
+        #CancelledFixedPrice;
+        #LiveAuction;
+        #SoldAuction;
+        #CancelledAuction;
+    };
+
     public type BaseListing = {
+        id: Nat;
         tokenId: Nat;
         listedAt: Int;
         seller: Account;
@@ -667,8 +756,7 @@ module {
     };
 
     public type SoldFixedPrice = FixedPrice and {
-        soldAt: Int;
-        buyer: Account;
+        bid: Bid;
         royaltyBps: ?Nat; // Basis points, e.g. 250 = 2.5%
     };
 
@@ -678,7 +766,10 @@ module {
         reason: CancelledReason;
     };
 
-    
+    public type Refund = {
+        #Err: Ref;
+        #Ok: Ref;
+    };
 
     public type Auction = BaseListing and {
         startingPrice: Nat;
@@ -689,6 +780,7 @@ module {
         endsAt: Int;
         highestBid: ?Bid;
         previousBids: [Bid];
+        refunds: [Refund];
     };
 
     public type AuctionCArg = {
@@ -730,6 +822,8 @@ module {
         #CancelledBySeller;
         #Expired;
         #CalledByAdmin;
+        #ReserveNotMet;
+        #NoBids;
     };
 
     public type BidArg = {
@@ -750,8 +844,9 @@ module {
         reason: CancelledReason;
     };
 
-
     public type MarketplaceAction = {
+        #LaunchProperty: LaunchArg;
+        #UpdateLaunch: FixedPriceUArg;
         #CreateFixedListing : FixedPriceCArg;
         #UpdateFixedListing: FixedPriceUArg;
         #CreateAuctionListing : AuctionCArg;
@@ -760,9 +855,41 @@ module {
         #CancelListing: CancelArg;
     };
 
+    public type LaunchProperty = {
+        propertyId: Nat;
+        price: Nat;
+        endsAt: ?Int;
+        quoteAsset: ?AcceptedCryptos;
+    };
+
     public type MarketplaceIntent = Intent<Listing>;
     public type MarketplaceIntentResult = IntentResult<MarketplaceIntent>;
 
-    
+//    //////Transfering NFTs
+    public type TransferFromResult = {
+        #Ok : Nat; // Transaction index for successful transfer
+        #Err : TransferFromError;
+    };
 
+    public type TransferFromArg = {
+        spender_subaccount: ?Blob; // The subaccount of the caller (used to identify the spender) - essentially equivalent to from_subaccount
+        from : Account;
+        to : Account;
+        token_id : Nat;
+        memo : ?Blob;
+        created_at_time : ?Nat64;
+    };
+
+    public type TransferArg = {
+        token_id : Nat;
+        from_subaccount : ?Blob;
+        memo: ?Blob;
+        created_at_time: ?Nat64;
+        to: Account;
+    };
+
+    public type TransferResult = {
+        #Ok : Nat; // Transaction index for successful transfer
+        #Err : TransferError;
+    };
 }

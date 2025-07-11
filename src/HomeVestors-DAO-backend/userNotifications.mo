@@ -1,9 +1,12 @@
 import Types "types";
 import NFT "nft";
+import PropHelper "propHelper";
 import Array "mo:base/Array";
 import Iter "mo:base/Iter";
 import Buffer "mo:base/Buffer";
 import Option "mo:base/Option";
+import HashMap "mo:base/HashMap";
+import Nat "mo:base/Nat";
 
 module UserNotifications {
     type UsersNotifications = Types.UsersNotifications;
@@ -12,16 +15,53 @@ module UserNotifications {
     type Account = Types.Account;
     type NotificationType = Types.NotificationType;
     type What = Types.What;
-    type UpdateError = Types.UpdateError;
     type Notification = Types.Notification;
     type NotificationResult = Types.NotificationResult;
 
     func createNewUser(): User {
       {
         id = 0;
+        kyc = false;
         notifications = [];
         results = [];
+        saved = [];
       }
+    };
+
+  public func verifyKYC(result: Bool, caller: Principal, userNotifications: HashMap.HashMap<Account, User>): (){
+    let account = {owner = caller; subaccount = null};
+    switch(userNotifications.get(account)){
+      case(?user){
+        if(not user.kyc){
+          let updatedUser = {user with kyc = result};
+          userNotifications.put(account, updatedUser);
+        }
+      };
+      case(null){
+        let newUser = {createNewUser() with kyc = result};
+        userNotifications.put(account, newUser)
+      };  
+    }
+  };
+
+
+    func toggleNat(arr: [Nat], target: Nat): [Nat] {
+      if (Array.indexOf<Nat>(target, arr, func(a, b) = a == b) != null) {
+          Array.filter<Nat>(arr, func(x) = x != target)
+      } else {
+          Array.append(arr, [target])
+      }
+    };
+
+    public func updateSaved(account: Account, propertyId: Nat, listId: Nat, userNotifications: UsersNotifications): (){
+      var user = getUser(account, userNotifications);
+      let saved = HashMap.fromIter<Nat, [Nat]>(user.saved.vals(), user.saved.size(), Nat.equal, PropHelper.natToHash);
+      switch(saved.get(propertyId)){
+        case(null) saved.put(propertyId, [listId]);
+        case(?listIds) saved.put(propertyId, toggleNat(listIds, listId));
+      };
+      user := {user with saved = Iter.toArray(saved.entries());};
+      userNotifications.put(account, user);
     };
 
     public func getUser(account: Account, userNotifications: UsersNotifications): User{
@@ -52,7 +92,9 @@ module UserNotifications {
       {
         id = user.id + 1;
         notifications = Array.append(user.notifications, [newNotification]);
-        results = Array.append(user.results, [#Ok(newNotification)])
+        results = Array.append(user.results, [#Ok(newNotification)]);
+        saved = user.saved;
+        kyc = user.kyc;
       };
     };
 

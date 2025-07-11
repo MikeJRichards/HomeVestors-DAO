@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+
+
+<head>
+ <meta charset="UTF-8" />
+ <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
+ <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+ <title>IC Hello Starter</title>
+
+
+ <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+ <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+ <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer" />
+ <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+
+
+<link rel="stylesheet" href="./src/styles/All.css">
+ <link rel="stylesheet" href="./src/styles/IMP-PropertyPage.css">
+
+</head>
+
+
+<body>
+   <nav>
+       <a class="logo" href="./index.html">
+         <img id="logo" src="assets/FullLogo_Transparent_NoBuffer (4).png" alt="Logo">
+         <h1 class="hvd-title"><span class="hvdao">H</span><span class="other">ome</span><span class="hvdao">V</span><span class="other">estors</span> <span class="hvdao">DAO</span></h1>
+       </a>
+    
+       <div id="nav_end">
+         <div class="nav_menu">
+           <a class="nav_headings" href="./AboutUs.html">About Us</a>
+           <a class="nav_headings" href="./marketplace.html">Market Place</a>
+           <a class="nav_headings" href="./MyHomes.html">My Homes</a>
+           <a class="nav_headings" href="./MyProposals.html">My Proposals</a>
+         </div>
+         <button id="connect_btn" class="hidden">Connect</button>
+         <a id="NavWallet" class="nav_headings hidden" href="./Balance.html"><i class="fa-solid fa-wallet" id="wallet_cp"></i></a>
+         <i id="hamburger" class="fas fa-bars"></i>
+       </div>
+   </nav>
+
+
+    
+   <!-- Mobile dropdown menu -->
+       <div id="mobile_nav_menu" class="mobile-hidden">
+           <a href="./AboutUs.html">About Us</a>
+           <a href="./MarketPlace.html">Market Place</a>
+           <a href="./MyHomes.html">My Homes</a>
+           <a href="./MyProposals.html">My Proposals</a>
+           <a href="#"><button class="btn">Connect</button></a>
+       </div>
+
+
+<!-- MAIN PAGE-->
+<section id="mainpage">
+    
+ <div id="top-container">
+
+
+   <div id="property-image-carousel">
+     <div class="carousel-container">
+       <div class="main-image-container">
+         <img id="mainImage" src="./assets/houseimg.jpg" alt="Main Property Image">
+       </div>
+       <div class="thumbnail-container">
+         <img class="thumbnail" id="image2" src="./assets/yNZPvgJedXyNZG7FvDMHTC-1280-80.jpg.webp" alt="Thumbnail 1">
+         <img class="thumbnail" id="image3" src="./assets/8.jpg" alt="Thumbnail 2">
+       </div>
+       <button id="clickLeft" class="pp-carousel-arrow left">&#10094;</button>
+       <button id="clickRight" class="pp-carousel-arrow right">&#10095;</button>
+     </div>
+   </div>
+
+
+ </div>
+
+
+ <div id="pp-mainbody">
+   <div id="pp-info-header">
+
+
+  
+     <div id="pp-header-top">
+         <div id="prop-value-container">
+           <p class="priceInfo pp-priceInfo" data-role="currentValue">_</p>
+           <p class="text-p ButtonDetails"> Last valued: <span data-role="lastValued"> _</span> </p>
+         </div>
+    
+         <a href="" id="pp-save"> <span id="pp-save-label">Save </span>
+           <i id="pp-save-heart" class="fa-regular fa-heart"></i>
+         </a>
+      
+     </div>
+     <div class="location" >
+       <p data-role="addressLine2" class="street">_</p>
+       <p data-role="location" class="city">_</p>
+       <p data-role="outcode"> _</p>
+     </div>
+     <div id="pp-header-bottom">
+       <div id="infoicons-container">
+         <div class="infoicons"><i class="fas fa-house"></i> <p data-role="propertyType">_</p></div>
+         <div class="infoicons"><i class="fas fa-bed"></i> <p data-role="beds">_</p></div>
+         <div class="infoicons"><i class="fas fa-bath"></i> <p data-role="baths">_</p></div>
+       </div>
+       <p id="added" class="added/launched" data-role="addedOn">Added on: _</p> <!--only displayed prior to launch-->
+       <p id="launched" class="added-launched" data-role="launchedOn">Launched: _</p> <!-- only displayed after launch-->
+     </div>
+   </div>
+ </div>
+
+
+
+
+ <div id="pp-mainpage">
+   <div id="pp-fullinfo-section">
+     <div id="Pp-toggle">
+       <button id="propertydetails" class="toggle-btn  active"> Property Details</button>
+       <button class="toggle-btn header-btns"> Location</button>
+       <button class="toggle-btn header-btns"> Financials</button>
+       <button class="toggle-btn header-btns"> DAO History</button>
+       <button class="toggle-btn header-btns"> Documents</button>
+     </div>
+
+
+     <div id="mainpage-propertydetails-section">
+       <div id="description" class="info-container">
+         <p class="info-subtitle bold-text-p">description:</p>
+         <p class="text-p bold-text-p" data-role="property_subheading"> _ </p>
+         <p class="text-p" data-role="description">
+           _
+         </p>
+       </div>
+      
+       <div id="physical" class="info-container">
+         <div id="physical-subcontainer">
+           <div class="info-layout">
+             <p class="info-subtitle bold-text-p">Built In:</p>
+             <div class="result-layout">
+               <p id="yearBuilt" data-role="yearBuilt"> _ </p>
+             </div>
+           </div>
+
+
+           <div class="info-layout">
+             <p class="info-subtitle bold-text-p">Last renevated in:</p>
+             <div class="result-layout">
+               <p id="lastRenovation" data-role="lastRenovation"> _ </p>
+             </div>
+           </div>
+
+
+           <div class="info-layout">
+             <p class="info-subtitle bold-text-p">Square footage:</p>
+             <div class="result-layout">
+               <p id="squareFootage" data-role="sqFt"> _ </p>
+             </div>
+           </div>
+
+
+           <div class="info-layout">
+             <p class="info-subtitle bold-text-p">Tenure:</p>
+             <div class="result-layout">
+               <p data-role="tenure"> _ </p>
+             </div>
+           </div>
+ 
+
+           <div class="info-layout">
+             <p class="info-subtitle bold-text-p">Off Road parking :</p>
+             <div class="result-layout">
+               <p data-role="parking"> _ </p>
+             </div>
+           </div>
+
+
+           <div class="info-layout">
+             <p class="info-subtitle bold-text-p">Garden:</p>
+             <div class="result-layout">
+               <p data-role="garden"> _ </p>
+             </div>
+           </div>
+
+
+           <div class="info-layout">
+             <p class="info-subtitle bold-text-p">Tax Band:</p>
+             <div class="result-layout">
+               <p data-role="taxBand"> _</p>
+             </div>
+           </div>
+
+
+           <div class="info-layout">
+             <p class="info-subtitle bold-text-p">EPC rating:</p>
+             <div class="result-layout">
+               <p  data-role="EPC"> _</p>
+             </div>
+           </div>
+         </div>
+         <div id="ValueMetrics" class="info-container">
+           <p id="ValueMetrics-head" class="info-subtitle bold-text-p">Value Metrics</p>
+           <div id="financials-subcontainer">
+             <div class="info-layout">
+               <p class="info-subtitle bold-text-p">Price per square ft:</p>
+               <div class="result-layout">
+                 <p id="pricePerSqFoot" data-role="pricePerSqFoot"> _</p>
+               </div>
+             </div>
+
+
+             <div class="info-layout">
+               <p class="info-subtitle bold-text-p">Expected rent pcm:</p>
+               <div class="result-layout">
+                 <p id="monthlyRent" data-role="monthlyRent"> _</p>
+               </div>
+             </div>
+
+
+             <div class="info-layout">
+               <p class="info-subtitle bold-text-p">Rental Yield:</p>
+               <div class="result-layout">
+                 <p id="yield" data-role="yield"> _ </p>
+               </div>
+             </div>
+
+
+             <div class="info-layout">
+               <p class="info-subtitle bold-text-p"></p>
+               <div class="result-layout">
+                 <p></p>
+               </div>
+             </div>
+           </div>
+         </div>
+       </div>
+     </div>
+
+
+     <div id="mainpage-financials-section">
+    
+      
+       <div id="financials-breakdown">
+         <div class="info-container financials-cards">
+           <div class="TableTitle-container">
+             <p class="info-subtitle text-p bold-text-p TableTitle"> full NFT collection</p>
+           </div>
+           <div id="financials-breakdown-subcontainer">
+             <p class="text-p bold-text-p finance_table_head">Property value </p>
+             <p class="text-p" data-role="propertyValue"> _</p>
+             <p class="text-p bold-text-p finance_table_head">Treasury</p>
+             <p class="text-p" data-role = "treasury"> _</p>
+             <div class="finance-divider"></div>
+             <p class="text-p bold-text-p cell">Total Collection Value</p>
+             <p class="text-p bold-text-p cell" data-role="totalValue"> _</p>
+           </div>
+         </div>
+
+
+         <div class="info-container financials-cards">
+           <div class="TableTitle-container">
+             <p class="info-subtitle text-p bold-text-p TableTitle"> individual NFT's</p>
+           </div>
+           <div id="financials-breakdown-subcontainer">
+             <p class="text-p bold-text-p finance_table_head">0.1% of property value </p>
+             <p class="text-p" data-role="nftPropertyValue"> _</p>
+             <p class="text-p bold-text-p finance_table_head">0.1% of treasury</p>
+             <p class="text-p" data-role="nftTreasury"> _</p>
+             <div class="finance-divider"></div>
+             <p class="text-p bold-text-p cell">NFT net asset value</p>
+             <p class="text-p bold-text-p cell" data-role="nftTotalValue"> _</p>
+           </div>
+         </div>
+       </div>
+      
+      
+     </div>
+
+
+     <div id="mainpage-location-section">
+       <div  class="info-container">
+         <p class="info-subtitle bold-text-p">why <span data-role="City" class="city"> _ </span>?</p>
+         <p class="text-p" data-role="whyLocation">
+           _
+         </p>
+       </div>
+
+
+       <div  class="info-container">
+         <p class="info-subtitle bold-text-p"> Description:</p>
+         <p class="text-p" data-role="specificLocation">
+          _
+        </p>
+       </div>
+
+
+       <div id="additional" class="info-container">
+         <div id="additional-subcontainer">
+           <div class="info-layout">
+             <p class="info-subtitle bold-text-p">crime Score:</p>
+             <div class="result-layout">
+               <p id="crimeScore" data-role="crimeScore"> _</p>
+             </div>
+           </div>
+
+
+           <div class="info-layout">
+             <p class="info-subtitle bold-text-p">school rating:</p>
+             <div class="result-layout">
+               <p id="schoolScore" data-role="schoolScore"> _</p>
+             </div>
+           </div>
+
+
+           <div class="info-layout">
+             <p class="info-subtitle bold-text-p"></p>
+             <div class="result-layout">
+               <p> </p>
+             </div>
+           </div>
+
+
+           <div class="info-layout">
+             <p class="info-subtitle bold-text-p"></p>
+             <div class="result-layout">
+               <p></p>
+             </div>
+           </div>
+         </div>
+       </div>
+     </div>
+
+
+     <div id="mainpage-daohistory-section">
+       <div id="daohis">
+         <p>No current History</p>
+       </div>
+     </div>
+
+
+     <div id="mainpage-documents-section">
+       <div id="document-grid">
+         <p>Title Deeds</p>
+         <i class="fas fa-download fa-lg"></i>
+         <p>EPC Certificate</p>
+         <i class="fas fa-download fa-lg"></i>
+         <p>Gas Certificate</p>
+         <i class="fas fa-download fa-lg"></i>
+
+
+        
+       </div>
+     </div>
+   </div>
+   <!-- NFT Side Box-->
+   <div id="container-nft-info">
+     <div id="nft-info">
+       <div class="container-advert-buyBtns" >
+         <p class="text-p ButtonDetails top" >Number Available: <span data-role="Available">_</span> </p>
+         <p id="imp-nftprice" data-role="buyNowPrice"> _ </p>
+         <button class="advert-buyBtns" id="buyBtn">Buy Now</button>
+         <p class="text-p ButtonDetails" id="auctionDetails" >Current Auction Price </p>
+         <p id="imp-nftprice" data-role="auctionPrice"> _ </p>
+         <button class="advert-buyBtns" id="auctionBtn">Place Bid</button>
+         <p class="text-p highestbidder">Highest Bidder: <span data-role="highestbidder">_</span></p>
+                   <p class="text-p win" >You're the Highest Bidder! </p>
+         <p class="text-p" id="auctionTiming">Auction closes: <span data-role="auctionEndsAt">_</span> </p>
+         <button id="sold-replacementBtn">SOLD</button>
+       </div>
+     </div>
+   </div>
+
+
+   <!-- Buy Now Modal -->
+ <div id="buyNowModal" class="modal hidden">
+   <div class="modal-content">
+     <span class="close" id="closeBuyNowModal">&times;</span>
+     <h2>Buy NFT</h2>
+     <p>Select quantity:</p>
+     <input type="number" id="buyQuantity" value="1" min="1" onchange="updateTotal()" />
+     <p>Total Cost: <span id="totalCost" data-role="totalCost">Îž 0</span></p>
+     <button class="modal-btns" onclick="handleBuyNow()">Complete Transaction</button>
+   </div>
+ </div>
+
+
+<!-- Place Bid Modal -->
+ <div id="placeBidModal" class="modal hidden">
+   <div class="modal-content">
+     <span class="close" id="closeAuctionModal">&times;</span>
+     <h2>Place a Bid</h2>
+     <p class="text-p">Current highest bid:  £<span data-role="highestBid">_</span></p>
+     <input type="number" id="bidAmount" placeholder="Enter bid amount (Îž)" />
+     <button class="modal-btns" onclick="handlePlaceBid()">Place Bid</button>
+     <p class="text-p highestbidder" >Highest Bidder: <span data-role="highestBidderModal">_</span></p>
+     <p class="text-p win" >You're the Highest Bidder! </p>
+   </div>
+ </div>
+  
+ </div>
+
+
+
+
+
+
+
+
+</section>
+<!-- FOOTER-->
+ <footer>
+   <div class="footer-social">
+     <a href="https://x.com/yourhandle" aria-label="Twitter"><i class="fab fa-x-twitter"></i></a>
+     <a href="https://facebook.com/yourpage" aria-label="Facebook"><i class="fab fa-facebook"></i></a>
+     <a href="https://instagram.com/yourpage" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+     <a href="https://oc.app/yourchat" aria-label="OpenChat"><i class="fas fa-comments"></i></a>
+     <a href="https://github.com/yourrepo" aria-label="GitHub"><i class="fab fa-github"></i></a>
+   </div>
+    <div class="footer-content">
+     <div class="footer-left">
+       <div id="footer-logo-div">
+         <img id="footer-logo" src="assets/FullLogo_Transparent_NoBuffer (4).png" alt="logo">
+         <p><strong><span class="hvdao">H</span>ome<span class="hvdao">V</span>estors <span class="hvdao">DAO</span></strong></p>
+       </div>
+       <p> © 2025 HomeVestors DAO. All rights reserved.</p>
+     </div>
+      <div class="footer-links">
+       <a href="/whitepaper.pdf">Whitepaper</a>
+       <a href="/faqs.html">FAQs</a>
+       <!-- Add more if needed -->
+     </div>
+    </div>
+    <div class="footer-disclaimer">
+     <p>Participation in governance is required to receive any rental rewards.</p>
+     <p>NFTs do not represent ownership or passive income rights.</p>
+   </div>
+ </footer>
+
+ <script src="./src/main.js" type="module"></script>
+<script src="./src/scripts/IMP-PropertyPage.js" type="module"></script>
+</body>
+
+
+</html>
+

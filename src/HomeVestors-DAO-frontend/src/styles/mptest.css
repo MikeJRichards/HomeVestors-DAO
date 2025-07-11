@@ -1,0 +1,446 @@
+/* Header */
+#toggle-line {
+   display: flex;
+   justify-content: space-between;
+   padding: 1rem 6rem 0rem 3rem;
+   }
+#mp-header {
+   display: flex;
+   justify-content: space-between;
+   padding: 1rem 3rem 0rem 5rem;
+   }
+.mp-header-toggle-btn {
+   padding: 0.5rem 1rem;
+   font-size: 1.05rem;
+   font-weight: 500;
+   font-family: 'Open Sans', sans-serif;
+   color: var(--mainText);
+   background-color: transparent;
+   border-radius: 16px 16px 0px 0px;
+   border: 0px;
+   cursor: pointer;
+   transition: all 0.2s ease;
+   }
+.mp-header-toggle-btn:hover {
+   background-color: var(--lightHVDbase);
+   transform: scale(1.02);
+   cursor: pointer;
+   font-weight: 700;
+   }
+.mp-header-toggle-btn.active {
+   background-image: linear-gradient(180deg, var(--lightHVDbase), var(--HVDbase), var(--HVDbase)) ;
+   transform: scale(1.02);
+   font-weight: 700;
+   color: white;
+   }
+  
+
+
+
+
+/*New Properties*/
+#npSaved-section {
+   width: 100%;
+   }
+.savedCardsContainer {
+   background-image: linear-gradient(180deg, var(--HVDbase), var(--HVDbase), var(--lightHVDbase)); 
+   min-height: 400px;
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   gap: 2rem;
+   border-radius: 8px;
+   padding: 2rem;
+   margin: 0 2rem 1rem 2rem;
+   }
+.property-card {
+   display: flex;
+   justify-content: space-between;
+   align-items: stretch;
+   width: 70%;
+   background-color: white;
+   border: var(--HVDbase) solid 2px;
+   border-radius: 8px;
+   padding: 0px;   
+   }
+.property-card:hover {
+   transform: translateY(-3px);
+   box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+   }
+   .image-carousel {
+   position: relative;
+   width: 50%;
+   overflow: hidden;
+   border-radius: 8px 0px 0px 8px;
+   padding: 0px;
+   margin: 0px;
+   flex: 1;
+   }
+         .carousel-image {
+           width: 100%;
+           height: 100%;
+           object-fit: cover;
+           display: none;
+           position: absolute;
+           top: 0;
+           left: 0;
+         }
+         .carousel-image.active {
+           display: block;
+         }
+         .mp-carousel-arrow {
+           position: absolute;
+           display: flex;
+           align-items: center;
+           justify-content: center;
+           line-height:1;
+           top: 50%;
+           transform: translateY(-50%);
+           background-color: var(--transpBase);
+           border: none;
+           font-size: 1.5rem;
+           padding: 0.5rem 0.75rem;
+           cursor: pointer;
+           z-index: 2;
+           border-radius: 8px;
+           color: var(--HVDcolourPop);
+         }
+    
+          
+        
+         .mp-carousel-arrow.left {
+           left: 10px;
+         }
+         .mp-carousel-arrow.right {
+           right: 10px;
+         }
+      
+  
+       .propertyInfo {
+           padding: 0;
+           width: 50%;
+           flex: 1;
+           }
+        
+  
+       .infoBar-container{
+           display: flex;
+           flex-direction: column;
+           background-color: var(--lightHVDpop);
+           padding: 1rem;
+           margin: 0px;
+           border-radius: 0px 8px 0px 0px;
+           }
+       .delete-btn-container{
+           display: flex;
+           justify-content: end;
+           gap: 1rem;
+           }
+       #delete-btn {
+           background-color: transparent;
+           border: transparent;
+           }
+       #delete {
+           color: var(--transpBase);
+           font-size: 1.2rem;
+           }
+       #delete:hover {
+           color: var(--HVDbase);
+           font-weight: bolder;
+           transition: ease-in-out 0.2s;
+           }
+  
+       .priceInfo-container{
+           display: flex;
+           flex-direction: row;
+           gap: 4rem;
+           margin: 0px;
+           }
+       .priceInfo{
+           color: var(--mainText);
+           font-family:'Open Sans', sans-serif;
+           font-size: 1.5rem;
+           font-weight: 900;
+           padding: 0 0 0 1rem;
+          
+           margin: 0;
+           }
+       .infoblock{
+           padding: 1rem;
+           color: var(--mainText);
+           }  
+       .np-location{
+           display: flex;
+           gap: 0.5rem;
+           font-weight: 600;
+           color: var(--mainText);
+           }
+
+
+       #progress-container{
+           width: 100%;
+           display: flex;
+           justify-content: center;
+           }
+       #nft-progress {
+           margin-top: 2rem;
+           width: 85%;
+           }     
+       .progress-labels {
+           display: flex;
+           justify-content: space-between;
+           font-size: 0.95rem;
+           margin-bottom: 0.25rem;
+           color: var(--mainText);
+           }
+       .progress-bar {
+           height: 1.2rem;
+           width: 100%;
+           background-color: var(--borderLine);
+           border-radius: 8px;
+           overflow: hidden;
+           box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+           }
+       .progress-fill {
+           height: 100%;
+           background-color: var(--HVDcolourPop);
+           width: 0%;
+           transition: width 0.4s ease-in-out;
+           }
+            
+  
+       .buyBtn-container {
+           display: flex;
+           justify-content: center;
+           align-items: center;
+           margin-bottom: 1rem;
+           }
+       .buyBtn {
+           background-color: var(--HVDbase);
+           color: white;
+           font-size: 1.2rem;
+           width: 160px;
+           height: 48px;
+           font-weight: 600;
+           font-size: 1.1rem;
+           border-radius: 8px;
+           outline: 2px;
+           padding: 0.75rem ;
+           box-shadow: 0 2px 10px rgba(0, 0, 0, 0.326);
+           align-items: center;
+           cursor: pointer;
+           }
+       .buyBtn:hover {
+           transition: ease-in-out 0.2s;
+           transform: scale(1.05);
+           cursor: pointer;
+           font-weight: 900;
+           color: var(--mainText);
+           background-image: linear-gradient(45deg, var(--HVDcolourPop), var(--lightHVDpop), var(--hover));
+           }
+      
+       /*Investor MP NFT's */
+       #nftAdvert-grid{
+           display: grid;
+           grid-template-columns: 1fr 1fr 1fr;
+           gap: 2rem;
+           }
+       .nftAdvert-card {
+           border: var(--HVDbase) solid 2px;
+           background-color: white;
+           border-radius: 8px;
+           height: fit-content;
+           padding: 0.2rem;
+           }
+       .image-container {
+           position: relative;
+           }
+       .close-btn {
+           position: absolute;
+           top: 0.5rem;
+           right: 0.5rem;
+           color: var(--lightHVDpop) !important;
+           border: none;
+           border-radius: 50%;
+           padding: 0.3rem 0.5rem;
+           font-size: 1rem;
+           cursor: pointer;
+           z-index: 2;
+           transition: background 0.2s ease;
+           }
+       .close-btn:hover {
+           color: var(--HVDcolourPop) !important;
+           font-weight: bolder;
+           }
+            
+  
+  
+           #nft-info {
+               padding: 1rem;
+               }
+             #nftprice {
+               font-size: 2rem;
+               color: var(--HVDbase);
+               line-height: 0;
+               font-family: 'Open Sans', sans-serif;
+               font-weight: 900;
+               }
+           #imp-nftprice {
+               font-size: 2rem;
+               color: var(--HVDbase);
+               line-height: 0;
+               font-family: 'Open Sans', sans-serif;
+               font-weight: 900;
+               margin: 0;
+               }
+           .container-advert-buyBtns {
+               display: flex;
+               flex-direction: column;
+               align-items: center;
+               }
+           .advert-buyBtns {
+               background-color: var(--HVDbase);
+               color: white;
+               font-size: 1.2rem;
+               width: 160px;
+               height: 48px;
+               font-weight: 600;
+               font-size: 1.1rem;
+               border-radius: 8px;
+               outline: 2px;
+               padding: 0.75rem;
+               box-shadow: 0 2px 10px rgba(0, 0, 0, 0.326);
+               align-items: center;
+               cursor: pointer;
+               margin-top: 1.5rem;
+               margin-bottom: 0.5rem;
+               }
+           .advert-buyBtns:hover {
+               transition: ease-in-out 0.2s;
+               transform: scale(1.05);
+               cursor: pointer;
+               font-weight: 900;
+               color: var(--mainText);
+               background-image: linear-gradient(45deg, var(--HVDcolourPop), var(--lightHVDpop), var(--hover));
+               }
+           .ButtonDetails {
+               margin-bottom: 1rem;
+               margin-top: 1rem;
+               color: var(--HVDbase);
+               }
+           #auctionTiming {
+               color: var(--lightText);
+               }
+       .thumbnailAdvert {
+           width:100%;
+           border-radius: 8px 8px 0 0;
+           display: block;
+           }
+       .location {
+           display: flex;
+           gap: 0.5rem;
+           padding-left: 1rem;
+           line-height: 0;
+           font-size: 1.2rem;
+           font-family: 'Open Sans', sans-serif;
+           font-weight: 600;
+           margin-top: 1rem;
+           }
+       .container-advert-buyBtns {
+           display: flex;
+           justify-content: center;
+           gap: 0.5rem;
+           align-items: center;
+           }
+       .btnInfo-div1 {
+           display: flex;
+           gap: 1rem;
+           align-items: center;
+           }
+       .btnInfo-div2 {
+          
+           }
+      
+       .advert-buyBtns {
+           background-color: var(--HVDbase);
+           color: white;
+           font-size: 1rem;
+           width: 49%;
+           height: auto;
+           font-weight: 600;
+           border-radius: 8px;
+           outline: 2px;
+           padding: 0.75rem;
+           box-shadow: 0 2px 10px rgba(0, 0, 0, 0.326);
+           align-items: center;
+           cursor: pointer;
+           margin: 0;
+           }
+       .advert-buyBtns:hover {
+           transition: ease-in-out 0.2s;
+           transform: scale(1.05);
+           cursor: pointer;
+           font-weight: 900;
+           color: var(--mainText);
+           background-image: linear-gradient(45deg, var(--HVDcolourPop), var(--lightHVDpop), var(--hover));
+           }
+      
+          
+  
+
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       /* Hidden */
+       #npSaved-section {display: none;}
+       #impSaved-section {display: noe;}
+
+
+
+
+
+
+
+
+           :root{
+               --background: #f2fefb;
+               --hover:#d9fbf3;
+               --mainText: #0F1D2A;
+               --lightText: #0f1d2aba;
+               --HVDcolourPop: #00E4B0;
+               --HVDbase:  #3A6A99;
+               --lightHVDpop: #A7F6D6;
+               --heroSubFont: #8C9299;
+               --lightHVDbase: #9DB5CC;
+               --hoverBase: #E2E9F0;
+               --transpBase:#3a6999a2;
+               --borderLine: #e0e0e0;
+             }
+      
+
+
+      
+

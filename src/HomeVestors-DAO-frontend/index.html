@@ -1,88 +1,95 @@
 <!DOCTYPE html>
 <html lang="en">
+
+
 <head>
  <meta charset="UTF-8" />
  <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
- <title>HomeVestors DAO</title>
+ <title>IC Hello Starter</title>
+
 
  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer" />
- <link rel="stylesheet" href="./src/Hp.css">
- <link rel="stylesheet" href="./src/AU.css">
+ <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
+
+<link rel="stylesheet" href="./src/styles/All.css">
+ <link rel="stylesheet" href="./src/styles/homepage.css">
 </head>
 
 
 <body>
  <nav>
-   <a class="logo" id="homePageNav" href="">
-     <img id="logo" src="assets/FullLogo_Transparent_NoBuffer (4) (1).png" alt="Logo">
+   <a class="logo" href="">
+     <img id="logo" src="assets/FullLogo_Transparent_NoBuffer (4).png" alt="Logo">
      <h1 class="hvd-title"><span class="hvdao">H</span><span class="other">ome</span><span class="hvdao">V</span><span class="other">estors</span> <span class="hvdao">DAO</span></h1>
    </a>
     <div id="nav_end">
      <div class="nav_menu">
-       <a class="nav_headings" id="aboutUsNav" href="#/aboutus">About Us</a>
-       <a class="nav_headings">Market Place</a>
-       <a class="nav_headings">My Homes</a>
-       <a class="nav_headings">My Proposals</a>
+       <a class="nav_headings" href="./AboutUs.html">About Us</a>
+       <a class="nav_headings" href="./marketplace.html">Market Place</a>
+       <a class="nav_headings" href="./MyHomes.html">My Homes</a>
+       <a class="nav_headings" href="./MyProposals.html">My Proposals</a>
      </div>
      <button id="connect_btn">Connect</button>
+     <a id="NavWallet" class="nav_headings" href="./Balance.html"><i class="fa-solid fa-wallet" id="wallet_cp"></i></a>
      <i id="hamburger" class="fas fa-bars"></i>
    </div>
  </nav>
-  <!-- Mobile dropdown menu -->
- <div id="mobile_nav_menu" class="mobile-hidden">
-   <a href="#/aboutus">About Us</a>
-   <a href="">Market Place</a>
-   <a href="">My Homes</a>
-   <a href="">My Proposals</a>
-   <a href=""><button class="btn">Connect</button></a>
- </div>
+
+
+ <!-- Mobile dropdown menu -->
+   <div id="mobile_nav_menu" class="mobile-hidden">
+       <a href="./AboutUs.html">About Us</a>
+       <a href="./MarketPlace.html">Market Place</a>
+       <a href="./MyHomes.html">My Homes</a>
+       <a href="./MyProposals.html">My Proposals</a>
+       <a href="#"><button class="btn">Connect</button></a>
+   </div> 
+
+
+ <!-- MAIN PAGE-->   
  <div id="page-content">
-   <!-- Home Page-->
-   <section class="section" id="homepage">
+        
+   <section id="mainpage">
      <div id="hero">
        <div id="hero-top">
          <div id="hp-hero_text">
            <h2 class="h1" id="hero-h1">Decentralizing <br> Real-World Assets</h2>
-           <h3 id="hero-h2"><p>Join property-specific DAOs, participate in decisions, and receive rental rewards without agents, banks, or bureaucracy.</p> NFT memberships are instantly tradable, low-cost, and fully on-chain, with rewards tied to your active involvement.</h3>
+           <h3 id="hero-h2"><p>Join property-specific DAOs, participate in decisions, and receive rental rewards â€” without agents, banks, or bureaucracy.</p> NFT memberships are instantly tradable, low-cost, and fully on-chain, with rewards tied to your active involvement.</h3>
          </div>
          <img id="hero_img" src="assets/image place holder2.svg" alt="place holder image">
        </div>
-      
+                
        <div id="hp-hero-btns">
          <button id="hp-btn1" class="btn">Explore the Protocol</button>
          <button id="hp-btn2" class="btn">Explore Properties</button>  
        </div>
      </div>
-
-
+        
      <div class="card_blue" id="WhatIsHVD">
        <h4 class="h3" id="hp-h3-s1">What Is HomeVestors DAO?</h4>
-           <p class="body-p">HomeVestors DAO brings real-world property onto the blockchain making participation faster, more flexible, and accessible to all.</p>
-           <p class="body-p">Each property on our platform is structured as a DAO, governed by its NFT-holding members. These NFTs represent membership and voting rights and ownership thorough code and are instantly tradable. Rental rewards are distributed proportional  to holdings, to all that participate in governance ensuring fairness, transparency, and community control.</p>
-           <div><img id="hp-img-s1" src="assets/image place holder2.svg" alt=""></div>
+       <p class="body-p">HomeVestors DAO brings real-world property onto the blockchain â€” making participation faster, more flexible, and accessible to all.</p>
+       <p class="body-p">Each property on our platform is structured as a DAO, governed by its NFT-holding members. These NFTs represent membership and voting rights â€” not ownership â€” and are instantly tradable. Rental rewards are distributed proportional  to holdings, to all that participate in governance ensuring fairness, transparency, and community control.</p>
+       <div><img id="hp-img-s1" src="assets/image place holder2.svg" alt=""></div>
      </div>
-
-
+        
      <div class="card_white" id="HowItWorks">
        <h4 class="h3" id="hp-h3-s2"> How It Works</h4>
-         <div id="hp-s2-content">
-           <p class="body-p"><b>1. Choose a Property DAO</b></p>
-           <p class="body-p">Browse listed properties. Each has its own DAO, tenants, and governance process.</p>
-           <p class="body-p"><b>2. Join via NFT Membership</b></p>
-           <p class="body-p">Purchase an NFT to become a DAO member. Its quick, low-cost, and on-chain.</p>
-           <p class="body-p"><b>3. Participate in Governance</b></p>
-           <p class="body-p">Vote on decisions such as maintenance, budgets, and rent distribution.</p>
-           <p class="body-p"><b>4. Exit or Unlock Flexibility</b></p>
-           <p class="body-p">NFTs can be resold or exited with a built-in liquidity mechanism. <br>
-            In future, you'll also be able to unlock liquidity without selling by minting stablecoins against your NFTs.</p>
-         </div>
+       <div id="hp-s2-content">
+         <p class="body-p"><b>1. Choose a Property DAO</b></p>
+         <p class="body-p">Browse listed properties. Each has its own DAO, tenants, and governance process.</p>
+         <p class="body-p"><b>2. Join via NFT Membership</b></p>
+         <p class="body-p">Purchase an NFT to become a DAO member. Itâ€™s quick, low-cost, and on-chain.</p>
+         <p class="body-p"><b>3. Participate in Governance</b></p>
+         <p class="body-p">Vote on decisions such as maintenance, budgets, and rent distribution.</p>
+         <p class="body-p"><b>4. Exit or Unlock Flexibility</b></p>
+         <p class="body-p">NFTs can be resold or exited with a built-in liquidity mechanism. <br>In future, youâ€™ll also be able to unlock liquidity without selling by minting stablecoins against your NFTs.</p>
+       </div>
      </div>
-
-
+        
      <div class="two-cards">
        <div class="cards-multi card_blue" id="WhyHVD">
          <h4 class="h3" id="hp-h3-s3"> Why HomeVestors DAO</h4>
@@ -98,149 +105,68 @@
        </div>
        <div class="cards-multi card_blue" id="Dfinity">
          <h4 class="h3" id="hp-h3-s4"> Backed by DFINITY</h4>
-         <p class="body-p">HomeVestors DAO is proudly supported by a developer grant from the DFINITY Foundation the team behind Internet Computer. We build on a fully decentralized, secure, and censorship-resistant blockchain.</p>
+         <p class="body-p">HomeVestors DAO is proudly supported by a developer grant from the DFINITY Foundation â€” the team behind Internet Computer. We build on a fully decentralized, secure, and censorship-resistant blockchain.</p>
          <div><img id="hp-img-s4" src="assets/icp-logo.svg" alt=""></div>
-       </div>
-      
+       </div>  
      </div>
-
-
+        
      <div class="card_white" id="CTA`">
        <h4 class="h3" id="hp-h3-s5"> Find Out More</h4>
        <div id="hp-cta-btns">
-         <button id="hp-btn3" class="btn">FAQs</button>
-         <button id="hp-btn4" class="btn">Whitepaper</button>  
+         <button id="hp-btn3" class="btn">FAQs</button>             <button id="hp-btn4" class="btn">Whitepaper</button>  
        </div>
      </div>
+      
    </section>
- 
-   <!-- About Us Page-->
-   <section class="section hidden" id="aboutuspage">
-     <div id="title-div">
-       <h2 class="h1 nothero" id="au-h1">About Us</h2>
+
+
+
+
+
+
+
+
+
+
+<!-- FOOTER-->
+   <footer>
+     <div class="footer-social">
+       <a href="https://x.com/yourhandle" aria-label="Twitter"><i class="fab fa-x-twitter"></i></a>
+       <a href="https://facebook.com/yourpage" aria-label="Facebook"><i class="fab fa-facebook"></i></a>
+       <a href="https://instagram.com/yourpage" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+       <a href="https://oc.app/yourchat" aria-label="OpenChat"><i class="fas fa-comments"></i></a>
+       <a href="https://github.com/yourrepo" aria-label="GitHub"><i class="fab fa-github"></i></a>
      </div>
-
-     <div class="card_blue card-single" id="au-s1">
-         <div class="TextLeft-ImgRight">
-           <div>
-             <h4 class="h3" id="au-h3-s1">Reimagining Property Participation for Web3 </h4>
-             <p class="text-p">HomeVestors DAO was born out of frustration the kind you only know if you've ever dealt with mortgages, repairs, void periods, and slow systems. As landlords, we've dealt with the inefficiencies, gatekeeping, and paperwork that define traditional property systems.</p>
-             <p class="text-p">We knew there had to be a better way one where people could participate meaningfully in real-world assets through transparent, collective decision-making.</p>
-             <p class="text-p">So we built it.</p>
-           </div>
-           <img id="au-img-s1" src="assets/image place holder2.svg" alt="">
-         </div>
-         <div id="btn-cont"><button class="btn"> Whitepaper</button></div>
-     </div>
-
-     <div class="two-cards">
-       <div class="card_white cards-multi" id="au-s2">
-         <h4 class="h3" id=" au-h3-s2">Our Mission</h4>
-         <p class="text-p">To make real estate participation more open, accessible, and governed by the people who engage with it.</p>
-       </div>
-
-       <div class="card_white cards-multi" id="au-s3">
-         <h4 class="h3" id=" au-h3-s3">Our Vision</h4>
-         <p class="text-p">A future where properties are governed by active communities using decentralized tools not held behind layers of bureaucracy or exclusive capital and powered by unstoppable Web3 infrastructure like the Internet Computer.</p>
-       </div>
-     </div>
-
-     <div class="card_blue card-single" id="au-s4">
-       <h4 class="h3" id="au-h3-s4">Who Are We? </h4>
-       <p class="text-p">Founded by Mike and Olivia Richards. </p>
-       <p class="text-p">We're a husband-and-wife team who've lived through the pain points of traditional property investing and decided to build the solution we wanted to see in the world. <br>
-       As landlords with a passion for real estate and a strong belief in the power of Web3, we're building a platform we wish had existed years ago.</p>
-       <p class="text-p">We're not a VC-funded team with flashy titles we're builders with skin in the game, deep conviction, and real-world property experience.</p>
-       <p class="text-p">Our project is proudly funded by the DFINITY Foundation, and we're here to make participation in real-world property assets more accessible, transparent, and community-led.</p>
-
-
-       <div id="au-ids">
-         <div class="au-ids">
-           <img class="au-img" src="assets/profile_img_placeholder.png" alt="mikeimg">
-           <div class="au-ids-labels">
-             <h3 class="au-img-name">Mr Michael Richards</h3>
-             <p class="au-img-creds">Co-founder <br> Backend & Smart Contracts Developer</p>
-           </div>
-         </div>
-
-
-         <div class="au-ids" id="test">
-           <img class="au-img" src="assets/profile_img_placeholder.png" alt="oliviaimg">
-           <div class="au-ids-labels">
-             <h3 class="au-img-name">Dr Olivia Richards</h3>
-             <p class="au-img-creds"> Co-founder <br> Design & UX</p>
-           </div>
-        </div>
-       </div>
-     </div>
-
-     <div class="two-cards" id="debug">
-       <div class="card_white cards-multi" id="au-s5">
-         <h4 class="h3" id=" au-h3-s5">What Makes HomeVestors DAO Different?</h4>
-         <p class="text-p">Each property on our platform is structured as a DAO (Decentralized Autonomous Organization). <br>
-           Membership is represented by NFTs as your key to participating in governance decisions for that specific property.</p>
-         <p class="text-p">Decisions like maintenance, rent distribution, and upgrades are voted on by DAO members. Participation in governance is essential, and active members shape the future of the properties they help manage.</p>
-       </div>
-
-
-        <div id="au-s6-s7-cont" class="card-multi">
-          <div class="card_white_small" id="au-s6">
-            <h4 class="h3" id=" au-h3-s6">Backed by Dfinity</h4>
-            <p class="text-p">Something need to be written here about us being funded by dfinity.</p>
-            <div><img id="au-img-s6" src="assets/icp-logo.svg" alt=""></div>
-          </div>
-
-
-          <div class="card_blue_small" id="au-s7">
-            <h4 class="h3" id="au-h3-s7">Start Exploring the Future of Property</h4>
-            <p class="text-p">Discover how decentralized communities can govern real-world assets and how you can take part.</p>
-            <div id="au-cta-btns">
-              <button id="hp-btn3" class="btn">Explore the Protocol</button>
-              <button id="hp-btn4" class="btn">Explore Properties</button>  
-            </div>
-          </div>
-       </div>
-     </div>
-    
-   </section>
- </div>
- 
- <footer>
- <div class="footer-social">
-   <a href="https://x.com/yourhandle" aria-label="Twitter"><i class="fab fa-x-twitter"></i></a>
-   <a href="https://facebook.com/yourpage" aria-label="Facebook"><i class="fab fa-facebook"></i></a>
-   <a href="https://instagram.com/yourpage" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
-   <a href="https://oc.app/yourchat" aria-label="OpenChat"><i class="fas fa-comments"></i></a>
-   <a href="https://github.com/yourrepo" aria-label="GitHub"><i class="fab fa-github"></i></a>
- </div>
-
-
- <div class="footer-content">
-   <div class="footer-left">
-     <div id="footer-logo-div">
-       <img id="footer-logo" src="assets/FullLogo_Transparent_NoBuffer (4) (1).png" alt="logo">
-       <p><strong><span class="hvdao">H</span>ome<span class="hvdao">V</span>estors <span class="hvdao">DAO</span></strong></p>
-     </div>
-     <p>Â© 2025 HomeVestors DAO. All rights reserved.</p>
-    </div>
-    
-    
-    <div class="footer-links">
-      <a href="/whitepaper.pdf">Whitepaper</a>
-      <a href="/faqs.html">FAQs</a>
-      <!-- Add more if needed -->
-    </div>
-    
-    
-  </div>
   
+     <div class="footer-content">
+       <div class="footer-left">
+         <div id="footer-logo-div">
+           <img id="footer-logo" src="assets/FullLogo_Transparent_NoBuffer (4).png" alt="logo">
+           <p><strong><span class="hvdao">H</span>ome<span class="hvdao">V</span>estors <span class="hvdao">DAO</span></strong></p>
+         </div>
+         <p>Â© 2025 HomeVestors DAO. All rights reserved.</p>
+       </div>
   
-  <div class="footer-disclaimer">
-   <p>Participation in governance is required to receive any rental rewards.</p>
-   <p>NFTs do not represent ownership or passive income rights.</p>
-  </div>
-</footer>
-<script type="module" src="src/main.js"></script>
+       <div class="footer-links">
+         <a href="/whitepaper.pdf">Whitepaper</a>
+         <a href="/faqs.html">FAQs</a>
+         <!-- Add more if needed -->
+       </div>
+  
+     </div>
+  
+     <div class="footer-disclaimer">
+       <p>Participation in governance is required to receive any rental rewards.</p>
+       <p>NFTs do not represent ownership or passive income rights.</p>
+     </div>
+   </footer>
+
+    <script src="./src/main.js" type="module"></script>
+<script src="./src/scripts/homepage.js" type="module"></script>
 </body>
 
+
 </html>
+
+
+
