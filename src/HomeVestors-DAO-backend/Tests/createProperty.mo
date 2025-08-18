@@ -6,6 +6,7 @@ import Option "mo:base/Option";
 import Principal "mo:base/Principal";
 import Utils "utils";
 import Arg "createArgs";
+import Int "mo:base/Int";
 
 module {
     type Property = Types.Property;
@@ -93,11 +94,14 @@ module {
 
     public func createFinancials(): Financials {
         {
+            account = {owner = Principal.fromText("vq2za-kqaaa-aaaas-amlvq-cai"); subaccount = null};
             currentValue = 0;
             investment = createInvestmentDetails();
             pricePerSqFoot =0;
             valuationId = 0;
             valuations = [(0, validValuationRecord(0, Utils.getCallers().admin))];
+            invoiceId = 0;
+            invoices = [];
             monthlyRent = 0;
             yield = 0.0;
         }
@@ -130,8 +134,22 @@ module {
             collectionId = Principal.fromText("vq2za-kqaaa-aaaas-amlvq-cai");
             listId = 0;
             listings = [];
+            timerIds = [];
             royalty = 0;
         }
+    };
+
+    public func createGovernance(): Types.Governance {
+      {
+        proposalId = 0;
+        proposals = [];
+        assetCost = #HGB;
+        proposalCost = 0;
+        requireNftToPropose = true;      // must own an NFT from this property to propose
+        minYesVotes = 0;           // Absolute vote count threshold
+        minTurnout = 0;               // % turnout requirement
+        quorumPercentage = 51;         // e.g. 51
+      };
     };
 
     public func createBlankProperty(): UnstableTypes.PropertyUnstable {
@@ -142,6 +160,7 @@ module {
             administrative = createAdministrativeInfo();
             operational = createOperationalInfo();
             nftMarketplace = createNFTMarketplace();
+            governance = createGovernance();
             updates = [];
         })
     };
@@ -156,20 +175,33 @@ module {
       }
     };
 
-    public func updatedNote(arg: NoteUArg, id: Nat): Note {
-        {
-            id = id;
-            title = Option.get(arg.title, "");
-            content = Option.get(arg.content, "");
-            date = arg.date;
-            author = Utils.getCallers().admin;
-        }
+    public func updatedNote(arg: NoteUArg, id: [Int], property:UnstableTypes.PropertyUnstable): Note {
+        switch(property.administrative.notes.get(Int.abs(id[0]))){
+          case(?note){
+            {
+              id = Int.abs(id[0]);
+              title = Option.get(arg.title, note.title);
+              content = Option.get(arg.content, note.content);
+              date = arg.date;
+              author = Utils.getCallers().admin;
+            }
+          };
+          case(null){
+            {
+              id = Int.abs(id[0]);
+              title = Option.get(arg.title, "");
+              content = Option.get(arg.content, "");
+              date = arg.date;
+              author = Utils.getCallers().admin;
+            }
+          }
+        };
     };
 
     public func validDocument(id: Nat, doc: DocumentCArg) : Document {
       {
         doc with 
-        id = id;
+        id;
         uploadDate = Time.now();
       }
     };
@@ -186,15 +218,29 @@ module {
         Option.get(nat, 0);
     };
 
-    public func updateValidDocument(doc: DocumentUArg, id: Nat) : Document {
-      {
-        id = id;
-        title = nullText(doc.title);
-        description = nullText(doc.description);
-        documentType = Option.get(doc.documentType, #EPC);
-        url = nullText(doc.url);
-        uploadDate = Time.now();
-      }
+    public func updateValidDocument(doc: DocumentUArg, id: [Int], property: UnstableTypes.PropertyUnstable) : Document {
+      switch(property.administrative.documents.get(Int.abs(id[0]))){
+        case(?document){
+          {
+            id = document.id;
+            title = Option.get(doc.title, document.title);
+            description = Option.get(doc.description, document.description);
+            documentType = Option.get(doc.documentType, document.documentType);
+            url = Option.get(doc.url, document.url);
+            uploadDate = document.uploadDate;
+          }
+        };
+        case(null){
+          {
+            id = Int.abs(id[0]);
+            title = nullText(doc.title);
+            description = nullText(doc.description);
+            documentType = Option.get(doc.documentType, #EPC);
+            url = nullText(doc.url);
+            uploadDate = Time.now();
+          }
+        }
+      };
     };
 
     type TenantCArg = Types.TenantCArg;
@@ -209,9 +255,9 @@ module {
       }
     };
 
-    public func updateValidTenant(arg: TenantUArg, id: Nat): Tenant {
+    public func updateValidTenant(arg: TenantUArg, id: [Int]): Tenant {
       {
-        id;
+        id = Int.abs(id[0]);
         leadTenant = nullText(arg.leadTenant);
         otherTenants = Option.get(arg.otherTenants, []);
         principal = arg.principal;
@@ -230,9 +276,9 @@ module {
       }
     };
 
-     public func updateValidMaintenanceRecord(arg: MaintenanceRecordUArg, id: Nat): MaintenanceRecord {
+     public func updateValidMaintenanceRecord(arg: MaintenanceRecordUArg, id: [Int]): MaintenanceRecord {
       {
-        id;
+        id = Int.abs(id[0]);
         description = nullText(arg.description);
         dateCompleted = arg.dateCompleted;
         cost = arg.cost;
@@ -254,9 +300,9 @@ module {
       }
     };
 
-    public func updateValidInspectionRecord(arg: InspectionRecordUArg, id: Nat): InspectionRecord {
+    public func updateValidInspectionRecord(arg: InspectionRecordUArg, id: [Int]): InspectionRecord {
       {
-        id;
+        id = Int.abs(id[0]);
         inspectorName = nullText(arg.inspectorName);
         date = arg.date;
         findings = nullText(arg.findings);
@@ -278,13 +324,26 @@ module {
       }
     };
 
-    public func updateValidValuationRecord(arg: ValuationRecordUArg, id: Nat): ValuationRecord {
-      {
-        id; 
-        value = nullNat(arg.value);
-        method = Option.get(arg.method, #Online);
-        date = Time.now();
-        appraiser = Utils.getCallers().admin;
+    public func updateValidValuationRecord(arg: ValuationRecordUArg, id: [Int], property: UnstableTypes.PropertyUnstable): ValuationRecord {
+      switch(property.financials.valuations.get(Int.abs(id[0]))){
+        case(?valuation){
+          {
+            id = valuation.id; 
+            value = Option.get(arg.value, valuation.value);
+            method = Option.get(arg.method, valuation.method);
+            date = valuation.date;
+            appraiser = valuation.appraiser;
+          }
+        };
+        case(null){
+          {
+            id = Int.abs(id[0]); 
+            value = nullNat(arg.value);
+            method = Option.get(arg.method, #Online);
+            date = Time.now();
+            appraiser = Utils.getCallers().admin;
+          }
+        };
       }
     };
     
@@ -296,9 +355,9 @@ module {
       }
     };
 
-    public func updateValidInsurancePolicy(insurance: InsurancePolicyUArg, id: Nat) : InsurancePolicy {
+    public func updateValidInsurancePolicy(insurance: InsurancePolicyUArg, id: [Int]) : InsurancePolicy {
       {
-        id = id;
+        id = Int.abs(id[0]);
         policyNumber = nullText(insurance.policyNumber);
         provider = nullText(insurance.provider);
         startDate = Time.now();

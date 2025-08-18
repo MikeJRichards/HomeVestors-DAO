@@ -18,6 +18,13 @@
      transition: all 0.2s ease-in-out;
     
      }
+
+
+ body, html {
+   padding: 0;
+   margin: 0;
+   }
+  
  body{
      background-color: var(--background) ;
  }
@@ -150,10 +157,7 @@
    }
 
 
-body, html {
-    margin: 0;
-    padding: 0;
-}
+
 
 
 
@@ -242,7 +246,7 @@ body, html {
          font-size: 1.5rem;
          transition: color 0.3s ease;
          }
-    
+
     
        #wallet-nav-container{
            display: flex;
@@ -308,10 +312,6 @@ body, html {
  display: none !important;
 }
 
-.hidden {
-  display: none !important
-}
-
 
 @media (max-width: 1040px) {
  .nav_menu {
@@ -320,10 +320,20 @@ body, html {
 
 
  #hamburger {
-   display: block;
+   display: block !important;
  }
 }
 
+
+@media (max-width: 400px) {
+ .hvd-title {
+   font-size: 28px;
+ }
+}
+
+.hidden {
+  display: none !important;
+}
 
       
 
@@ -419,16 +429,4 @@ body, html {
              margin-left: auto;
              margin-right: auto;
            }
-
-
-
-
-
-
-
-
-
-
-
-
 

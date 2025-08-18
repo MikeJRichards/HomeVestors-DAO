@@ -1,4 +1,5 @@
 import Types "types";
+import Stables "./Tests/stables";
 import UnstableTypes "./Tests/unstableTypes";
 import PropHelper "propHelper";
 import Principal "mo:base/Principal";
@@ -6,7 +7,7 @@ import Time "mo:base/Time";
 import Result "mo:base/Result";
 import Text "mo:base/Text";
 import Option "mo:base/Option";
-import Stables "./Tests/stables";
+import Debug "mo:base/Debug";
 
 module Operational {
     type OperationalInfo = Types.OperationalInfo;
@@ -18,11 +19,15 @@ module Operational {
     type InspectionRecordCArg = Types.InspectionRecordCArg;
     type TenantUArg = Types.TenantUArg;
     type TenantCArg = Types.TenantCArg;
-    type Handler<C,U,T> = UnstableTypes.Handler<C, U, T>;
+    type Handler<T, StableT> = UnstableTypes.Handler<T, StableT>;
+    type CrudHandler<C, U, T, StableT> = UnstableTypes.CrudHandler<C, U, T, StableT>;
     type MaintenanceRecordUnstable = UnstableTypes.MaintenanceRecordUnstable;
     type PropertyUnstable = UnstableTypes.PropertyUnstable;
     type TenantUnstable = UnstableTypes.TenantUnstable;
     type InspectionRecordUnstable = UnstableTypes.InspectionRecordUnstable;
+    type Property = Types.Property;
+    type Update = Types.Update;
+    type What = Types.What;
 
     public func createOperationalInfo(): OperationalInfo {
         {
@@ -35,57 +40,81 @@ module Operational {
         }
     };
 
-    public func createMaintenanceHandler(): Handler<MaintenanceRecordCArg, MaintenanceRecordUArg, MaintenanceRecordUnstable> {
-      {
-        map = func(p: PropertyUnstable) = p.operational.maintenance;
+    
+    type Arg = Types.Arg;
+    type Actions<C, U> = Types.Actions<C, U>;
+    type UpdateResult = Types.UpdateResult;
+    public func createMaintenanceHandler(args: Arg, action: Actions<MaintenanceRecordCArg, MaintenanceRecordUArg>): async UpdateResult {
+        type C = MaintenanceRecordCArg;
+        type U = MaintenanceRecordUArg;
+        type T = MaintenanceRecordUnstable;
+        type StableT = Types.MaintenanceRecord;
+        type S = UnstableTypes.OperationalInfoPartialUnstable;
+        let operational = Stables.toPartailStableOperationalInfo(args.property.operational);
+          
+        let map = operational.maintenance;
+        let crudHandler: CrudHandler<C, U, T, StableT> = {
+            map;
+            var id = operational.maintenanceId;
+            setId = func(id: Nat) = operational.maintenanceId := id;
+            assignId = func(id: Nat, el: StableT) = (id, {el with id = id;});
+            delete = PropHelper.makeDelete(map);
+            fromStable = Stables.fromStableMaintenanceRecord;
+            validate = func(maybeMaintenance: ?T): Result.Result<T, UpdateError> {
+                    let now = Time.now();
+                    let m = switch(maybeMaintenance){case(null) return #err(#InvalidElementId); case(?maintenance) maintenance};
+                    if (Text.equal(m.description, "")) return #err(#InvalidData{field = "description"; reason = #EmptyString;});
+                    if (Option.get(m.dateCompleted, now) > now) return #err(#InvalidData{field = "date completed"; reason = #CannotBeSetInTheFuture;});
+                    if (Option.get(m.dateReported, now) > now) return #err(#InvalidData{field = "date reported"; reason = #CannotBeSetInTheFuture;});
+                    return #ok(m);
+            };
 
-        getId = func(p: PropertyUnstable) = p.operational.maintenanceId;
+            mutate = func(arg: MaintenanceRecordUArg, maintenance: T): T {
+                maintenance.description := PropHelper.get(arg.description, maintenance.description);
+                maintenance.status := PropHelper.get(arg.status, maintenance.status);
+                maintenance.dateCompleted := PropHelper.getNullable(arg.dateCompleted, maintenance.dateCompleted);
+                maintenance.cost := PropHelper.getNullable(arg.cost, maintenance.cost);
+                maintenance.contractor := PropHelper.getNullable(arg.contractor, maintenance.contractor);
+                maintenance.paymentMethod := PropHelper.getNullable(arg.paymentMethod, maintenance.paymentMethod);
+                maintenance.dateReported := PropHelper.getNullable(arg.dateReported, maintenance.dateReported);
+                maintenance;
+            };
 
-        incrementId = func(p: PropertyUnstable) = p.operational.maintenanceId += 1;
-
-        mutate = func(arg: MaintenanceRecordUArg, maintenance: MaintenanceRecordUnstable): MaintenanceRecordUnstable {
-            maintenance.description := PropHelper.get(arg.description, maintenance.description);
-            maintenance.status := PropHelper.get(arg.status, maintenance.status);
-            maintenance.dateCompleted := PropHelper.getNullable(arg.dateCompleted, maintenance.dateCompleted);
-            maintenance.cost := PropHelper.getNullable(arg.cost, maintenance.cost);
-            maintenance.contractor := PropHelper.getNullable(arg.contractor, maintenance.contractor);
-            maintenance.paymentMethod := PropHelper.getNullable(arg.paymentMethod, maintenance.paymentMethod);
-            maintenance.dateReported := PropHelper.getNullable(arg.dateReported, maintenance.dateReported);
-            maintenance;
-        };
-
-        create = func(arg: MaintenanceRecordCArg, id: Nat, caller: Principal): MaintenanceRecordUnstable {
-            {
-                var id;
-                var description = arg.description;
-                var dateCompleted = arg.dateCompleted;
-                var cost = arg.cost;
-                var contractor = arg.contractor;
-                var status = arg.status;
-                var paymentMethod = arg.paymentMethod;
-                var dateReported = arg.dateReported;
-            }
-        };
-
-        validate = func(maybeMaintenance: ?MaintenanceRecordUnstable): Result.Result<MaintenanceRecordUnstable, UpdateError> {
-            let m = switch(maybeMaintenance){case(null) return #err(#InvalidElementId); case(?maintenance) maintenance};
-            if (Text.equal(m.description, "")) return #err(#InvalidData{field = "description"; reason = #EmptyString;});
-            if (Option.get(m.dateCompleted, Time.now()) > Time.now()) return #err(#InvalidData{field = "date completed"; reason = #CannotBeSetInTheFuture;});
-            if (Option.get(m.dateReported, Time.now()) > Time.now()) return #err(#InvalidData{field = "date reported"; reason = #CannotBeSetInTheFuture;});
-            return #ok(m);
-        }
-      }
+            create = func(arg: MaintenanceRecordCArg, id: Nat): T {
+                {
+                    var id;
+                    var description = arg.description;
+                    var dateCompleted = arg.dateCompleted;
+                    var cost = arg.cost;
+                    var contractor = arg.contractor;
+                    var status = arg.status;
+                    var paymentMethod = arg.paymentMethod;
+                    var dateReported = arg.dateReported;
+                }
+            };
+        };      
+  
+      let handler = PropHelper.generateGenericHandler<C, U, T, StableT, S>(crudHandler, action, Stables.toStableMaintenanceRecord, func(s: S) = #Operational(Stables.fromPartailStableOperationalInfo(s)), operational);
+      await PropHelper.applyHandler<T, StableT>(args, handler);
     };
 
-    public func createInspectionHandler(): Handler<InspectionRecordCArg, InspectionRecordUArg, InspectionRecordUnstable> {
-      {
-        map = func(p: PropertyUnstable) = p.operational.inspections;
-
-        getId = func(p: PropertyUnstable) = p.operational.inspectionsId;
-
-        incrementId = func(p: PropertyUnstable) = p.operational.inspectionsId += 1;
-
-        mutate = func(arg: InspectionRecordUArg, i: InspectionRecordUnstable): InspectionRecordUnstable {
+    public func createInspectionHandler(args: Arg, action: Actions<InspectionRecordCArg, InspectionRecordUArg>): async UpdateResult {
+        type C = InspectionRecordCArg;
+        type U = InspectionRecordUArg;
+        type T = InspectionRecordUnstable;
+        type StableT = Types.InspectionRecord;
+        type S = UnstableTypes.OperationalInfoPartialUnstable;
+        let operational = Stables.toPartailStableOperationalInfo(args.property.operational);
+        let map = operational.inspections;
+                  
+        let crudHandler: CrudHandler<C, U, T, StableT> = {
+            map;
+            var id = operational.inspectionsId;
+            setId = func(id: Nat) = operational.inspectionsId := id;
+            assignId = func(id: Nat, el: StableT) = (id, {el with id = id;});
+            delete = PropHelper.makeDelete(map);
+            fromStable = Stables.fromStableInspectionRecord;
+            mutate = func(arg: InspectionRecordUArg, i: InspectionRecordUnstable): InspectionRecordUnstable {
             i.inspectorName := PropHelper.get(arg.inspectorName, i.inspectorName);
             i.findings := PropHelper.get(arg.findings, i.findings);
             i.date := PropHelper.getNullable(arg.date, i.date);
@@ -94,7 +123,7 @@ module Operational {
             i;
         };
 
-        create = func(arg: InspectionRecordCArg, id: Nat, caller: Principal): InspectionRecordUnstable {
+        create = func(arg: InspectionRecordCArg, id: Nat): T {
             {
                 var id;
                 var inspectorName = arg.inspectorName;
@@ -102,28 +131,39 @@ module Operational {
                 var findings = arg.findings;
                 var actionRequired = arg.actionRequired;
                 var followUpDate = arg.followUpDate;
-                var appraiser = caller;
+                var appraiser = args.caller;
             }
         };
 
-        validate = func(maybeInspection: ?InspectionRecordUnstable): Result.Result<InspectionRecordUnstable, UpdateError> {
+        validate = func(maybeInspection: ?T): Result.Result<T, UpdateError> {
             let i = switch(maybeInspection){case(null) return #err(#InvalidElementId); case(?inspection) inspection};
             if (Text.equal(i.inspectorName, "")) return #err(#InvalidData{field = "inspector name"; reason = #EmptyString;});
             if (Text.equal(i.findings, "")) return #err(#InvalidData{field = "findings"; reason = #EmptyString;});
             if (Option.get(i.date, Time.now()) > Time.now()) return #err(#InvalidData{field = "inspection date"; reason = #CannotBeSetInTheFuture;});
             return #ok(i);
         }
-      }
+      };      
+  
+      let handler = PropHelper.generateGenericHandler<C, U, T, StableT, S>(crudHandler, action, Stables.toStableInspectionRecord, func(s: S) = #Operational(Stables.fromPartailStableOperationalInfo(s)), operational);
+      await PropHelper.applyHandler<T, StableT>(args, handler);
     };
 
-    public func createTenantHandler(): Handler<TenantCArg, TenantUArg, TenantUnstable> {
-      {
-        map = func(p: PropertyUnstable) = p.operational.tenants;
-
-        getId = func(p: PropertyUnstable) = p.operational.tenantId;
-
-        incrementId = func(p: PropertyUnstable) = p.operational.tenantId += 1;
-
+    public func createTenantHandler(args: Arg, action: Actions<TenantCArg, TenantUArg>): async UpdateResult {
+        type C = TenantCArg;
+        type U = TenantUArg;
+        type T = TenantUnstable;
+        type StableT = Types.Tenant;
+        type S = UnstableTypes.OperationalInfoPartialUnstable;
+        let operational = Stables.toPartailStableOperationalInfo(args.property.operational);
+        let map = operational.tenants;
+                  
+        let crudHandler: CrudHandler<C, U, T, StableT> = {
+            map;
+            var id = operational.tenantId;
+            setId = func(id: Nat) = operational.tenantId := id;
+            assignId = func(id: Nat, el: StableT) = (id, {el with id = id;});
+            delete = PropHelper.makeDelete(map);
+            fromStable = Stables.fromStableTenant;
         mutate = func(arg: TenantUArg, tenant: TenantUnstable): TenantUnstable {
             let t = Stables.toStableTenant(tenant);
             let updatedTenant = {
@@ -140,7 +180,7 @@ module Operational {
            Stables.fromStableTenant(updatedTenant);
         };
 
-        create = func(arg: TenantCArg, id: Nat, caller: Principal): TenantUnstable {
+        create = func(arg: TenantCArg, id: Nat): TenantUnstable {
            let tenant: Tenant = {arg with id; paymentHistory = []};
            Stables.fromStableTenant(tenant);
         };
@@ -153,9 +193,11 @@ module Operational {
             if (t.leaseStartDate < Time.now()) return #err(#InvalidData{field = "lease start date"; reason = #CannotBeSetInThePast;});
             return #ok(t);
         }
-      }
+      };      
+  
+      let handler = PropHelper.generateGenericHandler<C, U, T, StableT, S>(crudHandler, action, Stables.toStableTenant, func(s: S) = #Operational(Stables.fromPartailStableOperationalInfo(s)), operational);
+      await PropHelper.applyHandler<T, StableT>(args, handler);
     };
-
 
     
 };

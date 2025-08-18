@@ -4,6 +4,14 @@ import Prop "createProperty";
 import Utils "utils";
 import Arg "createArgs";
 import Time "mo:base/Time";
+import Stables "stables";
+import UnstableTypes = "unstableTypes";
+import Int "mo:base/Int";
+import Float "mo:base/Float";
+import Option "mo:base/Option";
+import Caller "caller";
+import PropHelper "./../propHelper";
+import Principal "mo:base/Principal";
 
 module {
     type TestCase = TestTypes.TestCase;
@@ -50,224 +58,13 @@ module {
     type PhysicalDetails = Types.PhysicalDetails;
     type AdditionalDetails = Types.AdditionalDetails;
     type What = Types.What;
+    type PropertyUnstable = UnstableTypes.PropertyUnstable;
 
 
 
     type DeleteCase = TestTypes.DeleteCase;
 
-    public func createNoteTestCaseArg(tcase: NoteCreateCase): NoteCArg {
-        let arg = Arg.createNoteCArg();
-        switch(tcase){
-            case(#Valid or #AnonymousAuthor) arg;
-            case(#EmptyTitle) return {arg with title = ""};
-            case(#EmptyContent) return {arg with content = ""};
-            case(#FutureDate) return {arg with date = ?Utils.daysInFuture(7)};
-        };
-    };
-
-    public func updateNoteTestCaseArg(tcase: NoteUpdateCase): (NoteUArg, Nat) {
-        let arg = Arg.createNoteUArg();
-        switch(tcase){
-            case(#Valid) (arg, 0);
-            case(#NonExistentId) (arg, 10);
-            case(#EmptyTitle) ({arg with title = ?""}, 0);
-            case(#NullTitle) ({arg with title = null}, 0);
-            case(#EmptyContent) ({arg with content = ?""}, 0);
-            case(#NullContent) ({arg with content = null}, 0);
-            case(#FutureDate) ({arg with date = ?Utils.daysInFuture(7)}, 0);
-        }
-    };
-
-    public func createInsuranceTestCaseArg(tcase: InsuranceCreateCase): InsurancePolicyCArg {
-        let arg = Arg.createInsurancePolicyCArg();
-        switch(tcase){
-            case(#Valid) arg;
-            case(#EmptyPolicyNumber) return { arg with policyNumber = "" };
-            case(#EmptyProvider) return { arg with provider = "" };
-            case(#EndDateInPast) return { arg with endDate = ?(Time.now() - 1_000_000) };
-            case(#PremiumZero) return { arg with premium = 0 };
-            case(#NextPaymentInPast) return { arg with nextPaymentDate = Time.now() - 1_000_000 };
-            case(#EmptyContactInfo) return { arg with contactInfo = "" };
-        };
-    };
-
-    public func updateInsuranceTestCaseArg(tcase: InsuranceUpdateCase): (InsurancePolicyUArg, Nat) {
-        let arg = Arg.createInsurancePolicyUArg();
-        switch(tcase){
-            case(#Valid) (arg, 0);
-            case(#NonExistentId) (arg, 10);
-            case(#EmptyProvider) return ({ arg with provider = ?"" }, 0);
-            case(#PremiumZero) return ({ arg with premium = ?0 }, 0);
-        };
-    };
-
-    public func createDocumentTestCaseArg(tcase: DocumentCreateCase): DocumentCArg {
-        let arg = Arg.createDocumentCArg();
-        switch(tcase){
-            case(#Valid) arg;
-            case(#EmptyTitle) return { arg with title = "" };
-            case(#EmptyDescription) return { arg with description = "" };
-            case(#EmptyURL) return { arg with url = "" };
-        };
-    };
-    
-    public func updateDocumentTestCaseArg(tcase: DocumentUpdateCase): (DocumentUArg, Nat) {
-        let arg = Arg.createDocumentUArg();
-        switch(tcase){
-            case(#Valid) (arg, 0);
-            case(#NonExistentId) (arg, 10);
-            case(#EmptyTitle) ({ arg with title = ?"" }, 0);
-            case(#EmptyDescription) ({ arg with description = ?"" }, 0);
-        };
-    };
-
-
-    // Tenant
-    public func createTenantTestCaseArg(tcase: TenantCreateCase): TenantCArg {
-        let arg = Arg.createTenantCArg();
-        switch (tcase) {
-            case (#Valid) arg;
-            case (#EmptyLeadTenant) return { arg with leadTenant = "" };
-            case (#ZeroMonthlyRent) return { arg with monthlyRent = 0 };
-            case (#ZeroDeposit) return { arg with deposit = 0 };
-            case (#StartDateInPast) return { arg with leaseStartDate = Time.now() - 1 };
-        };
-    };
-
-    public func updateTenantTestCaseArg(tcase: TenantUpdateCase): (TenantUArg, Nat) {
-        let arg = Arg.createTenantUArg();
-        switch (tcase) {
-            case (#Valid) (arg, 0);
-            case (#NonExistentId) (arg, 10);
-            case (#EmptyLeadTenant) ({ arg with leadTenant = ?"" }, 0);
-            case (#ZeroMonthlyRent) ({ arg with monthlyRent = ?0 }, 0);
-            case (#ZeroDeposit) ({ arg with deposit = ?0 }, 0);
-            case (#StartDateInPast) ({ arg with leaseStartDate = ?(Time.now() - 1) }, 0);
-        };
-    };
-
-    // Maintenance
-    public func createMaintenanceTestCaseArg(tcase: MaintenanceCreateCase): MaintenanceRecordCArg {
-        let arg = Arg.createMaintenanceRecordCArg();
-        switch (tcase) {
-            case (#Valid) arg;
-            case (#EmptyDescription) return { arg with description = "" };
-            case (#DateCompletedInFuture) return { arg with dateCompleted = ?(Time.now() + 1) };
-            case (#DateReportedInFuture) return { arg with dateReported = ?(Time.now() + 1) };
-        };
-    };
-
-    public func updateMaintenanceTestCaseArg(tcase: MaintenanceUpdateCase): (MaintenanceRecordUArg, Nat) {
-        let arg = Arg.createMaintenanceRecordUArg();
-        switch (tcase) {
-            case (#Valid) (arg, 0);
-            case (#NonExistentId) (arg, 10);
-            case (#EmptyDescription) ({ arg with description = ?"" }, 0);
-            case (#DateCompletedInFuture) ({ arg with dateCompleted = ?(Time.now() + 1) }, 0);
-            case (#DateReportedInFuture) ({ arg with dateReported = ?(Time.now() + 1) }, 0);
-        };
-    };
-
-    // Inspection
-    public func createInspectionTestCaseArg(tcase: InspectionCreateCase): InspectionRecordCArg {
-        let arg = Arg.createInspectionRecordCArg();
-        switch (tcase) {
-            case (#Valid) arg;
-            case (#EmptyInspectorName) return { arg with inspectorName = "" };
-            case (#EmptyFindings) return { arg with findings = "" };
-            case (#DateInFuture) return { arg with date = ?(Time.now() + 1) };
-        };
-    };
-
-    public func updateInspectionTestCaseArg(tcase: InspectionUpdateCase): (InspectionRecordUArg, Nat) {
-        let arg = Arg.createInspectionRecordUArg();
-        switch (tcase) {
-            case (#Valid) (arg, 0);
-            case (#NonExistentId) (arg, 10);
-            case (#EmptyInspectorName) ({ arg with inspectorName = ?"" }, 0);
-            case (#EmptyFindings) ({ arg with findings = ?"" }, 0);
-            case (#DateInFuture) ({ arg with date = ?(Time.now() + 1) }, 0);
-        };
-    };
-
-    public func createMonthlyRentTestCaseArg(tcase: MonthlyRentCreateCase): Nat {
-        switch (tcase) {
-            case (#Valid) 1000;
-            case (#ZeroRent) 0;
-        };
-    };
-
-    public func createFinancialsTestCaseArg(tcase: FinancialsCreateCase): FinancialsArg {
-        let arg = Arg.createFinancialsArg();
-        switch (tcase) {
-            case (#Valid) arg;
-            case (#ZeroCurrentValue) return { arg with currentValue = 0 };
-        };
-    };
-
-    public func createValuationTestCaseArg(tcase: ValuationCreateCase): ValuationRecordCArg {
-        let arg = Arg.createValuationRecordCArg();
-        switch (tcase) {
-            case (#Valid) arg;
-            case (#ZeroValue) return { arg with value = 0 };
-        };
-    };
-
-    public func updateValuationTestCaseArg(tcase: ValuationUpdateCase): (ValuationRecordUArg, Nat) {
-        let arg = Arg.createValuationRecordUArg();
-        switch (tcase) {
-            case (#Valid) (arg, 0);
-            case (#NonExistentId) (arg, 10);
-            case (#ZeroValue) ({ arg with value = ?0 }, 0);
-        };
-    };
-
-    public func createPhysicalDetailsTestCaseArg(tcase: PhysicalDetailsUpdateCase): PhysicalDetails {
-        let arg = Prop.createPhysicalDetails();
-        switch (tcase) {
-            case (#Valid) arg;
-            case (#RenovationTooOld) return { arg with lastRenovation = 1890 };
-            case (#TooManyBeds) return { arg with beds = 11 };
-            case (#TooManyBaths) return { arg with baths = 11 };
-        };
-    };
-
-    public func createAdditionalDetailsTestCaseArg(tcase: AdditionalDetailsUpdateCase): AdditionalDetails {
-        let arg = Prop.createAdditionalDetails();
-        switch (tcase) {
-            case (#Valid) arg;
-            case (#LowCrimeScore) return { arg with crimeScore = 10 };
-            case (#HighSchoolScore) return { arg with schoolScore = 11 };
-        };
-    };
-
-    type ImageCreateCase = TestTypes.ImageCreateCase;
-    type ImageUpdateCase = TestTypes.ImageUpdateCase;
-    type DescriptionCase = TestTypes.DescriptionCase;
-    public func createImageTestCaseArg(tcase: ImageCreateCase): Text {
-        switch (tcase) {
-            case (#Valid) "initial url to image";
-            case (#EmptyURL) "";
-        };
-    };
-
-    public func updateImageTestCaseArg(tcase: ImageUpdateCase): (Text, Nat) {
-        switch (tcase) {
-            case (#Valid) ("updated url to image",0);
-            case (#EmptyURL) ("",0);
-        };
-    };
-
-    public func descriptionTestCaseArg(tcase: DescriptionCase): Text {
-        switch (tcase) {
-            case (#Valid) "updated description of property";
-            case (#Empty) "";
-        };
-    };
-
-
-
-
+   
     public func createDeleteCase(tcase: DeleteCase): Nat {
         switch(tcase){
             case(#Valid) 0;
@@ -275,117 +72,1158 @@ module {
         }
     };
 
-    public func createWhat(tcases: TestCase): What {
-        switch (tcases) {
-            // NOTE
-            case (#Note(#Create(arg))) {
-                #Note(#Create(createNoteTestCaseArg(arg)));
-            };
-            case (#Note(#Update(arg))) {
-                #Note(#Update(updateNoteTestCaseArg(arg)));
-            };
-            case (#Note(#Delete(arg))) {
-                #Note(#Delete(createDeleteCase(arg)));
-            };
-
-            // INSURANCE
-            case (#Insurance(#Create(arg))) {
-                #Insurance(#Create(createInsuranceTestCaseArg(arg)));
-            };
-            case (#Insurance(#Update(arg))) {
-                #Insurance(#Update(updateInsuranceTestCaseArg(arg)));
-            };
-            case (#Insurance(#Delete(arg))) {
-                #Insurance(#Delete(createDeleteCase(arg)));
-            };
-
-            // DOCUMENTS
-            case (#Documents(#Create(arg))) {
-                #Document(#Create(createDocumentTestCaseArg(arg)));
-            };
-            case (#Documents(#Update(arg))) {
-                #Document(#Update(updateDocumentTestCaseArg(arg)));
-            };
-            case (#Documents(#Delete(arg))) {
-                #Document(#Delete(createDeleteCase(arg)));
-            };
-
-            // TENANT
-            case (#Tenant(#Create(arg))) {
-                #Tenant(#Create(createTenantTestCaseArg(arg)));
-            };
-            case (#Tenant(#Update(arg))) {
-                #Tenant(#Update(updateTenantTestCaseArg(arg)));
-            };
-            case (#Tenant(#Delete(arg))) {
-                #Tenant(#Delete(createDeleteCase(arg)));
-            };
-
-            // MAINTENANCE
-            case (#Maintenance(#Create(arg))) {
-                #Maintenance(#Create(createMaintenanceTestCaseArg(arg)));
-            };
-            case (#Maintenance(#Update(arg))) {
-                #Maintenance(#Update(updateMaintenanceTestCaseArg(arg)));
-            };
-            case (#Maintenance(#Delete(arg))) {
-                #Maintenance(#Delete(createDeleteCase(arg)));
-            };
-
-            // INSPECTION
-            case (#Inspection(#Create(arg))) {
-                #Inspection(#Create(createInspectionTestCaseArg(arg)));
-            };
-            case (#Inspection(#Update(arg))) {
-                #Inspection(#Update(updateInspectionTestCaseArg(arg)));
-            };
-            case (#Inspection(#Delete(arg))) {
-                #Inspection(#Delete(createDeleteCase(arg)));
-            };
-
-             case (#Financials(arg)) {
-                #Financials(createFinancialsTestCaseArg(arg));
-            };
-
-            // MONTHLY RENT
-            case (#MonthlyRent(arg)) {
-                #MonthlyRent(createMonthlyRentTestCaseArg(arg));
-            };
-
-            // VALUATION
-            case (#Valuation(#Create(arg))) {
-                #Valuations(#Create(createValuationTestCaseArg(arg)));
-            };
-            case (#Valuation(#Update(arg))) {
-                #Valuations(#Update(updateValuationTestCaseArg(arg)));
-            };
-            case (#Valuation(#Delete(arg))) {
-                #Valuations(#Delete(createDeleteCase(arg)));
-            };
-
-            case(#Images(#Create(arg))){
-                #Images(#Create(createImageTestCaseArg(arg)));
-            };
-            case(#Images(#Update(arg))){
-                #Images(#Update(updateImageTestCaseArg(arg)));
-            };
-            case(#Images(#Delete(arg))){
-                #Images(#Delete(createDeleteCase(arg)));
-            };
-
-            case(#Description(arg)){
-                #Description(descriptionTestCaseArg(arg));
-            };
-
-            case (#PhysicalDetails(arg)) {
-                #PhysicalDetails(createPhysicalDetailsTestCaseArg(arg));
-            };
-
-            // ADDITIONAL DETAILS
-            case (#AdditionalDetails(arg)) {
-                #AdditionalDetails(createAdditionalDetailsTestCaseArg(arg));
-            };
-        };
+    func deleteEntries(what: What, property: PropertyUnstable): (){
+        switch(what){
+            case(#Insurance(_)) property.administrative.insurance.delete(0);
+            case(#Document(_)) property.administrative.documents.delete(0);
+            case(#Note(_)) property.administrative.notes.delete(0);
+            case(#Maintenance(_)) property.operational.maintenance.delete(0);
+            case(#Inspection(_)) property.operational.inspections.delete(0);
+            case(#Tenant(_)) property.operational.tenants.delete(0);
+            case(#Valuations(_)) property.financials.valuations.delete(0);
+            case(#Images(_)) property.details.misc.images.delete(0);
+            case(_){};
+        }
     };
 
+    func deleteCaseExpectedOutcome(property: PropertyUnstable): (DeleteCase, What) -> Types.UpdateResult {
+        func(tcase: DeleteCase, what: What){
+            switch(tcase){
+                case(#Valid) deleteEntries(what, property);
+                case(#NonExistentId) return #Err([(?10, #InvalidElementId)]);
+            };
+            property.updates.add(makeOk(what, ?0));
+            #Ok(Stables.toStableProperty(property));
+        }
+    };
+
+    //here we should call to get the arg, and use that id for all ids here
+    //we should also pass in property not create a new one each time
+    public func createInvalidDataError(id: ?Nat, field: Text, reason: Types.Reason): Types.UpdateResult {
+        #Err([(id, #InvalidData{field; reason})]);
+    };
+
+
+    //func makeErrorNull(err: Types.UpdateError): Types.UpdateResult {
+    //    #Err([(null, err)]);
+    //};
+    //returning updateResult
+    //appending result
+
+    func makeOk(what: What, id: ?Nat): Types.Result {
+        #Ok({what; results = [#ok(id)]})
+    };
+
+    func makeNull(what: What): Types.Result {
+        #Ok({what; results = [#ok(null)]})
+    };
+
+    type TestHandler<CT, UT, DT, C, U> = TestTypes.TestHandler<CT, UT, DT, C, U>;
+    public func createNoteTestType(tcases: TestCase, property: PropertyUnstable, tcase: TestTypes.NoteTestCase): TestType{
+        type CT = NoteCreateCase;
+        type UT = NoteUpdateCase;
+        type C = NoteCArg;
+        type U = NoteUArg;
+        type DT = DeleteCase;
+        let handler : TestTypes.TestHandler<CT, UT, DT, C, U> = {
+            tcase;
+            wrapAction = func(action) = #Note(action);
+            createArg = func(tcase: CT): C {
+                let arg = Arg.createNoteCArg();
+                switch(tcase){
+                    case(#Valid or #AnonymousAuthor) arg;
+                    case(#EmptyTitle) return {arg with title = ""};
+                    case(#EmptyContent) return {arg with content = ""};
+                    case(#FutureDate) return {arg with date = ?Utils.daysInFuture(7)};
+                };
+            };
+            createExpected = func(arg: C, tcase: CT): Types.UpdateResult {
+                let id = ?property.administrative.notesId;
+                switch(tcase){
+                    case (#AnonymousAuthor) return createInvalidDataError(id, "author", #Anonymous);
+                    case(#EmptyTitle) return createInvalidDataError(id, "title", #EmptyString);
+                    case(#EmptyContent) return createInvalidDataError(id, "content", #EmptyString);
+                    case(#FutureDate) return createInvalidDataError(id, "Upload Date", #CannotBeSetInTheFuture);
+                    case(_) {
+                        property.administrative.notesId += 1;
+                        let note = Prop.validNote(property.administrative.notesId, arg);
+                        property.administrative.notes.put(property.administrative.notesId, Stables.fromStableNote(note));
+                        property.updates.add(#Ok{results = [#ok(?property.administrative.notesId)]; what = #Note(#Create([arg]))});
+                    };
+                };
+                #Ok(Stables.toStableProperty(property));
+            };
+            updateArg = func(tcase: UT): (U, [Int]) {
+                let arg = Arg.createNoteUArg();
+                switch(tcase){
+                    case(#Valid) (arg, [0]);
+                    case(#NonExistentId) (arg, [10]);
+                    case(#EmptyTitle) ({arg with title = ?""}, [0]);
+                    case(#NullTitle) ({arg with title = null}, [0]);
+                    case(#EmptyContent) ({arg with content = ?""}, [0]);
+                    case(#NullContent) ({arg with content = null}, [0]);
+                    case(#FutureDate) ({arg with date = ?Utils.daysInFuture(7)}, [0]);
+                }
+            };
+            updateExpected = func(tcase: UT, uArg: (U, [Int])): Types.UpdateResult {
+                let id = Int.abs(uArg.1[0]);
+                let arg : (Types.NoteUArg, [Int]) = switch(tcase){
+                    case(#NonExistentId) return #Err([(?id, #InvalidElementId)]);
+                    case(#EmptyTitle) return createInvalidDataError(?id, "title", #EmptyString);
+                    case(#EmptyContent) return createInvalidDataError(?id, "content", #EmptyString);
+                    case(#FutureDate) return createInvalidDataError(?id, "Upload Date", #CannotBeSetInTheFuture);
+                    case(_) uArg;
+                };
+                let note = Prop.updatedNote(arg.0, arg.1, property);
+                property.administrative.notes.put(id, Stables.fromStableNote(note));
+                property.updates.add(#Ok({results = [#ok(?id)]; what = #Note(#Update(arg))}));  
+                #Ok(Stables.toStableProperty(property));
+            };
+            deleteArg = createDeleteCase;
+            deleteExpected = deleteCaseExpectedOutcome(property);
+        };
+
+        createTestType(tcases, handler);
+    };
+
+    type UpdateResult = Types.UpdateResult;
+    public func createInsuranceTestType(tcases: TestCase, property: PropertyUnstable, tcase: TestTypes.InsuranceTestCase): TestType{
+        type CT = InsuranceCreateCase;
+        type UT = InsuranceUpdateCase;
+        type C = InsurancePolicyCArg;
+        type U = InsurancePolicyUArg;
+        type DT = DeleteCase;
+
+        let handler : TestTypes.TestHandler<CT, UT, DT, C, U> = {
+            tcase;
+            wrapAction = func(action) = #Insurance(action);
+            createArg = func(tcase: CT): C {
+                let arg = Arg.createInsurancePolicyCArg();
+                switch(tcase){
+                    case(#Valid) arg;
+                    case(#EmptyPolicyNumber) return { arg with policyNumber = "" };
+                    case(#EmptyProvider) return { arg with provider = "" };
+                    case(#EndDateInPast) return { arg with endDate = ?(Time.now() - 1_000_000) };
+                    case(#PremiumZero) return { arg with premium = 0 };
+                    case(#NextPaymentInPast) return { arg with nextPaymentDate = Time.now() - 1_000_000 };
+                    case(#EmptyContactInfo) return { arg with contactInfo = "" };
+                };
+            };
+            createExpected = func(arg: C, tcase: CT): UpdateResult {
+                let id = property.administrative.insuranceId;
+                switch(tcase){
+                    case(#EmptyPolicyNumber) return createInvalidDataError(?id, "policy Number", #EmptyString);
+                    case(#EmptyProvider) return createInvalidDataError(?id, "policy Provider", #EmptyString);
+                    case(#EndDateInPast) return createInvalidDataError(?id, "Insurance End Date", #CannotBeSetInThePast);
+                    case(#PremiumZero) return createInvalidDataError(?id, "Insurance Premium", #CannotBeZero);
+                    case(#NextPaymentInPast) return createInvalidDataError(?id, "Next Payment Date", #CannotBeSetInThePast);
+                    case(#EmptyContactInfo)return createInvalidDataError(?id, "Contact Info", #EmptyString);
+                    case(_){
+                        property.administrative.insuranceId += 1;
+                        let insurance = Prop.validInsurancePolicy(property.administrative.insuranceId, arg);
+                        property.administrative.insurance.put(property.administrative.insuranceId, Stables.fromStableInsurancePolicy(insurance));
+                        property.updates.add(makeOk(#Insurance(#Create([arg])), ?property.administrative.insuranceId));  
+                    }
+                };
+                #Ok(Stables.toStableProperty(property));
+            };
+            updateArg = func(tcase: UT): (U, [Int]) {
+                let arg = Arg.createInsurancePolicyUArg();
+                switch(tcase){
+                    case(#Valid) (arg, [0]);
+                    case(#NonExistentId) (arg, [10]);
+                    case(#EmptyProvider) return ({ arg with provider = ?"" }, [0]);
+                    case(#PremiumZero) return ({ arg with premium = ?0 }, [0]);
+                };
+            };
+            updateExpected = func(tcase: UT, uArg: (U, [Int])): UpdateResult {
+                let id = Int.abs(uArg.1[0]);
+                switch(tcase){
+                    case(#NonExistentId) return #Err([(?id, #InvalidElementId)]);
+                    case(#EmptyProvider) return createInvalidDataError(?id, "policy Provider", #EmptyString);
+                    case(#PremiumZero) return createInvalidDataError(?id, "Insurance Premium", #CannotBeZero);
+                    case(_) {
+                        let insurance = Prop.updateValidInsurancePolicy(uArg);
+                        property.administrative.insurance.put(id, Stables.fromStableInsurancePolicy(insurance));
+                        property.updates.add(makeOk(#Insurance(#Update(uArg)), ?id)); 
+                    }
+                };
+                #Ok(Stables.toStableProperty(property));
+            };
+            deleteArg = createDeleteCase;
+            deleteExpected = deleteCaseExpectedOutcome(property);
+        };
+
+        createTestType(tcases, handler);
+    };
+
+    public func createDocumentTestType(tcases: TestCase, property: PropertyUnstable, tcase: TestTypes.DocumentsTestCase): TestType{
+        type CT = DocumentCreateCase;
+        type UT = DocumentUpdateCase;
+        type C = DocumentCArg;
+        type U = DocumentUArg;
+        type DT = DeleteCase;
+
+        let handler : TestTypes.TestHandler<CT, UT, DT, C, U> = {
+            tcase;
+            wrapAction = func(action) = #Document(action);
+            createArg = func(tcase: CT): C {
+                let arg = Arg.createDocumentCArg();
+                switch(tcase){
+                    case(#Valid) arg;
+                    case(#EmptyTitle) return { arg with title = "" };
+                    case(#EmptyDescription) return { arg with description = "" };
+                    case(#EmptyURL) return { arg with url = "" };
+                };
+            };
+            createExpected = func(arg: C, tcase: CT): UpdateResult {
+                let id = ?property.administrative.documentId;
+                switch(tcase){
+                    case(#EmptyTitle) return createInvalidDataError(id, "title", #EmptyString);
+                    case(#EmptyDescription) return createInvalidDataError(id, "description", #EmptyString);
+                    case(#EmptyURL) return createInvalidDataError(id, "URL", #EmptyString);
+                    case(_) {
+                        property.administrative.documentId += 1;
+                        let document = Prop.validDocument(property.administrative.documentId, arg);
+                        property.administrative.documents.put(property.administrative.documentId, Stables.fromStableDocument(document));
+                        property.updates.add(makeOk(#Document(#Create([arg])), ?property.administrative.documentId)); 
+                    }
+                };
+                #Ok(Stables.toStableProperty(property));
+            };
+            updateArg = func(tcase: UT): (U, [Int]) {
+                let arg = Arg.createDocumentUArg();
+                switch(tcase){
+                    case(#Valid) (arg, [0]);
+                    case(#NonExistentId) (arg, [10]);
+                    case(#EmptyTitle) ({ arg with title = ?"" }, [0]);
+                    case(#EmptyDescription) ({ arg with description = ?"" }, [0]);
+                };
+            };
+            updateExpected = func(tcase: UT, uArg: (U, [Int])): UpdateResult {
+                let id = Int.abs(uArg.1[0]);
+                switch(tcase){
+                    case(#NonExistentId) return #Err([(?id, #InvalidElementId)]);
+                    case(#EmptyTitle) return createInvalidDataError(?id, "title", #EmptyString);
+                    case(#EmptyDescription) return createInvalidDataError(?id, "description", #EmptyString);
+                    case(_) {
+                        let document = Prop.updateValidDocument(uArg.0, uArg.1, property);
+                        property.administrative.documents.put(id, Stables.fromStableDocument(document));
+                        property.updates.add(makeOk(#Document(#Update(uArg)), ?id)); 
+                    }
+                };
+                #Ok(Stables.toStableProperty(property));
+            };
+            deleteArg = createDeleteCase;
+            deleteExpected = deleteCaseExpectedOutcome(property);
+        };
+
+        createTestType(tcases, handler);
+    };
+
+    
+    public func createTenantTestType(tcases: TestCase, property: PropertyUnstable, tcase: TestTypes.TenantTestCase): TestType{
+        type CT = TenantCreateCase;
+        type UT = TenantUpdateCase;
+        type C = TenantCArg;
+        type U = TenantUArg;
+        type DT = DeleteCase;
+      
+        let handler : TestTypes.TestHandler<CT, UT, DT, C, U> = {
+            tcase;
+            wrapAction = func(action) = #Tenant(action);
+            createArg = func(tcase: CT): C {
+                let arg = Arg.createTenantCArg();
+                switch (tcase) {
+                    case (#Valid) arg;
+                    case (#EmptyLeadTenant) return { arg with leadTenant = "" };
+                    case (#ZeroMonthlyRent) return { arg with monthlyRent = 0 };
+                    case (#ZeroDeposit) return { arg with deposit = 0 };
+                    case (#StartDateInPast) return { arg with leaseStartDate = Time.now() - 1 };
+                };
+            };
+            createExpected = func(arg: C, tcase: CT): UpdateResult {
+                let id = ?property.operational.tenantId;
+                switch(tcase) {
+                    case(#EmptyLeadTenant) return createInvalidDataError(id, "lead tenant", #EmptyString);
+                    case(#ZeroMonthlyRent) return createInvalidDataError(id, "monthly rent", #CannotBeZero);
+                    case(#ZeroDeposit) return createInvalidDataError(id, "deposit", #CannotBeZero);
+                    case(#StartDateInPast) return createInvalidDataError(id, "lease start date", #CannotBeSetInThePast);
+                    case(_) {
+                        property.operational.tenantId += 1;
+                        let tenant = Prop.createValidTenant(arg, property.operational.tenantId);
+                        property.operational.tenants.put(property.operational.tenantId, Stables.fromStableTenant(tenant));
+                        property.updates.add(makeOk(#Tenant(#Create([arg])), ?property.operational.tenantId)); 
+                    }
+                };
+                #Ok(Stables.toStableProperty(property));
+            };
+            updateArg = func(tcase: UT): (U, [Int]) {
+               let arg = Arg.createTenantUArg();
+                switch (tcase) {
+                    case (#Valid) (arg, [0]);
+                    case (#NonExistentId) (arg, [10]);
+                    case (#EmptyLeadTenant) ({ arg with leadTenant = ?"" }, [0]);
+                    case (#ZeroMonthlyRent) ({ arg with monthlyRent = ?0 }, [0]);
+                    case (#ZeroDeposit) ({ arg with deposit = ?0 }, [0]);
+                    case (#StartDateInPast) ({ arg with leaseStartDate = ?(Time.now() - 1) }, [0]);
+                };
+            };
+            updateExpected = func(tcase: UT, uArg: (U, [Int])): UpdateResult {
+                let id = Int.abs(uArg.1[0]);
+                switch(tcase) {
+                    case(#NonExistentId) return #Err([(?id, #InvalidElementId)]);
+                    case(#EmptyLeadTenant) return createInvalidDataError(?id, "lead tenant", #EmptyString);
+                    case(#ZeroMonthlyRent) return createInvalidDataError(?id, "monthly rent", #CannotBeZero);
+                    case(#ZeroDeposit) return createInvalidDataError(?id, "deposit", #CannotBeZero);
+                    case(#StartDateInPast) return createInvalidDataError(?id, "lease start date", #CannotBeSetInThePast);
+                    case(_) {
+                        let tenant = Prop.updateValidTenant(uArg);
+                        property.operational.tenants.put(id, Stables.fromStableTenant(tenant));
+                        property.updates.add(makeOk(#Tenant(#Update(uArg)), ?id)); 
+                    }
+                };
+                #Ok(Stables.toStableProperty(property));
+            };
+            deleteArg = createDeleteCase;
+            deleteExpected = deleteCaseExpectedOutcome(property);
+        };
+
+        createTestType(tcases, handler);
+    };
+
+    
+    public func createMaintenanceTestType(tcases: TestCase, property: PropertyUnstable, tcase: TestTypes.MaintenanceTestCase): TestType{
+        type CT = MaintenanceCreateCase;
+        type UT = MaintenanceUpdateCase;
+        type C = MaintenanceRecordCArg;
+        type U = MaintenanceRecordUArg;
+        type DT = DeleteCase;
+
+        let handler : TestTypes.TestHandler<CT, UT, DT, C, U> = {
+            tcase;
+            wrapAction = func(action) = #Maintenance(action);
+            createArg = func(tcase: CT): C {
+                let arg = Arg.createMaintenanceRecordCArg();
+                switch (tcase) {
+                    case (#Valid) arg;
+                    case (#EmptyDescription) return { arg with description = "" };
+                    case (#DateCompletedInFuture) return { arg with dateCompleted = ?(Time.now() + 1_000_000_000) };
+                    case (#DateReportedInFuture) return { arg with dateReported = ?(Time.now() + 1_000_000_000) };
+                };
+            };
+            createExpected = func(arg: C, tcase: CT): UpdateResult {
+                let id = ?property.operational.maintenanceId;
+                switch(tcase) {
+                    case(#EmptyDescription) return createInvalidDataError(id, "description", #EmptyString);
+                    case(#DateCompletedInFuture) return createInvalidDataError(id, "date completed", #CannotBeSetInTheFuture);
+                    case(#DateReportedInFuture) return createInvalidDataError(id, "date reported", #CannotBeSetInTheFuture);
+                    case(_){
+                        property.operational.maintenanceId += 1;
+                        let maintenance = Prop.createValidMaintenanceRecord(arg, property.operational.maintenanceId);
+                        property.operational.maintenance.put(property.operational.maintenanceId, Stables.fromStableMaintenanceRecord(maintenance));
+                        property.updates.add(makeOk(#Maintenance(#Create([arg])), ?property.operational.maintenanceId)); 
+                    }
+                };
+                #Ok(Stables.toStableProperty(property));
+            };
+            updateArg = func(tcase: UT): (U, [Int]) {
+                let arg = Arg.createMaintenanceRecordUArg();
+                switch (tcase) {
+                    case (#Valid) (arg, [0]);
+                    case (#NonExistentId) (arg, [10]);
+                    case (#EmptyDescription) ({ arg with description = ?"" }, [0]);
+                    case (#DateCompletedInFuture) ({ arg with dateCompleted = ?(Time.now() + 1_000_000_000_000) }, [0]);
+                    case (#DateReportedInFuture) ({ arg with dateReported = ?(Time.now() + 1_000_000_000_000) }, [0]);
+                };
+            };
+            updateExpected = func(tcase: UT, uArg: (U, [Int])): UpdateResult {
+                let id = Int.abs(uArg.1[0]);
+                switch(tcase) {
+                    case(#NonExistentId) return #Err([(?id, #InvalidElementId)]);
+                    case(#EmptyDescription) return createInvalidDataError(?id, "description", #EmptyString);
+                    case(#DateCompletedInFuture) return createInvalidDataError(?id, "date completed", #CannotBeSetInTheFuture);
+                    case(#DateReportedInFuture) return createInvalidDataError(?id, "date reported", #CannotBeSetInTheFuture);                    
+                    case(_){
+                        let maintenance = Prop.updateValidMaintenanceRecord(uArg);
+                        property.operational.maintenance.put(id, Stables.fromStableMaintenanceRecord(maintenance));
+                        property.updates.add(makeOk(#Maintenance(#Update(uArg)), ?id)); 
+                    }
+                };
+                #Ok(Stables.toStableProperty(property));
+            };
+            deleteArg = createDeleteCase;
+            deleteExpected = deleteCaseExpectedOutcome(property);
+        };
+
+        createTestType(tcases, handler);
+    };
+
+    public func createValuationTestType(tcases: TestCase, property: PropertyUnstable, tcase: TestTypes.ValuationTestCase): TestType{
+        type CT = ValuationCreateCase;
+        type UT = ValuationUpdateCase;
+        type C = ValuationRecordCArg;
+        type U = ValuationRecordUArg;
+        type DT = DeleteCase;
+
+        let handler : TestTypes.TestHandler<CT, UT, DT, C, U> = {
+            tcase;
+            wrapAction = func(action) = #Valuations(action);
+            createArg = func(tcase: CT): C {
+                let arg = Arg.createValuationRecordCArg();
+                switch (tcase) {
+                    case (#Valid) arg;
+                    case (#ZeroValue) return { arg with value = 0 };
+                };
+            };
+            createExpected = func(arg: C, tcase: CT): UpdateResult {
+                let id = ?property.financials.valuationId;
+                switch(tcase) {
+                    case (#Valid) {
+                        property.financials.valuationId += 1;
+                        let valuation = Prop.createValidValuationRecord(arg, property.financials.valuationId);
+                        property.financials.valuations.put(property.financials.valuationId, Stables.fromStableValuationRecord(valuation));
+                        property.updates.add(makeOk(#Valuations(#Create([arg])), ?property.financials.valuationId));
+                    };
+                    case (#ZeroValue) return createInvalidDataError(id, "value", #CannotBeZero);
+                };
+                #Ok(Stables.toStableProperty(property));
+            };
+            updateArg = func(tcase: UT): (U, [Int]) {
+                let arg = Arg.createValuationRecordUArg();
+                switch (tcase) {
+                    case (#Valid) (arg, [0]);
+                    case (#NonExistentId) (arg, [10]);
+                    case (#ZeroValue) ({ arg with value = ?0 }, [0]);
+                };
+            };
+            updateExpected = func(tcase: UT, uArg: (U, [Int])): UpdateResult {
+                let id = Int.abs(uArg.1[0]);
+                switch(tcase) {
+                    case (#NonExistentId) return #Err([(?id, #InvalidElementId)]);
+                    case (#ZeroValue) return createInvalidDataError(?id, "value", #CannotBeZero);
+                    case (_){
+                        let valuation = Prop.updateValidValuationRecord(uArg.0, uArg.1, property);
+                        property.financials.valuations.put(id, Stables.fromStableValuationRecord(valuation));
+                        property.updates.add(makeOk(#Valuations(#Update(uArg)), ?id));
+                    }
+                };
+                #Ok(Stables.toStableProperty(property));
+            };
+            deleteArg = createDeleteCase;
+            deleteExpected = deleteCaseExpectedOutcome(property);
+        };
+
+        createTestType(tcases, handler);
+    };
+
+
+    public func createInspectionTestType(tcases: TestCase, property: PropertyUnstable, tcase: TestTypes.InspectionTestCase): TestType{
+        type CT = InspectionCreateCase;
+        type UT = InspectionUpdateCase;
+        type C = InspectionRecordCArg;
+        type U = InspectionRecordUArg;
+        type DT = DeleteCase;
+        
+        let handler : TestTypes.TestHandler<CT, UT, DT, C, U> = {
+            tcase;
+            wrapAction = func(action) = #Inspection(action);
+            createArg = func(tcase: CT): C {
+                let arg = Arg.createInspectionRecordCArg();
+                switch (tcase) {
+                    case (#Valid) arg;
+                    case (#EmptyInspectorName) return { arg with inspectorName = "" };
+                    case (#EmptyFindings) return { arg with findings = "" };
+                    case (#DateInFuture) return { arg with date = ?(Time.now() + 1) };
+                };
+            };
+            createExpected = func(arg: C, tcase: CT): UpdateResult {
+                let id = ?property.operational.inspectionsId;
+                switch(tcase) {
+                    case(#EmptyInspectorName) return createInvalidDataError(id, "inspector name", #EmptyString);
+                    case(#EmptyFindings) return createInvalidDataError(id, "findings", #EmptyString);
+                    case(#DateInFuture) return createInvalidDataError(id, "inspection date", #CannotBeSetInTheFuture);
+                    case(_){
+                        property.operational.inspectionsId += 1;
+                        let inspection = Prop.createValidInspectionRecord(arg, property.operational.inspectionsId);
+                        property.operational.inspections.put(property.operational.inspectionsId, Stables.fromStableInspectionRecord(inspection));
+                        property.updates.add(makeOk(#Inspection(#Create([arg])), ?property.operational.inspectionsId)); 
+                    }
+                };
+                #Ok(Stables.toStableProperty(property));
+            };
+            updateArg = func(tcase: UT): (U, [Int]) {
+                let arg = Arg.createInspectionRecordUArg();
+                switch (tcase) {
+                    case (#Valid) (arg, [0]);
+                    case (#NonExistentId) (arg, [10]);
+                    case (#EmptyInspectorName) ({ arg with inspectorName = ?"" }, [0]);
+                    case (#EmptyFindings) ({ arg with findings = ?"" }, [0]);
+                    case (#DateInFuture) ({ arg with date = ?(Time.now() + 1) }, [0]);
+                };
+            };
+            updateExpected = func(tcase: UT, uArg: (U, [Int])): UpdateResult {
+                let id = Int.abs(uArg.1[0]);
+                switch(tcase) {
+                    case(#NonExistentId) return #Err([(?id, #InvalidElementId)]);
+                    case(#EmptyInspectorName) return createInvalidDataError(?id, "inspector name", #EmptyString);
+                    case(#EmptyFindings) return createInvalidDataError(?id, "findings", #EmptyString);
+                    case(#DateInFuture) return createInvalidDataError(?id, "inspection date", #CannotBeSetInTheFuture);
+                    case(_){
+                        let inspection = Prop.updateValidInspectionRecord(uArg);
+                        property.operational.inspections.put(id, Stables.fromStableInspectionRecord(inspection));
+                        property.updates.add(makeOk(#Inspection(#Update(uArg)), ?id));
+                    }
+                };
+                #Ok(Stables.toStableProperty(property));
+            };
+            deleteArg = createDeleteCase;
+            deleteExpected = deleteCaseExpectedOutcome(property);
+        };
+
+        createTestType(tcases, handler);
+    };
+
+    public func createImageTestType(tcases: TestCase, property: PropertyUnstable, tcase: TestTypes.ImagesTestCase): TestType{
+        type CT = TestTypes.ImageCreateCase;
+        type UT = TestTypes.ImageUpdateCase;
+        type C = Text;
+        type U = Text;
+        type DT = DeleteCase;
+        
+        let handler : TestTypes.TestHandler<CT, UT, DT, C, U> = {
+            tcase;
+            wrapAction = func(action) = #Images(action);
+            createArg = func(tcase: CT): C {
+                switch (tcase) {
+                    case (#Valid) "initial url to image";
+                    case (#EmptyURL) "";
+                };
+            };
+            createExpected = func(arg: C, tcase: CT): UpdateResult {
+                let id = ?property.details.misc.imageId;
+                switch(tcase) {
+                    case(#EmptyURL) return createInvalidDataError(id, "image", #EmptyString);
+                    case(_){
+                        property.details.misc.imageId += 1;
+                        property.details.misc.images.put(property.details.misc.imageId, "initial url to image");
+                        property.updates.add(makeOk(#Images(#Create([arg])), ?property.details.misc.imageId)); 
+                    }
+                };
+                #Ok(Stables.toStableProperty(property));
+            };
+            updateArg = func(tcase: UT): (U, [Int]) {
+                switch (tcase) {
+                    case (#Valid) ("updated url to image",[0]);
+                    case (#EmptyURL) ("",[0]);
+                };
+            };
+            updateExpected = func(tcase: UT, uArg: (U, [Int])): UpdateResult {
+                let id = Int.abs(uArg.1[0]);
+                switch(tcase) {
+                    case(#EmptyURL) return createInvalidDataError(?id, "image", #EmptyString);
+                    case(_){
+                        property.details.misc.images.put(id, "updated url to image");
+                        property.updates.add(makeOk(#Images(#Update(uArg)), ?id)); 
+                    }
+                };
+                #Ok(Stables.toStableProperty(property));
+            };
+            deleteArg = createDeleteCase;
+            deleteExpected = deleteCaseExpectedOutcome(property);
+        };
+
+        createTestType(tcases, handler);
+    };
+
+    public func createFixedPriceTestType(tcases: TestCase, property: PropertyUnstable, tcase: TestTypes.FixedPriceTestCase): TestType{
+        type CT = TestTypes.FixedPriceCreateCase;
+        type UT = TestTypes.FixedPriceUpdateCase;
+        type C = FixedPriceCArg;
+        type U = FixedPriceUArg;
+        type DT = DeleteCase;
+        
+        let handler : TestTypes.TestHandler<CT, UT, DT, C, U> = {
+            tcase;
+            wrapAction = func(action) = #NftMarketplace(#FixedPrice(action));
+            createArg = func(tcase: CT): C {
+                let arg = Arg.createFixedPriceCArg();
+                switch (tcase) {
+                    case (#Valid) arg;
+                };
+            };
+            createExpected = func(arg: C, tcase: CT): UpdateResult {
+                switch(tcase) {
+                    //case(#EmptyURL) return createInvalidDataError(id, "image", #EmptyString);
+                    case(_){
+                        property.nftMarketplace.listId += 1;
+                        let fixedPrice = #LiveFixedPrice({
+                            tokenId = arg.tokenId;
+                            price = arg.price;
+                            expiresAt = arg.expiresAt;
+                            id = property.nftMarketplace.listId;
+                            listedAt = Time.now();
+                            seller = {owner = Caller.getCaller(tcases); subaccount = arg.seller_subaccount};
+                            quoteAsset = Option.get(arg.quoteAsset, #ICP);
+                        });
+                        property.nftMarketplace.listings.put(property.nftMarketplace.listId, fixedPrice);
+                        property.updates.add(makeOk(#NftMarketplace(#FixedPrice(#Create([arg]))), ?property.nftMarketplace.listId)); 
+                    }
+                };
+                #Ok(Stables.toStableProperty(property));
+            };
+            updateArg = func(tcase: UT): (U, [Int]) {
+                let arg = Arg.createFixedPriceUArg();
+                switch (tcase) {
+                    case (#Valid) (arg,[0]);
+                    //case (#EmptyURL) ("",[0]);
+                };
+            };
+            updateExpected = func(tcase: UT, uArg: (U, [Int])): UpdateResult {
+                let id = Int.abs(uArg.1[0]);
+                switch(tcase, property.nftMarketplace.listings.get(id)) {
+                    //case(#EmptyURL) return createInvalidDataError(?id, "image", #EmptyString);
+                    case(_, ?#LiveFixedPrice(fixedPrice)){
+                        let updatedFixedPrice = {
+                            fixedPrice with 
+                            price = Option.get(uArg.0.price, fixedPrice.price);
+                            quoteAsset = Option.get(uArg.0.quoteAsset, fixedPrice.quoteAsset);
+                            expiresAt = switch(uArg.0.expiresAt){case(null) fixedPrice.expiresAt; case(?expires) ?expires};
+                        };
+                        property.nftMarketplace.listings.put(id, #LiveFixedPrice(updatedFixedPrice));
+                        property.updates.add(makeOk(#NftMarketplace(#FixedPrice(#Update(uArg))), ?id)); 
+                    };
+                    case(_, null) return #Err([(?id, #InvalidElementId)]);
+                    case(_) return #Err([(?id, #InvalidType)]);
+                };
+                #Ok(Stables.toStableProperty(property));
+            };
+            deleteArg = createDeleteCase;
+            deleteExpected = func(tcase: DT, what: What): Types.UpdateResult{
+                let id = createDeleteCase(tcase);
+                switch(property.nftMarketplace.listings.get(id)){
+                    case(?#LiveFixedPrice(fixedPrice)){
+                        let cancelled = #CancelledFixedPrice({
+                            fixedPrice with
+                            cancelledBy = {owner = Caller.getCaller(tcases); subaccount = null};
+                            cancelledAt = Time.now();
+                            reason = #CalledByAdmin;
+                        });
+                        property.nftMarketplace.listings.put(id, cancelled);
+                        property.updates.add(makeOk(#NftMarketplace(#FixedPrice(#Delete([id]))), ?id));
+                        #Ok(Stables.toStableProperty(property))
+                    };
+                    case(null) return #Err([(?id, #InvalidElementId)]);
+                    case(_) return #Err([(?id, #InvalidType)]);
+                }
+            };
+        };
+
+        createTestType(tcases, handler);
+    };
+
+    public func createAuctionTestType(tcases: TestCase, property: PropertyUnstable, tcase: TestTypes.FixedPriceTestCase): TestType{
+        type CT = TestTypes.AuctionCreateCase;
+        type UT = TestTypes.AuctionUpdateCase;
+        type C = AuctionCArg;
+        type U = AuctionUArg;
+        type DT = DeleteCase;
+        
+        let handler : TestTypes.TestHandler<CT, UT, DT, C, U> = {
+            tcase;
+            wrapAction = func(action) = #NftMarketplace(#Auction(action));
+            createArg = func(tcase: CT): C {
+                let arg = Arg.createAuctionCArg();
+                switch (tcase) {
+                    case (#Valid) arg;
+                };
+            };
+            createExpected = func(arg: C, tcase: CT): UpdateResult {
+                let id = property.nftMarketplace.listId;
+                switch(tcase) {
+                    //case(#EmptyURL) return createInvalidDataError(id, "image", #EmptyString);
+                    case(_){
+                        property.nftMarketplace.listId += 1;
+                        let auction : Types.Auction = {
+                            arg with 
+                            id;
+                            listedAt = Time.now();
+                            seller = {owner = Caller.getCaller(tcases); subaccount = null};
+                            quoteAsset = Option.get(arg.quoteAsset, #ICP);
+                            bidIncrement = 1;
+                            highestBid = null;
+                            previousBids = [];
+                            refunds = [];
+                        };
+                        property.nftMarketplace.listings.put(property.nftMarketplace.listId, #LiveAuction(auction));
+                        property.updates.add(makeOk(#NftMarketplace(#Auction(#Create([arg]))), ?property.nftMarketplace.listId)); 
+                    }
+                };
+                #Ok(Stables.toStableProperty(property));
+            };
+            updateArg = func(tcase: UT): (U, [Int]) {
+                let arg = Arg.createAuctionUArg();
+                switch (tcase) {
+                    case (#Valid) (arg,[0]);
+                    //case (#EmptyURL) ("",[0]);
+                };
+            };
+            updateExpected = func(tcase: UT, uArg: (U, [Int])): UpdateResult {
+                let id = Int.abs(uArg.1[0]);
+                switch(tcase, property.nftMarketplace.listings.get(id)) {
+                    //case(#EmptyURL) return createInvalidDataError(?id, "image", #EmptyString);
+                    case(_, ?#LiveAuction(auction)){
+                        let updatedAuction : Types.Auction = {
+                            auction with
+                            startingPrice = Option.get(uArg.0.startingPrice, auction.startingPrice);
+                            startTime = Option.get(uArg.0.startTime, auction.startTime);
+                            endsAt = Option.get(uArg.0.endsAt, auction.endsAt);
+                            quoteAsset = Option.get(uArg.0.quoteAsset, auction.quoteAsset);
+                            buyNowPrice = switch(uArg.0.buyNowPrice){case(null) auction.buyNowPrice; case(?p) ?p};
+                            reservePrice = switch(uArg.0.reservePrice){case(null) auction.reservePrice; case(?reserve) ?reserve};
+                        };
+                        property.nftMarketplace.listings.put(id, #LiveAuction(updatedAuction));
+                        property.updates.add(makeOk(#NftMarketplace(#Auction(#Update(uArg))), ?id)); 
+                    };
+                    case(_, null) return #Err([(?id, #InvalidElementId)]);
+                    case(_) return #Err([(?id, #InvalidType)]);
+                };
+                #Ok(Stables.toStableProperty(property));
+            };
+            deleteArg = createDeleteCase;
+            deleteExpected = func(tcase: DT, what: What): Types.UpdateResult{
+                let id = createDeleteCase(tcase);
+                switch(property.nftMarketplace.listings.get(id)){
+                    case(?#LiveAuction(auction)){
+                        let cancelled = #CancelledAuction({
+                            auction with
+                            cancelledBy = {owner = Caller.getCaller(tcases); subaccount = null};
+                            cancelledAt = Time.now();
+                            reason = #CalledByAdmin;
+                        });
+                        property.nftMarketplace.listings.put(id, cancelled);
+                        property.updates.add(makeOk(#NftMarketplace(#Auction(#Delete([id]))), ?id));
+                        #Ok(Stables.toStableProperty(property))
+                    };
+                    case(null) return #Err([(?id, #InvalidElementId)]);
+                    case(_) return #Err([(?id, #InvalidType)]);
+                }
+            };
+        };
+
+        createTestType(tcases, handler);
+    };
+
+    public func createProposalTestType(tcases: TestCase, property: PropertyUnstable, tcase: TestTypes.ProposalTestCase): TestType{
+        //ignored timers in testing
+        type CT = TestTypes.ProposalCreateCase;
+        type UT = TestTypes.ProposalUpdateCase;
+        type C = Types.ProposalCArg;
+        type U = Types.ProposalUArg;
+        type DT = DeleteCase;
+        let calculateEndTime = func(startTime: Int, category: Types.ImplementationCategory) : Int {
+            let HOUR_NS : Int = 3_600_000_000_000;
+            let DAY_NS : Int = 24 * HOUR_NS;
+        
+            let duration = switch (category) {
+              case (#Quick)    6 * HOUR_NS;
+              case (#Day)      1 * DAY_NS;
+              case (#FourDays) 4 * DAY_NS;
+              case (#Week)     7 * DAY_NS;
+              case (#BiWeek)   14 * DAY_NS;
+              case (#Month)    30 * DAY_NS;
+            };
+            startTime + duration
+        };  
+
+        
+        let handler : TestTypes.TestHandler<CT, UT, DT, C, U> = {
+            tcase;
+            wrapAction = func(action) = #Governance(#Proposal(action));
+            createArg = func(tcase: CT): C {
+                let arg = Arg.createProposalCArg();
+                switch (tcase) {
+                    case (#Valid) arg;
+                };
+            };
+            createExpected = func(arg: C, tcase: CT): UpdateResult {
+                let id = property.governance.proposalId;
+                switch(tcase) {
+                    //case(#EmptyURL) return createInvalidDataError(id, "image", #EmptyString);
+                    case(_){
+                        property.governance.proposalId += 1;
+                        let newProposal : Types.Proposal = {
+                            arg with 
+                            id;
+                            creator = Caller.getCaller(tcases);
+                            createdAt = Time.now();
+                            eligibleVoters = []; //got from async
+                            totalEligibleVoters = 0; //got from async
+                            votes = [];
+                            status = #LiveProposal{
+                                endTime = calculateEndTime(arg.startAt, arg.implementation);
+                                yesVotes = 0;
+                                noVotes = 0;
+                                eligibleVoterCount = 0; //got from async
+                                totalVotesCast = 0;
+                                timerId = null; //got from async
+                            }
+                        };
+                        property.governance.proposals.put(property.governance.proposalId, newProposal);
+                        property.updates.add(makeOk(#Governance(#Proposal(#Create([arg]))), ?property.governance.proposalId)); 
+                    }
+                };
+                #Ok(Stables.toStableProperty(property));
+            };
+            updateArg = func(tcase: UT): (U, [Int]) {
+                let arg = Arg.createProposalUArg();
+                switch (tcase) {
+                    case (#Valid) (arg,[0]);
+                    //case (#EmptyURL) ("",[0]);
+                };
+            };
+            updateExpected = func(tcase: UT, uArg: (U, [Int])): UpdateResult {
+                let id = Int.abs(uArg.1[0]);
+                let proposal = switch(property.governance.proposals.get(id)){case(?proposal) proposal; case(null) return #Err([(?id, #InvalidElementId)])};
+                switch(tcase, proposal.status) {
+                    //case(#EmptyURL) return createInvalidDataError(?id, "image", #EmptyString);
+                    case(_, #LiveProposal(live)){
+                        let updatedProposal = {
+                            proposal with
+                            title = Option.get(uArg.0.title, proposal.title);
+                            startAt = Option.get(uArg.0.startAt, proposal.startAt);
+                            description = Option.get(uArg.0.description, proposal.description);
+                            category = Option.get(uArg.0.category, proposal.category);
+                            implementation = Option.get(uArg.0.implementation, proposal.implementation);
+                            actions = Option.get(uArg.0.actions, proposal.actions);
+                            status = #LiveProposal{live with endTime = calculateEndTime(Option.get(uArg.0.startAt, proposal.startAt), Option.get(uArg.0.implementation, proposal.implementation))};
+                        };
+                        property.governance.proposals.put(id, updatedProposal);
+                        property.updates.add(makeOk(#Governance(#Proposal(#Update(uArg))), ?id)); 
+                    };
+                    case(_) return #Err([(?id, #InvalidType)]);
+                };
+                #Ok(Stables.toStableProperty(property));
+            };
+            deleteArg = createDeleteCase;
+            deleteExpected = func(tcase: DT, what: What): Types.UpdateResult{
+                let id = createDeleteCase(tcase);
+                let proposal = switch(property.governance.proposals.get(id)){case(?proposal) proposal; case(null) return #Err([(?id, #InvalidElementId)])};
+                switch(proposal.status){
+                    case(#LiveProposal(live)){
+                        if(Caller.getCaller(tcases) == PropHelper.getAdmin()) property.governance.proposals.put(id, {proposal with status = #RejectedEarly{reason = "cancelled By Admin"}});
+                        if(live.endTime > Time.now()){
+                            let executedProposal : Types.ProposalStatus = #Executed{
+                                outcome = if(live.yesVotes > live.noVotes) #Accepted([]) else #Refused("");
+                                executedAt = Time.now();
+                                yesVotes = live.yesVotes;
+                                noVotes = live.noVotes;
+                                totalVotesCast = proposal.votes.size();
+                            };
+                            property.governance.proposals.put(id, {proposal with status = executedProposal});
+                            property.updates.add(makeOk(#Governance(#Proposal(#Delete([id]))), ?id));
+                        };
+                        #Ok(Stables.toStableProperty(property))
+                    };
+                    case(_) return #Err([(?id, #InvalidType)]);
+                }
+            };
+        };
+
+        createTestType(tcases, handler);
+    };
+
+    public func createInvoiceTestType(tcases: TestCase, property: PropertyUnstable, tcase: TestTypes.InvoiceTestCase): TestType{
+        //ignored timers in testing
+        type CT = TestTypes.InvoiceCreateCase;
+        type UT = TestTypes.InvoiceUpdateCase;
+        type C = Types.InvoiceCArg;
+        type U = Types.InvoiceUArg;
+        type DT = DeleteCase;
+        let handler : TestTypes.TestHandler<CT, UT, DT, C, U> = {
+            tcase;
+            wrapAction = func(action) = #Invoice(action);
+            createArg = func(tcase: CT): C {
+                let arg = Arg.createInvoiceCArg();
+                switch (tcase) {
+                    case (#Valid) arg;
+                };
+            };
+            createExpected = func(arg: C, tcase: CT): UpdateResult {
+                let id = property.financials.invoiceId;
+                switch(tcase) {
+                    //case(#EmptyURL) return createInvalidDataError(id, "image", #EmptyString);
+                    case(_){
+                        property.financials.invoiceId += 1;
+                        let newInvoice : UnstableTypes.InvoiceUnstable = {
+                            var id;
+                            var title = arg.title;
+                            var description = arg.description;
+                            var amount = arg.amount;
+                            var due = arg.dueDate;
+                            var direction = arg.direction;
+                            var recurrence = arg.recurrence;
+                            var paymentMethod = switch(arg.paymentMethod){case(null)#HGB; case(?method)method};
+                            var status = #Draft;
+                            var paymentStatus = #WaitingApproval;
+                            var logs = [];
+                        };
+                        property.financials.invoices.put(property.financials.invoiceId, newInvoice);
+                        property.updates.add(makeOk(#Invoice(#Create([arg])), ?property.financials.invoiceId)); 
+                    }
+                };
+                #Ok(Stables.toStableProperty(property));
+            };
+            updateArg = func(tcase: UT): (U, [Int]) {
+                let arg = Arg.createInvoiceUArg();
+                switch (tcase) {
+                    case (#Valid) (arg,[0]);
+                    //case (#EmptyURL) ("",[0]);
+                };
+            };
+            updateExpected = func(tcase: UT, uArg: (U, [Int])): UpdateResult {
+                let id = Int.abs(uArg.1[0]);
+                let invoice = switch(property.financials.invoices.get(id)){case(?invoice) invoice; case(null) return #Err([(?id, #InvalidElementId)])};
+                switch(tcase, invoice.status) {
+                    //case(#EmptyURL) return createInvalidDataError(?id, "image", #EmptyString);
+                    case(_, #Draft){
+                            invoice.title := Option.get(uArg.0.title, invoice.title);
+                            invoice.description := Option.get(uArg.0.description, invoice.description);
+                            invoice.amount := Option.get(uArg.0.amount, invoice.amount);
+                            invoice.due := Option.get(uArg.0.dueDate, invoice.due);
+                            invoice.direction := Option.get(uArg.0.direction, invoice.direction);
+                            invoice.paymentMethod := Option.get(uArg.0.paymentMethod, invoice.paymentMethod);
+                            invoice.recurrence := Option.get(uArg.0.recurrence, invoice.recurrence);
+                            invoice.status := switch(uArg.0.preApprovedByAdmin, uArg.0.process, Principal.equal(Caller.getCaller(tcases), PropHelper.getAdmin())){
+                                case(?true, true, true) #PreApproved(Caller.getCaller(tcases));
+                                case(_, true, _) #Pending;
+                                case(_) invoice.status; 
+                            };
+                        property.financials.invoices.put(id, invoice);
+                        property.updates.add(makeOk(#Invoice(#Update(uArg)), ?id)); 
+                    };
+                    case(_, #Failed){
+                        invoice.status := switch(uArg.0.preApprovedByAdmin, uArg.0.process, Principal.equal(Caller.getCaller(tcases), PropHelper.getAdmin())){
+                            case(?true, true, true) #PreApproved(Caller.getCaller(tcases));
+                            case(_, true, _) #Pending;
+                            case(_) invoice.status; 
+                        };
+                        property.financials.invoices.put(id, invoice);
+                        property.updates.add(makeOk(#Invoice(#Update(uArg)), ?id)); 
+                    };
+                    case(_, #Paid) return #Err([(?id, #InvalidType)]);
+                    case(_){};
+                };
+                #Ok(Stables.toStableProperty(property));
+            };
+            deleteArg = createDeleteCase;
+            deleteExpected = func(tcase: DT, what: What): Types.UpdateResult{
+                let id = createDeleteCase(tcase);
+                let invoice = switch(property.financials.invoices.get(id)){case(?invoices) Stables.toStableInvoice(invoices); case(null) return #Err([(?id, #InvalidElementId)])};
+                switch(invoice.status, invoice.direction){
+                    case(#Pending, #Incoming(_)) property.financials.invoices.put(id, Stables.fromStableInvoice({invoice with status = #Approved}));
+                    case(#Pending, #Outgoing(outgoing)){
+                        switch(property.governance.proposals.get(outgoing.proposalId)){
+                            case(?proposal){
+                                switch(proposal.status){
+                                    case(#Executed(executed)){
+                                        switch(executed.outcome){
+                                            case(#Refused(_)) property.financials.invoices.put(id, Stables.fromStableInvoice({invoice with status = #Approved}));
+                                            case(#Accepted(_))property.financials.invoices.put(id, Stables.fromStableInvoice({invoice with status = #Rejected}));
+                                        }
+                                    };
+                                    case(_){};
+                                };
+                            };
+                            case(null){};
+                        };
+                    };
+                    case(#Draft, _) property.financials.invoices.delete(id);
+                    case(#Paid, _) return #Err([(?id, #InvalidType)]);
+                    case(_){};
+                };
+                #Ok(Stables.toStableProperty(property))
+            };
+        };
+
+        createTestType(tcases, handler);
+    };
+
+
+
+
+
+
+    public func createTestType <CT, UT, DT, C, U>(tcases: TestCase, handler: TestTypes.TestHandler<CT, UT, DT, C, U>): TestType{
+        switch(handler.tcase){
+            case(#Create(arg)){
+                let cArg = handler.createArg(arg);
+                {
+                    name = tcases;
+                    arg = handler.wrapAction(#Create([cArg]));
+                    expectedOutcome = handler.createExpected(cArg, arg);
+                };
+            };
+            case(#Update(arg)){
+                let uArg = handler.updateArg(arg);
+                {
+                    name = tcases;
+                    arg = handler.wrapAction(#Update(uArg));
+                    expectedOutcome = handler.updateExpected(arg, uArg);
+                };
+            };
+            case(#Delete(arg)){
+                {
+                    name = tcases;
+                    arg = handler.wrapAction(#Delete([handler.deleteArg(arg)]));
+                    expectedOutcome = handler.deleteExpected(arg, handler.wrapAction(#Delete([0])))
+                }
+            }
+        }
+    };
+
+    public func createFinancialTestType(tcases: TestCase, property: PropertyUnstable, tcase: TestTypes.FinancialsCreateCase): TestType {
+        let arg = switch (tcase) {
+            case (#Valid) Arg.createFinancialsArg();
+            case (#ZeroCurrentValue) {{ Arg.createFinancialsArg() with currentValue = 0 }};
+        };
+
+        let expectedOutcome = func(): UpdateResult {
+            switch(tcase) {
+                case (#Valid) property.financials.currentValue := arg.currentValue;
+                case (#ZeroCurrentValue) return createInvalidDataError(null, "current value", #CannotBeZero);
+            };
+            property.updates.add(makeNull(#Financials(arg)));
+            property.financials.pricePerSqFoot := property.financials.currentValue / property.details.physical.squareFootage;
+            #Ok(Stables.toStableProperty(property));
+        };
+
+        {
+           name = tcases;
+           arg = #Financials(arg);
+            expectedOutcome =  expectedOutcome();
+        }
+    };
+
+    public func createMonthlyRentTestType(tcases: TestCase, property: PropertyUnstable, tcase: TestTypes.MonthlyRentCreateCase): TestType {
+        let arg = switch (tcase) {
+            case (#Valid) 1000;
+            case (#ZeroRent) 0;
+        };
+
+        let expectedOutcome = func(): UpdateResult {
+            switch(tcase) {
+                case (#Valid) property.financials.monthlyRent := arg;
+                case (#ZeroRent) return createInvalidDataError(null, "Monthly Rent", #CannotBeZero);
+            };
+            property.updates.add(makeNull(#MonthlyRent(arg)));
+            property.financials.yield := Float.fromInt(12 * property.financials.monthlyRent) / Float.fromInt(property.financials.currentValue);
+            #Ok(Stables.toStableProperty(property));
+        };
+
+        {
+           name = tcases;
+           arg = #MonthlyRent(arg);
+            expectedOutcome =  expectedOutcome();
+        }
+    };
+
+    public func createDescriptionTestType(tcases: TestCase, property: PropertyUnstable, tcase: TestTypes.DescriptionCase): TestType {
+        let arg = switch (tcase) {
+            case (#Valid) "updated description of property";
+            case (#Empty) "";
+        };
+
+        let expectedOutcome = func(): UpdateResult {
+            switch (tcase) {
+                case (#Valid) property.details.misc.description := arg;
+                case (_) return createInvalidDataError(null, "description", #EmptyString);
+            };
+            property.updates.add(makeNull(#Description(arg)));
+            #Ok(Stables.toStableProperty(property));
+        };
+
+        {
+           name = tcases;
+           arg = #Description(arg);
+            expectedOutcome =  expectedOutcome();
+        }
+    };
+
+    public func createPhysicalDescriptionTestType(tcases: TestCase, property: PropertyUnstable, tcase: TestTypes.PhysicalDetailsTestCase): TestType {
+        let arg = func(): Types.PhysicalDetailsUArg {
+            let arg = Arg.createPhysicalDetailsUArg();
+            switch (tcase) {
+                case (#Valid) arg;
+                case (#RenovationTooOld) return { arg with lastRenovation = ?1890 };
+                case (#TooManyBeds) return { arg with beds = ?11 };
+                case (#TooManyBaths) return { arg with baths = ?11 };
+            };
+        };
+
+        let expectedOutcome = func(): UpdateResult {
+            switch (tcase) {
+                case (#Valid) property.details.physical := Prop.validUnstablePhysicalDetails();
+                case (#RenovationTooOld) return createInvalidDataError(null, "renovation", #InaccurateData);
+                case (#TooManyBeds) return createInvalidDataError(null, "beds", #InaccurateData);
+                case (#TooManyBaths) return createInvalidDataError(null, "baths", #InaccurateData);
+            };
+            property.updates.add(makeNull(#PhysicalDetails(arg())));
+            #Ok(Stables.toStableProperty(property));
+        };
+
+        {
+           name = tcases;
+           arg = #PhysicalDetails(arg());
+            expectedOutcome =  expectedOutcome();
+        }
+    };
+
+    public func createAdditionalDetailsTestType(tcases: TestCase, property: PropertyUnstable, tcase: TestTypes.AdditionalDetailsTestCase): TestType {
+        let arg = func(): Types.AdditionalDetailsUArg {
+            let arg = Arg.createAdditionalDetailsUArg();
+            switch (tcase) {
+                case (#Valid) arg;
+                case (#LowCrimeScore) return { arg with crimeScore = ?10 };
+                case (#HighSchoolScore) return { arg with schoolScore = ?11 };
+            };
+        };
+
+        let expectedOutcome = func(): UpdateResult {
+            switch (tcase) {
+                case (#Valid) property.details.additional := Prop.validUnstableAdditionalDetails();
+                case (#LowCrimeScore) return createInvalidDataError(null, "Crime Score", #OutOfRange);
+                case (#HighSchoolScore) return createInvalidDataError(null, "School Score", #OutOfRange);
+            };
+            property.updates.add(makeNull(#AdditionalDetails(arg())));
+            #Ok(Stables.toStableProperty(property));
+        };
+
+        {
+           name = tcases;
+           arg = #AdditionalDetails(arg());
+            expectedOutcome = expectedOutcome();
+        }
+    };
+
+
+
+
+    public func createTestCase(tcases: TestCase, property: PropertyUnstable): TestType {
+        switch(tcases){
+            case(#Note(testCase)) return createNoteTestType(tcases, property, testCase);
+            case(#Insurance(testCase)) return createInsuranceTestType(tcases, property, testCase);
+            case(#Documents(testCase)) return createDocumentTestType(tcases, property, testCase);
+            case(#Tenant(testCase)) return createTenantTestType(tcases, property, testCase);
+            case(#Maintenance(testCase)) return createMaintenanceTestType(tcases, property, testCase);
+            case(#Inspection(testCase)) return createInspectionTestType(tcases, property, testCase);
+            case(#Valuation(testCase)) return createValuationTestType(tcases, property, testCase);
+            case(#Images(testCase)) return createImageTestType(tcases, property, testCase);
+            case (#Financials(testCase)) return createFinancialTestType(tcases, property, testCase);
+            case (#MonthlyRent(testCase)) return createMonthlyRentTestType(tcases, property, testCase);
+            case(#Description(testCase)) return createDescriptionTestType(tcases, property, testCase);
+            case (#PhysicalDetails(testCase)) return createPhysicalDescriptionTestType(tcases, property, testCase);
+            case (#AdditionalDetails(testCase)) return createAdditionalDetailsTestType(tcases, property, testCase);
+        };
+    };
 }

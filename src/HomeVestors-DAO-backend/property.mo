@@ -1,6 +1,6 @@
 import Types "types";
 import UnstableTypes "Tests/unstableTypes";
-import Stables "Tests/stables";
+import CreateProperty "Tests/createProperty";
 import NFT "nft";
 import Administrative "administrative";
 import Details "details";
@@ -8,6 +8,8 @@ import Financials "financials";
 import Operational "operational";
 import Result "mo:base/Result";
 import NFTMarketplace "nftMarketplace";
+import Invoices "invoices";
+import Governance "proposals";
 import Buffer "mo:base/Buffer";
 import PropHelper "propHelper";
 import Iter "mo:base/Iter";
@@ -37,9 +39,9 @@ module Property {
     type InspectionRecord = Types.InspectionRecord;
     type Miscellaneous = Types.Miscellaneous;
     type SimpleHandler<T> = UnstableTypes.SimpleHandler<T>;
-    type Arg = UnstableTypes.Arg;
+    type Arg = Types.Arg;
     type Actions<C,U> = Types.Actions<C,U>;
-    type Handler<C,U,T> = UnstableTypes.Handler<C,U,T>;
+    type Handler<C,U> = UnstableTypes.Handler<C,U>;
     type InsurancePolicyCArg = Types.InsurancePolicyCArg;
     type InsurancePolicyUArg = Types.InsurancePolicyUArg;
     type InsurancePolicyUnstable = UnstableTypes.InsurancePolicyUnstable;
@@ -83,6 +85,8 @@ module Property {
     type ElementResult<T> = Types.ElementResult<T>;
     type FilterProperties = Types.FilterProperties;
     type ReadArg = Types.ReadArg;
+    type Proposal = Types.Proposal;
+    type Invoice = Types.Invoice;
     
     public func addProperty(id: Nat, nftCollection: Principal, quantity: Nat): async (Property, [?MintResult]) {
         let (mintResult, (financials, details)) = await NFT.initiateNFT(nftCollection, quantity, id);
@@ -94,10 +98,11 @@ module Property {
         {
             id;
             details;
-            financials = Financials.createFinancials(financials);
+            financials = Financials.createFinancials(financials, id);
             administrative = Administrative.createAdministrativeInfo();
             operational = Operational.createOperationalInfo();
             nftMarketplace = NFTMarketplace.createNFTMarketplace(nftCollection);
+            governance = CreateProperty.createGovernance();
             updates = [];
         }
     };
@@ -113,72 +118,28 @@ module Property {
         }
     };
 
-
-    func applySimpleUpdate<T>(arg: Arg, val: T, handler: SimpleHandler<T>): UpdateResult {
-      switch (handler.validate(val)) {
-        case (#err(e)){
-            arg.property.updates.add(#Err(e));
-            return #Err(e);
-        };
-        case (#ok(valid)) {
-          handler.apply(valid, arg.property);
-          arg.property.updates.add(#Ok(arg.what));
-          return #Ok(Stables.toStableProperty(arg.property));
-        }
-      };
-    };
-
-    func applyHandler<C, U, T>(args: Arg, action: Actions<C, (U, Nat)>, handler: Handler<C, U, T>): UpdateResult {
-        let map = handler.map(args.property);
-        let id = handler.getId(args.property);
-        let maybeElement = switch(action){
-            case(#Create(arg)) ?handler.create(arg, id + 1, args.caller);
-            case(#Update(arg, id)){
-                switch(map.get(id)){
-                    case(null) null;
-                    case(?el) ?handler.mutate(arg, el);
-                };
-            };
-            case(#Delete(id)) map.get(id);
-        };
-
-        switch(handler.validate(maybeElement)){
-            case(#err(e)){
-                args.property.updates.add(#Err(e));
-                return #Err(e);
-            };
-            case(#ok(el)){
-                switch(action){
-                    case(#Create(_)){
-                        map.put(id + 1, el);
-                        handler.incrementId(args.property);
-                    };
-                    case(#Update(_, updateId)) map.put(updateId, el);
-                    case(#Delete(deleteId)) map.delete(deleteId);
-                };
-                args.property.updates.add(#Ok(args.what));
-                return #Ok(Stables.toStableProperty(args.property));
-            }
-        };
-    };
-
-    public func updateProperty(what: What, caller: Principal, property: Property): async UpdateResult {
-        let arg = {what; caller; property = Stables.fromStableProperty(property)};
+    public func updateProperty(arg: Arg): async UpdateResult {
         switch(arg.what){
-            case(#Insurance(action)) applyHandler<InsurancePolicyCArg, InsurancePolicyUArg, InsurancePolicyUnstable>(arg, action, Administrative.createInsuranceHandler());
-            case(#Document(action)) applyHandler<DocumentCArg, DocumentUArg, DocumentUnstable>(arg, action, Administrative.createDocumentHandler());
-            case(#Note(action)) applyHandler<NoteCArg, NoteUArg, NoteUnstable>(arg, action, Administrative.createNoteHandler());
-            case(#Maintenance(action)) applyHandler<MaintenanceRecordCArg, MaintenanceRecordUArg, MaintenanceRecordUnstable>(arg, action, Operational.createMaintenanceHandler());
-            case(#Inspection(action)) applyHandler<InspectionRecordCArg, InspectionRecordUArg, InspectionRecordUnstable>(arg, action, Operational.createInspectionHandler());
-            case(#Tenant(action)) applyHandler<TenantCArg, TenantUArg, TenantUnstable>(arg, action, Operational.createTenantHandler());
-            case(#Valuations(action)) applyHandler<ValuationRecordCArg, ValuationRecordUArg, ValuationRecordUnstable>(arg, action, Financials.createValuationHandler());
-            case(#Images(action)) applyHandler<Text, Text, Text>(arg, action, Details.createImageHandler());
-            case(#Financials(val)) applySimpleUpdate<FinancialsArg>(arg, val, Financials.currentValueHandler());
-            case(#MonthlyRent(val)) applySimpleUpdate<Nat>(arg, val, Financials.monthlyRentHandler());
-            case(#PhysicalDetails(val)) applySimpleUpdate<PhysicalDetails>(arg, val, Details.physicalDetailsHandler());
-            case(#AdditionalDetails(val)) applySimpleUpdate<AdditionalDetails>(arg, val, Details.additionalDetailsHandler());
-            case(#Description(val)) applySimpleUpdate<Text>(arg, val, Details.descriptionHandler());
-            case(#NFTMarketplace(val)) await NFTMarketplace.writeListings(val, property, caller);
+            case(#Insurance(action)) await Administrative.createInsuranceHandler(arg, action);
+            case(#Document(action)) await Administrative.createDocumentHandler(arg, action);
+            case(#Note(action)) await Administrative.createNoteHandler(arg, action);
+            case(#Maintenance(action)) await Operational.createMaintenanceHandler(arg, action);
+            case(#Inspection(action)) await Operational.createInspectionHandler(arg, action);
+            case(#Tenant(action)) await Operational.createTenantHandler(arg, action);
+            case(#Valuations(action)) await Financials.createValuationHandler(arg, action);
+            case(#Images(action)) await Details.createImageHandler(arg, action);
+            case(#Financials(val)) await Financials.currentValueHandler(arg, val);
+            case(#MonthlyRent(val)) await Financials.monthlyRentHandler(arg, val);
+            case(#PhysicalDetails(val)) await Details.physicalDetailsHandler(arg, val);
+            case(#AdditionalDetails(val)) await Details.additionalDetailsHandler(arg, val);
+            case(#Description(val)) await Details.descriptionHandler(arg, val);
+            case(#NftMarketplace(#FixedPrice(action))) await NFTMarketplace.createFixedPriceHandlers(arg, action);
+            case(#NftMarketplace(#Auction(action))) await NFTMarketplace.createAuctionHandlers(arg, action);
+            case(#NftMarketplace(#Launch(action))) await NFTMarketplace.createLaunchHandlers(arg, action);
+            case(#NftMarketplace(#Bid(action))) await NFTMarketplace.createBidHandlers(arg, action);
+            case(#Governance(#Vote(action))) await Governance.voteHandler(arg, action);
+            case(#Governance(#Proposal(action))) await Governance.createProposalHandlers(arg, action);
+            case(#Invoice(action)) await Invoices.createInvoiceHandler(arg, action);
         }
     };
 
@@ -394,7 +355,7 @@ module Property {
     func updatesReadHandler(arg: {#All; #Err; #Ok}): SimpleReadHandler<[Result]>{
         {
             toEl = func(p: Property) : [Result] = p.updates;
-            cond = func(arr) = resultCond<What,UpdateError>(arr, arg);
+            cond = func(arr) = resultCond<Types.OkUpdateResult,UpdateError>(arr, arg);
         }
     };
 
@@ -436,6 +397,27 @@ module Property {
             filter = null; 
             cond = func(el: Listing): ReadOutcome<Listing> {
                 if(matchAcc(el, arg.account, arg.ltype) and NFTMarketplace.tagMatching(el, arg.listingType)) #Ok(el) else #Err(#DidNotMatchConditions);
+            };
+        }
+    };
+
+    
+    func proposalReadHandler(arg: Types.ProposalConditionals): ReadHandler<Types.Proposal>{
+        {
+            toEl = func(p) = p.governance.proposals;
+            filter = null; 
+            cond = func(el: Proposal): ReadOutcome<Proposal> {
+                Governance.matchProposalConditions(el, arg);
+            };
+        }
+    };
+
+    func invoiceReadHandler(arg: Types.InvoiceConditionals): ReadHandler<Invoice>{
+        {
+            toEl = func(p) = p.financials.invoices;
+            filter = null; 
+            cond = func(el: Invoice): ReadOutcome<Invoice> {
+                Invoices.filterInvoices(el, arg);
             };
         }
     };
@@ -503,6 +485,8 @@ module Property {
                 case(#Listings(arg)) #Listings(applyReadArgs<Listing>(args, arg.base, listingsReadHandler(arg.conditionals))); 
                 case(#UpdateResults(arg)) #UpdateResults(returnPropertyElement<[Result]>(args, arg.selected, updatesReadHandler(arg.conditional))); 
                 case(#Refunds(arg)) #Refunds(applyReadArgs<[Refund]>(args, arg.nested, refundsReadHandler(arg.conditionals))); 
+                case(#Proposals(arg)) #Proposals(applyReadArgs<Proposal>(args, arg.base, proposalReadHandler(arg.conditionals))); 
+                case(#Invoices(arg)) #Invoices(applyReadArgs<Invoice>(args, arg.base, invoiceReadHandler(arg.conditionals))); 
             };
             buff.add(result);
         };

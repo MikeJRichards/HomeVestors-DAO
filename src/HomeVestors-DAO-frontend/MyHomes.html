@@ -6,42 +6,926 @@
  <meta charset="UTF-8" />
  <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
- <title>IC Home Page</title>
+ <title>IC Hello Starter</title>
 
 
- <link rel="stylesheet" href="homepage.css">
- <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./src/styles/All.css">
+ <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer" />
+ <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+
+
+
+
+
+ <link rel="stylesheet" href="./src/styles/All.css">
  <link rel="stylesheet" href="./src/styles/MyHomes.css">
 </head>
 
 
+
+
 <body>
-
-
  <nav>
-   <a class="logo" href="./index.html" >
+   <a class="logo" href="">
      <img id="logo" src="assets/FullLogo_Transparent_NoBuffer (4).png" alt="Logo">
-     <h1><span class="hvdao">H</span><span class="other">ome</span><span class="hvdao">V</span><span class="other">estors</span> <span class="hvdao">DAO</span></h1>
+     <h1 class="hvd-title"><span class="hvdao">H</span><span class="other">ome</span><span class="hvdao">V</span><span class="other">estors</span> <span class="hvdao">DAO</span></h1>
    </a>
-   <div class="nav_end">
+    <div id="nav_end">
      <div class="nav_menu">
-       <a class="nav_headings"  href="./AboutUs.html">About Us</a>
-       <a class="nav_headings"  href="./marketplace.html">Market Place</a>
-       <a class="nav_headings"  href="./MyHomes.html">My Homes</a>
-       <a class="nav_headings"  href="./MyProposals.html">My Proposals</a>
+       <a class="nav_headings" href="./AboutUs.html">About Us</a>
+       <a class="nav_headings" href="./marketplace.html">Market Place</a>
+       <a class="nav_headings" href="./MyHomes.html">My Homes</a>
+       <a class="nav_headings" href="./MyProposals.html">My Proposals</a>
      </div>
-     <button class="btn" id="connect_btn">Connect</button>
+     <i id="hamburger" class="fas fa-bars"></i>
+     <button id="connect_btn">Connect</button>
+          <a  id="NavWallet" class="nav_headings active hidden" href="./Balance.html"><i class="fa-solid fa-wallet" id="wallet_cp"></i></a>
    </div>
-</nav>
+ </nav>
 
 
-<div class="page_content">
+  <!-- Mobile dropdown menu -->
+ <div id="mobile_nav_menu" class="mobile-hidden">
+   <a href="./AboutUs.html">About Us</a>
+   <a href="./marketplace.html">Market Place</a>
+   <a href="./MyHomes.html">My Homes</a>
+   <a href="./MyProposals.html">My Proposals</a>
+   <button id="connect_btn_mob">Connect</button>
+ </div>
+
+
+ <!-- Main Body-->
+ <div id="page-content">
+   <div id="dashboardHeader" >
+     <div class="property-dropdown-container">
+       <label for="propertyDropdown" class="property-dropdown-label">Select Property</label>
+       <select id="propertyDropdown" class="property-dropdown">
+       </select>
+     </div>
+
+
+     <div id="dashboardHeaderButtons" >
+       <button class="btn dashBtn">Manage Proposals</button>
+       <button class="btn dashBtn">Manage NFTs</button>
+     </div>
+   </div>
+
+
+
+
+   <div id="mh-mainpage">
+     <div id="summaryCards">
+       <div id="Image" class="dashCards Summary" >
+         <img id="Thumbnail_Img" src="./assets/houseimg.jpg" alt="">
+       </div>
+       <div id="SummaryInfo" class="dashCards Summary" >
+         <div class="data">
+           <p class="mhSummary h3 text-p bold-text-p">Property Value:</p>
+           <p class="text-p" id="CurrentValue" data-role="CurrentValue" >£200,000</p>
+         </div>
+         <div class="data">
+           <p class="mhSummary h3 text-p bold-text-p">Rent pcm:</p>
+           <p class="text-p" id="CurrentRent" data-role="CurrentRent" >£1,000</p>
+         </div>
+         <div class="data">
+           <p class="mhSummary h3 text-p bold-text-p">Rental Status:</p>
+           <p class="text-p" id="Status" data-role="Status">Occupied</p><!-- Vacant, notice given, eviction in progress, maintenace-->
+         </div>
+         <div class="data">
+           <p class="mhSummary h3 text-p bold-text-p">Total Maintenance:</p>
+           <p class="text-p" id="TotalMaintenance" data-role="TotalMaintenance">£500</p>
+         </div>
+         <div class="data">
+           <p class="mhSummary h3 text-p bold-text-p">Total Rental Profit:</p>
+           <p class="text-p" id="TotalProfit" data-role="TotalProfit">£5000</p>
+         </div>
+       </div>
+      
+       <div id="Documents" class="dashCards Summary" >
+         <p class="h3 bold-text-p mhSummary">Documents </p>
+         <a class="text-p aDoc" data-role="GasCert" href="">Gas certificates</a> <br>
+         <a class="text-p aDoc" data-role="EPC" href="">EPC (Energy Performance Certificate)</a> <br>
+         <a class="text-p aDoc" data-role="Insurance" href="">Landlord insurance documents</a><br>
+         <a class="text-p aDoc" data-role="Elec" href="">Electricl Safety Certificate</a><br>
+         <a class="text-p aDoc" data-role="Inv" href="">Inventory</a>
+       </div>
+     </div>
+
+
+     <div id="otherCards" >
+       <div id="TennantLog" class="dashCards Other" >
+         <div class="cardTopHead">
+           <p class="h3 bold-text-p mhOther-h3">Tennant Log</p>
+           <div class="view-container">
+             <a class="view-link" id="view-tennantlog" target="_blank" rel="noopener noreferrer">
+               View <i class="fas fa-up-right-from-square"></i> 
+             </a>
+           </div>
+         </div>
+         <div class="mh-tables-container" >
+           <table class="mh-tables" id="TennantLogTable">
+             <thead>
+               <tr>
+                 <th>Date</th>
+                 <th>Status</th>
+               </tr>
+             </thead>
+             <tbody>
+               <tr>
+                 <td class="date">12/3/2025</td>
+                 <td class="rentStatus">Rental contract signed</td>
+               </tr>
+               <tr>
+                 <td class="date">10/4/2025</td>
+                 <td class="rentStatus">Tennancy Renewed</td>
+               </tr>
+               <tr>
+                 <td class="date">1/5/2025</td>
+                 <td class="rentStatus">Notice Given</td>
+               </tr>
+               <tr>
+                 <td class="date">12/6/2025</td>
+                 <td class="rentStatus">Tennancy Ended</td>
+               </tr>
+             </tbody>
+           </table>
+         </div>
+       </div>
+      
+       <div id="RentalProfit" class="dashCards Other" >
+         <div class="cardTopHead">
+           <p class="h3 bold-text-p mhOther-h3">Monthly Profit</p>
+           <div class="view-container">
+             <a class="view-link" id="view-rentalprofit" target="_blank" rel="noopener noreferrer">
+               View <i class="fas fa-up-right-from-square"></i>
+             </a>
+           </div>
+         </div>
+         <div class="mh-tables-container" >
+           <table class="mh-tables" id="RentProfitTable">
+             <thead>
+               <tr>
+                 <th>Date</th>
+                 <th>Profit</th>
+               </tr>
+             </thead>
+             <tbody>
+               <tr>
+                 <td class="Month-date">03/2025</td>
+                 <td class="rentStatus">£800</td>
+               </tr>
+               <tr>
+                 <td class="Month-date">04/2025</td>
+                 <td class="rentStatus">£800</td>
+               </tr>
+               <tr>
+                 <td class="Month-date">05/2025</td>
+                 <td class="rentStatus">£900</td>
+               </tr>
+               <tr>
+                 <td class="Month-date">06/2025</td>
+                 <td class="rentStatus">£950</td>
+               </tr>
+             </tbody>
+           </table>
+         </div>
+       </div>
+      
+       <div id="PropertyValue" class="dashCards Other" >
+         <div class="cardTopHead">
+           <p class="h3 bold-text-p mhOther-h3">Property value information</p>
+           <div class="view-container">
+             <a class="view-link" id="view-prpertyvalue" target="_blank" rel="noopener noreferrer">
+               View <i class="fas fa-up-right-from-square"></i>
+             </a>
+           </div>
+         </div>
+         <div class="mh-tables-container" >
+           <table class="mh-tables" id="PropertyValueTable">
+             <thead>
+               <tr>
+                 <th>Date</th>
+                 <th>Valuation</th>
+               </tr>
+             </thead>
+             <tbody>
+               <tr>
+                 <td class="Month-date">03/2025</td>
+                 <td class="propVal">£800</td>
+               </tr>
+               <tr>
+                 <td class="Month-date">04/2025</td>
+                 <td class="propVal">£800</td>
+               </tr>
+               <tr>
+                 <td class="Month-date">05/2025</td>
+                 <td class="propVal">£900</td>
+               </tr>
+               <tr>
+                 <td class="Month-date">06/2025</td>
+                 <td class="propVal">£950</td>
+               </tr>
+             </tbody>
+           </table>
+         </div>
+       </div>
+      
+       <div id="Inspections" class="dashCards Other" >
+         <div class="cardTopHead">
+           <p class="h3 bold-text-p mhOther-h3">Inspections/ feedback</p>
+           <div class="view-container">
+             <a class="view-link" id="view-inspections" target="_blank" rel="noopener noreferrer">
+               View <i class="fas fa-up-right-from-square"></i>
+             </a>
+           </div>
+         </div>
+         <div class="mh-tables-container" >
+           <table class="mh-tables" id="InspectionsTable">
+             <thead>
+               <tr>
+                 <th>Date</th>
+                 <th>Feedback</th>
+                 <th>Report</th>
+               </tr>
+             </thead>
+             <tbody>
+               <tr>
+                 <td class="date">12/03/2025</td>
+                 <td class="inspectionResult">£800</td>
+                 <td><a class="text-p aDocMainBody" data-role="inspectionDoc" href="">Document</a></td>
+               </tr>
+               <tr>
+                 <td class="date">12/04/2025</td>
+                 <td class="inspectionResult">£800</td>
+                 <td><a class="text-p aDocMainBody" data-role="inspectionDoc" href="">Document</a></td>
+               </tr>
+               <tr>
+                 <td class="date">12/05/2025</td>
+                 <td class="inspectionResult">£900</td>
+                 <td><a class="text-p aDocMainBody" data-role="inspectionDoc" href="">Document</a></td>
+               </tr>
+               <tr>
+                 <td class="date">12/06/2025</td>
+                 <td class="inspectionResult">£950</td>
+                 <td><a class="text-p aDocMainBody" data-role="inspectionDoc" href="">Document</a></td>
+               </tr>
+             </tbody>
+           </table>
+         </div>
+       </div>
+
+
+       <div id="Maintenance" class="dashCards Other" >
+         <div class="cardTopHead">
+           <p class="h3 bold-text-p mhOther-h3">Maintenance expences </p>
+           <div class="view-container">
+             <a class="view-link" id="view-maintenance" target="_blank" rel="noopener noreferrer">
+               View <i class="fas fa-up-right-from-square"></i>
+             </a>
+           </div>
+         </div>
+         <div class="mh-tables-container" >
+           <table class="mh-tables" id="MaintenanceTable">
+             <thead>
+               <tr>
+                 <th>Date</th>
+                 <th>Maintenance</th>
+                 <th>Cost</th>
+               </tr>
+             </thead>
+             <tbody>
+               <tr>
+                 <td class="date">12/6/2025</td>
+                 <td class="maintenance">Fix Kitchen tap</td>
+                 <td class="maintenanceCost">£30.00</td>
+               </tr>
+               <tr>
+                 <td class="date">12/6/2025</td>
+                 <td class="maintenance">New carpets througout</td>
+                 <td class="maintenanceCost">£750.00</td>
+               </tr>
+               <tr>
+                 <td class="date">12/6/2025</td>
+                 <td class="maintenance">New back door</td>
+                 <td class="maintenanceCost">£500.00</td>
+               </tr>
+             </tbody>
+           </table>
+         </div>
+       </div>
+
+
+       <div id="NFTvalue" class="dashCards Other" >
+         <div class="cardTopHead">
+           <p class="h3 bold-text-p mhOther-h3">NFT value </p>
+           <div class="view-container">
+             <a class="view-link" id="view-nftvalue" target="_blank" rel="noopener noreferrer">
+               View <i class="fas fa-up-right-from-square"></i>
+             </a>
+           </div>
+         </div>
+       </div>
+
+
+       <div id="Occupency" class="dashCards Other" >
+         <div class="cardTopHead">
+           <p class="h3 bold-text-p mhOther-h3">occupency rate (annual)</p>
+           <div class="view-container">
+             <a class="view-link" id="view-occupency" target="_blank" rel="noopener noreferrer">
+               View <i class="fas fa-up-right-from-square"></i>
+             </a>
+           </div>
+         </div>
+         <div class="mh-tables-container" >
+           <table class="mh-tables" id="OccupencyTable">
+             <thead>
+               <tr>
+                 <th>Year</th>
+                 <th>Weeks Vacant</th>
+                 <th>Occupency Rate</th>
+               </tr>
+             </thead>
+             <tbody>
+               <tr>
+                 <td class="year">2025</td>
+                 <td class="weeksVacant">0</td>
+                 <td class="OccRate">100%</td>
+               </tr>
+               <tr>
+                 <td class="year">2024</td>
+                 <td class="weeksVacant">3</td>
+                 <td class="OccRate">94.23%</td>
+               </tr>
+               <tr>
+                 <td class="year">2023</td>
+                 <td class="weeksVacant">0</td>
+                 <td class="OccRate">100%</td>
+               </tr>
+               <tr>
+                 <td class="year">2022</td>
+                 <td class="weeksVacant">3</td>
+                 <td class="OccRate">94.23%</td>
+               </tr>
+               <tr>
+                 <td class="year">2021</td>
+                 <td class="weeksVacant">0</td>
+                 <td class="OccRate">100%</td>
+               </tr>
+             </tbody>
+           </table>
+         </div>
+       </div>
+      
+       <div id="PaymentLog" class="dashCards Other" >
+         <div class="cardTopHead">
+           <p class="h3 bold-text-p mhOther-h3">rental payment log</p>
+           <div class="view-container">
+             <a class="view-link" id="view-paymentlog" target="_blank" rel="noopener noreferrer">
+               View <i class="fas fa-up-right-from-square"></i>
+             </a>
+           </div>
+         </div>
+         <div class="mh-tables-container" >
+           <table class="mh-tables" id="PaymentLogTable">
+             <thead>
+               <tr>
+                 <th>Date</th>
+                 <th>Rent Payment</th>
+               </tr>
+             </thead>
+             <tbody>
+               <tr>
+                 <td class="Month-date">06/2025</td>
+                 <td class="rent">£950</td>
+               </tr>
+               <tr>
+                 <td class="Month-date">07/2025</td>
+                 <td class="rent">£950</td>
+               </tr>
+               <tr>
+                 <td class="Month-date">08/2025</td>
+                 <td class="rent">£950</td>
+               </tr>
+               <tr>
+                 <td class="Month-date">09/2025</td>
+                 <td class="rent">£950</td>
+               </tr>
+             </tbody>
+           </table>
+         </div>
+       </div>
+      
+       <div id="Proposals" class="dashCards Other" >
+         <div class="cardTopHead">
+           <p class="h3 bold-text-p mhOther-h3">Proposals</p>
+           <div class="view-container">
+             <a href="./MyProposals.html" class="view-link" target="_blank" rel="noopener noreferrer" id="proposalView">
+               View <i class="fas fa-up-right-from-square"></i>
+             </a>
+           </div>
+         </div>
+         <div class="mh-tables-container" >
+           <table class="mh-tables" id="ProposalsTable">
+             <thead>
+               <tr>
+                 <th>Date</th>
+                 <th>Proposal</th>
+                 <th class="catagory">Category</th>
+                 <th>Status</th>
+               </tr>
+             </thead>
+             <tbody>
+               <tr>
+                 <td class="date">13/6/2025</td>
+                 <td class="proposal">Increase rent</td>
+                 <td class="catagory">Rent value</td>
+                 <td class="status" >Pending</td>
+               </tr>
+               <tr>
+                 <td class="date">10/4/2025</td>
+                 <td class="proposal">Buy new boiler</td>
+                 <td class="catagory">Maintenance Issue</td>
+                 <td class="status">Accepted</td>
+               </tr>
+               <tr>
+                 <td class="date">1/3/2025</td>
+                 <td class="proposal">Fix tap</td>
+                 <td class="catagory">Maintenance Issue</td>
+                 <td class="status">Accepted</td>
+               </tr>
+             </tbody>
+           </table>
+         </div>
+         <!-- rent status: pending, live, accepted, rejected -->
+       </div>
+      
+       <div id="Activity" class="dashCards Other" >
+         <div class="cardTopHead">
+           <p class="h3 bold-text-p mhOther-h3">Activity</p>
+           <div class="view-container">
+             <a class="view-link" target="_blank" rel="noopener noreferrer" id="view-activityModal">
+               View <i class="fas fa-up-right-from-square"></i>
+             </a>
+           </div>
+         </div>
+         <div class="mh-tables-container" >
+           <table class="mh-tables" id="ActivityTable">
+             <thead>
+               <tr>
+                 <th>Date</th>
+                 <th>Activity</th>
+               </tr>
+             </thead>
+             <tbody>
+               <tr>
+                 <td class="date">13/6/2025</td>
+                 <td class="activity">Increase rent</td>
+               </tr>
+               <tr>
+                 <td class="date">13/6/2025</td>
+                 <td class="activity">Rental agreement signed</td>
+               </tr>
+               <tr>
+                 <td class="date">10/4/2025</td>
+                 <td class="activity">Tennancy initiated</td>
+               </tr>
+               <tr>
+                 <td class="date">1/3/2025</td>
+                 <td class="activity">Rent paid </td>
+               </tr>
+               <tr>
+                 <td class="date">1/2/2025</td>
+                 <td class="activity">Rent paid</td>
+               </tr>
+               <tr>
+                 <td class="date">1/1/2025</td>
+                 <td class="activity">Rent paid </td>
+               </tr>
+             </tbody>
+           </table>
+         </div>
+       </div>
+      
+       <div id="14" class="dashCards Other" >
+         <div class="cardTopHead">
+           <p class="h3 bold-text-p mhOther-h3"></p>
+           <div class="view-container">
+             <a href="https://example.com" class="view-link" target="_blank" rel="noopener noreferrer">
+               View <i class="fas fa-up-right-from-square"></i>
+             </a>
+           </div>
+         </div>
+       </div>
+
+
+       <div id="15" class="dashCards Other" >
+         <div class="cardTopHead">
+           <p class="h3 bold-text-p mhOther-h3"></p>
+           <div class="view-container">
+             <a href="https://example.com" class="view-link" target="_blank" rel="noopener noreferrer">
+               View <i class="fas fa-up-right-from-square"></i>
+             </a>
+           </div>
+         </div>
+       </div>
+     </div>
+   </div>
+ </div>
+
+
+ <!-- Modals-->
+ <div id="tenantLogModal" class="modal hidden">
+   <div class="modal-content">
+     <span class="close" id="closeTenantLogModal">&times;</span>
+     <div class="modalTitle-container">
+       <h3 class="h3 bold-text-p mhOther-h3">Full Tenant Log</h3>
+     </div>
+     <table class="MT-tenantLog" id="modal-table">
+       <thead>
+         <tr>
+           <th>Date</th>
+           <th>Status</th>
+         </tr>
+       </thead>
+       <tbody>
+         <tr>
+           <td class="date">12/3/2025</td>
+           <td class="rentStatus">Rental contract signed</td>
+         </tr>
+         <tr>
+           <td class="date">10/4/2025</td>
+           <td class="rentStatus">Tennancy Renewed</td>
+         </tr>
+         <tr>
+           <td class="date">1/5/2025</td>
+           <td class="rentStatus">Notice Given</td>
+         </tr>
+         <tr>
+           <td class="date">12/6/2025</td>
+           <td class="rentStatus">Tennancy Ended</td>
+         </tr>
+         <tr>
+           <td class="date">10/4/2025</td>
+           <td class="rentStatus">Tennancy Renewed</td>
+         </tr>
+         <tr>
+           <td class="date">1/5/2025</td>
+           <td class="rentStatus">Notice Given</td>
+         </tr>
+         <tr>
+           <td class="date">12/6/2025</td>
+           <td class="rentStatus">Tennancy Ended</td>
+         </tr>
+         <tr>
+           <td class="date">12/3/2025</td>
+           <td class="rentStatus">Rental contract signed</td>
+         </tr>
+         <tr>
+           <td class="date">10/4/2025</td>
+           <td class="rentStatus">Tennancy Renewed</td>
+         </tr>
+         <tr>
+           <td class="date">1/5/2025</td>
+           <td class="rentStatus">Notice Given</td>
+         </tr>
+         <tr>
+           <td class="date">12/6/2025</td>
+           <td class="rentStatus">Tennancy Ended</td>
+         </tr>
+       </tbody>
+     </table>
+   </div>
+ </div>
+
+
+ <div id="rentalProfitModal" class="modal hidden">
+
+
+   <div class="modal-content">
+     <span class="close" id="closeRentalProfitModal">&times;</span>
+     <div class="modalTitle-container">
+       <h3 class="h3 bold-text-p mhOther-h3">Rental Profit</h3>
+     </div>
+     <table class="modal-table" id="MT-rentalProfit">
+       <thead>
+         <tr>
+           <th>Date</th>
+           <th>Profit</th>
+         </tr>
+       </thead>
+       <tbody>
+         <tr>
+           <td class="Month-date">03/2025</td>
+           <td class="rentStatus">£800</td>
+         </tr>
+         <tr>
+           <td class="Month-date">04/2025</td>
+           <td class="rentStatus">£800</td>
+         </tr>
+         <tr>
+           <td class="Month-date">05/2025</td>
+           <td class="rentStatus">£900</td>
+         </tr>
+         <tr>
+           <td class="Month-date">06/2025</td>
+           <td class="rentStatus">£950</td>
+         </tr>
+       </tbody>
+     </table>
+   </div>
+ </div>
+
+
+ <div id="PropertyValueModal" class="modal hidden">
+   <div class="modal-content">
+     <span class="close" id="closePropertyValueModal">&times;</span>
+     <div class="modalTitle-container">
+       <h3 class="h3 bold-text-p mhOther-h3">property value</h3>
+     </div>
+     <table class="modal-table" id="MT-PropertyValueTable">
+       <thead>
+         <tr>
+          <th>id</th>
+           <th>Date</th>
+           <th>Valuation</th>
+           <th>Method</th>
+           <th>Appraiser</th>
+         </tr>
+       </thead>
+       <tbody>
+         <tr>
+           <td class="Month-date">03/2025</td>
+           <td class="propVal">£800</td>
+         </tr>
+         <tr>
+           <td class="Month-date">04/2025</td>
+           <td class="propVal">£800</td>
+         </tr>
+         <tr>
+           <td class="Month-date">05/2025</td>
+           <td class="propVal">£900</td>
+         </tr>
+         <tr>
+           <td class="Month-date">06/2025</td>
+           <td class="propVal">£950</td>
+         </tr>
+       </tbody>
+     </table>
+   </div>
+ </div>
+
+
+ <div id="InspectionsModal" class="modal hidden">
+   <div class="modal-content">
+     <span class="close" id="closeInspectionsModal">&times;</span>
+     <div class="modalTitle-container">
+       <h3 class="h3 bold-text-p mhOther-h3">Inspections</h3>
+     </div>
+     <table class="modal-table" id="MT-InspectionsTable">
+       <thead>
+         <tr>
+            <th>Date</th>
+            <th>Feedback</th>
+            <th>Inspector</th>
+            <th>Appraiser</th>
+            <th>Action Required</th>
+            <th>Follow-up Date</th>
+            <th>Report</th>
+         </tr>
+       </thead>
+       <tbody>
+         <tr>
+           <td class="date">12/03/2025</td>
+           <td class="inspectionResult">£800</td>
+           <td><a class="text-p aDocMainBody" data-role="inspectionDoc" href="">Document</a></td>
+         </tr>
+         <tr>
+           <td class="date">12/04/2025</td>
+           <td class="inspectionResult">£800</td>
+           <td><a class="text-p aDocMainBody" data-role="inspectionDoc" href="">Document</a></td>
+         </tr>
+         <tr>
+           <td class="date">12/05/2025</td>
+           <td class="inspectionResult">£900</td>
+           <td><a class="text-p aDocMainBody" data-role="inspectionDoc" href="">Document</a></td>
+         </tr>
+         <tr>
+           <td class="date">12/06/2025</td>
+           <td class="inspectionResult">£950</td>
+           <td><a class="text-p aDocMainBody" data-role="inspectionDoc" href="">Document</a></td>
+         </tr>
+       </tbody>
+     </table>
+   </div>
+ </div>
+
+  <div id="MaintenanceModal" class="modal hidden">
+   <div class="modal-content">
+     <span class="close" id="closeMaintenanceModal">&times;</span>
+     <div class="modalTitle-container">
+       <h3 class="h3 bold-text-p mhOther-h3">Maintenance expences</h3>
+     </div>
+     <table class="modal-table" id="MT-MaintenanceTable">
+       <thead>
+         <tr>
+           <th>Date</th>
+           <th>Maintenance</th>
+           <th>Cost</th>
+         </tr>
+       </thead>
+       <tbody>
+         <tr>
+           <td class="date">12/6/2025</td>
+           <td class="maintenance">Fix Kitchen tap</td>
+           <td class="maintenanceCost">£30.00</td>
+         </tr>
+         <tr>
+           <td class="date">12/6/2025</td>
+           <td class="maintenance">New carpets througout</td>
+           <td class="maintenanceCost">£750.00</td>
+         </tr>
+         <tr>
+           <td class="date">12/6/2025</td>
+           <td class="maintenance">New back door</td>
+           <td class="maintenanceCost">£500.00</td>
+         </tr>
+       </tbody>
+     </table>
+   </div>
+ </div>
+
+
+ <div id="NFTvalueModal" class="modal hidden">
+   <div class="modal-content">
+     <span class="close" id="closeNFTvalueModal">&times;</span>
+     <div class="modalTitle-container">
+       <h3 class="h3 bold-text-p mhOther-h3">NFT Value</h3>
+     </div>
+     <div id="MT-NFTValueTable" class="modal-table">
   
-</div>
+     </div>
+   </div>
+ </div>
 
+
+ <div id="OccupencyModal" class="modal hidden">
+   <div class="modal-content">
+     <span class="close" id="closeOccupencyModal">&times;</span>
+     <div class="modalTitle-container">
+       <h3 class="h3 bold-text-p mhOther-h3">Occupency rate (annual)</h3>
+     </div>
+     <table class="modal-table" id="MT-OccupencyTable">
+       <thead>
+         <tr>
+           <th>Year</th>
+           <th>Weeks Vacant</th>
+           <th>Occupency Rate</th>
+         </tr>
+       </thead>
+       <tbody>
+         <tr>
+           <td class="year">2025</td>
+           <td class="weeksVacant">0</td>
+           <td class="OccRate">100%</td>
+         </tr>
+         <tr>
+           <td class="year">2024</td>
+           <td class="weeksVacant">3</td>
+           <td class="OccRate">94.23%</td>
+         </tr>
+         <tr>
+           <td class="year">2023</td>
+           <td class="weeksVacant">0</td>
+           <td class="OccRate">100%</td>
+         </tr>
+         <tr>
+           <td class="year">2022</td>
+           <td class="weeksVacant">3</td>
+           <td class="OccRate">94.23%</td>
+         </tr>
+         <tr>
+           <td class="year">2021</td>
+           <td class="weeksVacant">0</td>
+           <td class="OccRate">100%</td>
+         </tr>
+       </tbody>
+     </table>
+   </div>
+ </div>
+
+
+ <div id="PaymentLogModal" class="modal hidden">
+   <div class="modal-content">
+     <span class="close" id="closePaymentLogModal">&times;</span>
+     <div class="modalTitle-container">
+       <h3 class="h3 bold-text-p mhOther-h3">rental payment log</h3>
+     </div>
+     <table class="modal-table" id="MT-PaymentLogTable">
+       <thead>
+         <tr>
+           <th>Date</th>
+           <th>Rent Payment</th>
+         </tr>
+       </thead>
+       <tbody>
+         <tr>
+           <td class="Month-date">06/2025</td>
+           <td class="rent">£950</td>
+         </tr>
+         <tr>
+           <td class="Month-date">07/2025</td>
+           <td class="rent">£950</td>
+         </tr>
+         <tr>
+           <td class="Month-date">08/2025</td>
+           <td class="rent">£950</td>
+         </tr>
+         <tr>
+           <td class="Month-date">09/2025</td>
+           <td class="rent">£950</td>
+         </tr>
+       </tbody>
+     </table>
+   </div>
+ </div>
+
+
+ <div id="ActivityModal" class="modal hidden">
+   <div class="modal-content">
+     <span class="close" id="closeActivityModal">&times;</span>
+     <div class="modalTitle-container">
+       <h3 class="h3 bold-text-p mhOther-h3">rental payment log</h3>
+     </div>
+     <table class="modal-table" id="MT-ActivityTable">
+       <thead>
+         <tr>
+           <th>Date</th>
+           <th>Activity</th>
+         </tr>
+       </thead>
+       <tbody>
+         <tr>
+           <td class="date">13/6/2025</td>
+           <td class="activity">Increase rent</td>
+         </tr>
+         <tr>
+           <td class="date">13/6/2025</td>
+           <td class="activity">Rental agreement signed</td>
+         </tr>
+         <tr>
+           <td class="date">10/4/2025</td>
+           <td class="activity">Tennancy initiated</td>
+         </tr>
+         <tr>
+           <td class="date">1/3/2025</td>
+           <td class="activity">Rent paid </td>
+         </tr>
+         <tr>
+           <td class="date">1/2/2025</td>
+           <td class="activity">Rent paid</td>
+         </tr>
+         <tr>
+           <td class="date">1/1/2025</td>
+           <td class="activity">Rent paid </td>
+         </tr>
+       </tbody>
+     </table>
+   </div>
+ </div>
+
+
+
+
+ <!-- FOOTER-->
+ <footer>
+   <div class="footer-social">
+     <a href="https://x.com/yourhandle" aria-label="Twitter"><i class="fab fa-x-twitter"></i></a>
+     <a href="https://facebook.com/yourpage" aria-label="Facebook"><i class="fab fa-facebook"></i></a>
+     <a href="https://instagram.com/yourpage" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+     <a href="https://oc.app/yourchat" aria-label="OpenChat"><i class="fas fa-comments"></i></a>
+     <a href="https://github.com/yourrepo" aria-label="GitHub"><i class="fab fa-github"></i></a>
+   </div>
+    <div class="footer-content">
+     <div class="footer-left">
+       <div id="footer-logo-div">
+         <img id="footer-logo" src="assets/FullLogo_Transparent_NoBuffer (4).png" alt="logo">
+         <p><strong><span class="hvdao">H</span>ome<span class="hvdao">V</span>estors <span class="hvdao">DAO</span></strong></p>
+       </div>
+       <p>Â© 2025 HomeVestors DAO. All rights reserved.</p>
+     </div>
+      <div class="footer-links">
+       <a href="/whitepaper.pdf">Whitepaper</a>
+       <a href="/faqs.html">FAQs</a>
+       <!-- Add more if needed -->
+     </div>
+    </div>
+    <div class="footer-disclaimer">
+     <p>Participation in governance is required to receive any rental rewards.</p>
+     <p>NFTs do not represent ownership or passive income rights.</p>
+   </div>
+ </footer>
 
  <script src="./src/main.js" type="module"></script>
 <script src="./src/scripts/MyHomes.js" type="module"></script>
@@ -49,4 +933,6 @@
 
 
 </html>
+
+
 

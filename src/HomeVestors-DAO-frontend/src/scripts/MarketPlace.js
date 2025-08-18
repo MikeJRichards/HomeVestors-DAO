@@ -242,6 +242,7 @@ async function loadProperties() {
         let backend = await getCanister("backend");
         console.log(backend);
         const results = await backend.readProperties(readArgs, []);
+        console.log(results);
     
         let listings = results[5].Listings[0].result.Ok;
         console.log(listings);
@@ -270,14 +271,13 @@ async function loadProperties() {
             let launches = results[5].Listings[i].result.Ok
             .filter(item => item.value.Ok && "LaunchedProperty" in item.value.Ok)
             .map(item => item.value.Ok.LaunchedProperty);
+            console.log(launches);
             
             for(let n = 0; n < launches.length; n++){
-              //get ids for every fixed price listing from this launch
-              const ids = launches[n].args.map(item => item[0]); // Extract the first element of each inner array
               //get only listings that match these ids. 
-              let activeListings =  results[6].Listings[i].result.Ok
-                .filter(item => item.value.Ok && ids.includes(item.value.Ok.LaunchFixedPrice.id))
-                .map(item => item.value.Ok.LaunchFixedPrice);
+              let activeListings = results[6].Listings[i].result.Ok
+              .filter(item => item.value.Ok && launches[n].listIds.includes(item.value.Ok.LaunchFixedPrice.id))
+              .map(item => item.value.Ok.LaunchFixedPrice);
               data.push({
                 id: Number(results[0].Physical[i].id),
                 physical: results[0].Physical[i].value.Ok,
@@ -309,8 +309,8 @@ async function loadProperties() {
         location: property.location.location,
         outcode: property.location.postcode.slice(0, 4),
         description: property.misc.description,
-        sold: property.LaunchedProperties.args.length - property.fixedPriceListings.length, // Example: NFTs sold
-        totalNFTs: property.LaunchedProperties.args.length // Total NFTs for this property
+        sold: property.LaunchedProperties.tokenIds.length - property.fixedPriceListings.length, // Example: NFTs sold
+        totalNFTs: property.LaunchedProperties.tokenIds.length // Total NFTs for this property
       });
       let tokenIds = property.fixedPriceListings.map(listing => Number(listing.id));
       container.appendChild(card);
@@ -359,7 +359,7 @@ export async function buyNFT(listingsIds, propertyId, price, quantity = 1){
     args.push({
       propertyId,
       what: {
-        NFTMarketplace: {
+        NftMarketplace: {
           Bid:{
             listingId: Number(listingsIds[i]),
             bidAmount: Number(price),

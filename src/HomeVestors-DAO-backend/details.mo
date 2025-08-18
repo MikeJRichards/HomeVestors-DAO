@@ -2,9 +2,10 @@ import Types "types";
 import UnstableTypes "Tests/unstableTypes";
 import Stables "Tests/stables";
 import Result "mo:base/Result";
+import PropHelper "propHelper";
 module {
     type SimpleHandler<T> = UnstableTypes.SimpleHandler<T>;
-    type Handler<C, U, T> = UnstableTypes.Handler<C, U, T>;
+    type Handler<T, StableT> = UnstableTypes.Handler<T, StableT>;
     type AdditionalDetails = Types.AdditionalDetails;
     type PhysicalDetails = Types.PhysicalDetails;
     type PropertyDetails = Types.PropertyDetails;
@@ -12,67 +13,128 @@ module {
     type PropertyUnstable = UnstableTypes.PropertyUnstable;
     type UpdateError = Types.UpdateError;
 
+  public func additionalDetailsHandler(args: Arg, arg: Types.AdditionalDetailsUArg): async UpdateResult {
+    type U = Types.AdditionalDetailsUArg;
+    type T = UnstableTypes.AdditionalDetailsUnstable;
+    type StableT = AdditionalDetails;
 
-    public func additionalDetailsHandler(): SimpleHandler<AdditionalDetails> {
-      {
-        validate = func(additionalDetails: AdditionalDetails): Result.Result<AdditionalDetails, UpdateError> {
-            if(additionalDetails.crimeScore <= 100) return #err(#InvalidData{field = "Crime Score"; reason = #OutOfRange});
-            if(additionalDetails.schoolScore > 10) return #err(#InvalidData{field = "School Score"; reason = #OutOfRange});
-            return #ok(additionalDetails);
-        };
+    func mutateAdditionalDetails(arg: U, details: T): T {
+      details.crimeScore := PropHelper.get(arg.crimeScore, details.crimeScore);
+      details.schoolScore := PropHelper.get(arg.schoolScore, details.schoolScore);
+      details.affordability := PropHelper.get(arg.affordability, details.affordability);
+      details.floodZone := PropHelper.get(arg.floodZone, details.floodZone);
+      details;
+    };
+    
+    func validateAdditionalDetails(details: T): Result.Result<T, UpdateError> {
+      if (details.crimeScore <= 100) return #err(#InvalidData{field = "Crime Score"; reason = #OutOfRange});
+      if (details.schoolScore > 10) return #err(#InvalidData{field = "School Score"; reason = #OutOfRange});
+      #ok(details);
+    };
+    
+    let handler = PropHelper.makeFlatHandler<U, T, StableT>(
+      arg,
+      Stables.fromStableAdditionalDetails(args.property.details.additional),
+      mutateAdditionalDetails,
+      validateAdditionalDetails,
+      Stables.toStableAdditionalDetails,
+      func(el: StableT) = #Details({ args.property.details with additional =el})
+    );
+    
+    await PropHelper.applyHandler(args, handler);
+  };
 
-        apply = func(arg: AdditionalDetails, p: PropertyUnstable) {
-           p.details.additional := Stables.fromStableAdditionalDetails(arg);
-        }
-      }
+  public func physicalDetailsHandler(args: Arg, arg: Types.PhysicalDetailsUArg): async UpdateResult {
+    type U = Types.PhysicalDetailsUArg;
+    type T = UnstableTypes.PhysicalDetailsUnstable;
+    type StableT = PhysicalDetails;
+    
+    let mutate = func(arg: U, details: T): T{
+      details.lastRenovation := PropHelper.get(arg.lastRenovation, details.lastRenovation);
+      details.yearBuilt := PropHelper.get(arg.yearBuilt, details.yearBuilt);
+      details.squareFootage := PropHelper.get(arg.squareFootage, details.squareFootage);
+      details.beds := PropHelper.get(arg.beds, details.beds);
+      details.baths := PropHelper.get(arg.baths, details.baths);
+      return details;
     };
 
-    public func physicalDetailsHandler(): SimpleHandler<PhysicalDetails> {
-      {
-        validate = func(physicalDetails: PhysicalDetails): Result.Result<PhysicalDetails, UpdateError> {
-            if(physicalDetails.lastRenovation <= 1900) return #err(#InvalidData{field = "renovation"; reason = #InaccurateData});
-            if(physicalDetails.beds > 10) return #err(#InvalidData{field = "beds"; reason = #InaccurateData});
-            if(physicalDetails.baths > 10) return #err(#InvalidData{field = "baths"; reason = #InaccurateData});
-            return #ok(physicalDetails);
-        };
-
-        apply = func(arg: PhysicalDetails, p: PropertyUnstable) {
-            p.details.physical := Stables.fromStablePhysicalDetails(arg);
-        }
-      }
+    let validate = func(physicalDetails: T): Result.Result<T, UpdateError> {
+      if(physicalDetails.lastRenovation <= 1900) return #err(#InvalidData{field = "renovation"; reason = #InaccurateData});
+      if(physicalDetails.beds > 10) return #err(#InvalidData{field = "beds"; reason = #InaccurateData});
+      if(physicalDetails.baths > 10) return #err(#InvalidData{field = "baths"; reason = #InaccurateData});
+      return #ok(physicalDetails);
     };
 
-    public func descriptionHandler(): SimpleHandler<Text> {
-      {
-        validate = func(arg: Text): Result.Result<Text, UpdateError> {
-           if(arg.size() == 0) return #err(#InvalidData{field = "description"; reason = #EmptyString;});
-            return #ok(arg);
-        };
+    let handler = PropHelper.makeFlatHandler<U, T, StableT>(
+      arg,
+      Stables.fromStablePhysicalDetails(args.property.details.physical),
+      mutate,
+      validate,
+      Stables.toStablePhysicalDetails,
+      func(el: StableT) = #Details({ args.property.details with physical =el})
+    );
 
-        apply = func(arg: Text, p: PropertyUnstable) {
-            p.details.misc.description := arg;
-        }
-      }
+    await PropHelper.applyHandler(args, handler);
+  };
+
+    public func descriptionHandler(args: Arg, arg: Text): async UpdateResult {
+      type U = Text;
+      type T = Text;
+      type StableT = Text;
+
+      let mutate = func(arg: U, _:T): T{
+        arg;
+      };
+
+      let validate = func(arg: T): Result.Result<T, UpdateError> {
+        if(arg.size() == 0) return #err(#InvalidData{field = "description"; reason = #EmptyString;});
+        return #ok(arg);
+      };
+
+      let handler = PropHelper.makeFlatHandler<U, T, StableT>(
+        arg,
+        args.property.details.misc.description,
+        mutate,
+        validate,
+        func(el:Text) = el,
+        func(el: StableT) = #Details({ args.property.details with misc ={args.property.details.misc with description = el }})
+      );
+
+      await PropHelper.applyHandler(args, handler);
     };
 
-    public func createImageHandler(): Handler<Text, Text, Text> {
-      {
-        map = func(p: PropertyUnstable) = p.details.misc.images;
 
-        getId = func(p: PropertyUnstable) = p.details.misc.imageId;
+    type Arg = Types.Arg;
+    type Actions<C,U> = Types.Actions<C,U>;
+    type CrudHandler<C, U, T, StableT> = UnstableTypes.CrudHandler<C, U, T, StableT>;
+    public func createImageHandler(args: Arg, action: Actions<Text, Text>): async UpdateResult {
+      type C = Text;
+      type U = Text;
+      type T = Text;
+      type StableT = Text;
+      type S = UnstableTypes.MiscellaneousPartialUnstable;
+      let misc = Stables.toPartialStableMiscellaneous(args.property.details.misc);
+      let map = misc.images;
+      let crudHandler: CrudHandler<C, U, T, StableT> = {
+        map;
+        var id = misc.imageId;
+        setId = func(id: Nat) = misc.imageId := id;
+        assignId = func(id: Nat, el: StableT) = (id, el);
+        delete = PropHelper.makeDelete(map);
+        fromStable = func(el: T) = el;
+        mutate = func(arg: U, image: T) = arg;
 
-        incrementId = func(p: PropertyUnstable) = p.details.misc.imageId += 1;
+        create = func(arg: C, id: Nat): T = arg;
 
-        mutate = func(arg: Text, image: Text) = arg;
-
-        create = func(arg: Text, id: Nat, caller: Principal): Text = arg;
-
-        validate = func(maybeImage: ?Text): Result.Result<Text, UpdateError> {
+        validate = func(maybeImage: ?T): Result.Result<T, UpdateError> {
             let image = switch(maybeImage){case(null) return #err(#InvalidElementId); case(?image) image};
             if(image.size() == 0) return #err(#InvalidData{field = "image"; reason = #EmptyString;});
             return #ok(image);
         }
-      }
-    };   
+      };      
+  
+      let handler = PropHelper.generateGenericHandler<C, U, T, StableT, S>(crudHandler, action, func(el: Text) = el, func(s: S) = #Details({args.property.details with misc = Stables.fromPartialStableMiscellaneous(s)}), misc);
+      await PropHelper.applyHandler<T, StableT>(args, handler);
+    };
 
 }

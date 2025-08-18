@@ -9,6 +9,7 @@ import HashMap "mo:base/HashMap";
 import Nat "mo:base/Nat";
 
 module UserNotifications {
+  
     type UsersNotifications = Types.UsersNotifications;
     type WhatWithPropertyId = Types.WhatWithPropertyId;
     type User = Types.User;

@@ -1,10 +1,8 @@
 import Types "types";
 import Prop "property";
-import Stables "Tests/stables";
 import Financial "financials";
 import NFT "nft";
 import Tokens "token";
-import NFTMarketplace "nftMarketplace";
 import UserNotifications "userNotifications";
 import PropHelper "propHelper";
 import Test "Tests/test";
@@ -21,7 +19,7 @@ import Nat64 "mo:base/Nat64";
 import IC "ic:aaaaa-aa";
 import Buffer "mo:base/Buffer";
 
-actor {
+persistent actor {
   type Property = Types.Property;
   type Properties = Types.Properties;
   type Error = Types.Error;
@@ -39,10 +37,10 @@ actor {
   type LaunchProperty = Types.LaunchProperty;
   type MintError = Types.MintError;
 
-  var properties : Properties = HashMap.HashMap<Nat, Property>(0, Nat.equal, PropHelper.natToHash);
-  var userNotifications = HashMap.HashMap<Account, User>(0, NFT.accountEqual, NFT.accountHash);
-  stable var stableProperties : [(Nat, Property)] = [];
-  stable var stableUserNotifications : [(Account, User)] = [];
+  transient var properties : Properties = HashMap.HashMap<Nat, Property>(0, Nat.equal, PropHelper.natToHash);
+  transient var userNotifications = HashMap.HashMap<Account, User>(0, NFT.accountEqual, NFT.accountHash);
+  var stableProperties : [(Nat, Property)] = [];
+  var stableUserNotifications : [(Account, User)] = [];
   var id = 0;
 
 
@@ -67,8 +65,8 @@ actor {
   };
 
   func handlePropertyUpdate(action: WhatWithPropertyId, caller: Principal): async UpdateResult {
-    let property = switch(properties.get(action.propertyId)){case(?p) p; case(null) return #Err(#InvalidPropertyId)};
-    switch(await Prop.updateProperty(action.what, caller, property)){
+    let property = switch(properties.get(action.propertyId)){case(?p) p; case(null) return #Err([(?action.propertyId, #InvalidPropertyId)])};
+    switch(await Prop.updateProperty({what = action.what; caller; property; handlePropertyUpdate; testing = false})){
       case(#Ok(updatedProperty)){
         properties.put(action.propertyId, updatedProperty);
         let updatedNotifications = await UserNotifications.addUserNotification(action, userNotifications, updatedProperty.nftMarketplace.collectionId);
@@ -76,11 +74,7 @@ actor {
         ignore NFT.handleNFTMetadataUpdate(action.what, updatedProperty);
         return #Ok(updatedProperty);
       };
-      case(#Err(e)){
-        let updatedProperty = {property with updates = Array.append(property.updates, [#Err(e)])};
-        properties.put(action.propertyId, updatedProperty);
-        return #Err(e);
-      }
+      case(#Err(e)) return #Err(e);
     };
   };
 
@@ -310,7 +304,7 @@ public func transferNFTBulk(): async [?TransferResult] {
   };
 
   public func runTests(arg: TestOption): async (){
-    await Test.runTests(arg);
+    await Test.runTests(arg, handlePropertyUpdate);
   };
      
   system func preupgrade(){

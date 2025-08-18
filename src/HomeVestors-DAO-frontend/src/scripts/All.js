@@ -1,7 +1,7 @@
+import { getCanister, getPrincipal, logout} from "./Main.js";
+import { Principal } from "@dfinity/principal";
 
-
-
-  export function setupModal(openBtnId, modalId, closeBtnId) {
+export function setupModal(openBtnId, modalId, closeBtnId) {
     const openBtn = document.getElementById(openBtnId);
     const modal = document.getElementById(modalId);
     const closeBtn = document.getElementById(closeBtnId);
@@ -26,6 +26,21 @@
       if (event.target === modal) {
         modal.classList.add("hidden");
       }
+    });
+  }
+
+  export function setupToggle(openCloseButtonId, toggleElementId) {
+    const Button = document.getElementById(openCloseButtonId);
+    const element = document.getElementById(toggleElementId);
+
+    if (!Button || !element) {
+      console.error("toggle setup error:", { openCloseButtonId, toggleElementId});
+      return;
+    }
+
+    // Open modal
+    Button.addEventListener("click", () => {
+      element.classList.toggle("hidden");
     });
   }
 
@@ -139,3 +154,111 @@ export function shortenPrincipal(principal) {
 
     return `${first}…${last}`;
 }
+
+export async function selectProperty(dropdownId, includeAll = false) {
+  const readArgs = [
+    { Location: [] },
+    { CollectionIds: [] }
+  ];
+
+  try {
+    let backend = await getCanister("backend");
+    const results = await backend.readProperties(readArgs, []);
+    console.log("SelectProperty:Results", results);
+
+    const principal = await getPrincipal();
+    if (!principal) {
+      console.error("No principal found. User not authenticated?");
+      return [];
+    }
+    const account = { owner: Principal.fromText(principal), subaccount: [] };
+
+    // check ownership
+    const nftCalls = results[1].CollectionIds
+      .filter(c => "Ok" in c.value)
+      .map(async (c) => {
+        let nftBackend = await getCanister("nft", c.value.Ok.toText());
+        let tokens = await nftBackend.icrc7_tokens_of(account, [], []);
+        return { id: Number(c.id), tokens };
+      });
+
+    const nfts = await Promise.all(nftCalls);
+    console.log("NFTs", nfts);
+
+    // 🔑 Extract owned property IDs
+    const ownedIds = nfts.filter(n => n.tokens.length > 0).map(n => n.id);
+
+    // Populate dropdown
+    const dropdown = document.getElementById(dropdownId);
+    dropdown.innerHTML = "";
+
+    if (includeAll) {
+      const allOption = document.createElement("option");
+      allOption.value = "all";
+      allOption.textContent = "All Properties";
+      allOption.selected = true;
+      dropdown.appendChild(allOption);
+    } else {
+      const placeholder = document.createElement("option");
+      placeholder.value = "";
+      placeholder.disabled = true;
+      placeholder.selected = true;
+      placeholder.textContent = "-- Select a property --";
+      dropdown.appendChild(placeholder);
+    }
+
+    results[0].Location.forEach((prop) => {
+      if (!("Ok" in prop.value)) return;
+      const id = Number(prop.id);
+      if (!ownedIds.includes(id)) return;
+
+      const loc = prop.value.Ok;
+      const label = [
+        loc.addressLine1,
+        loc.addressLine2,
+        loc.city,
+        loc.postcode
+      ].filter(Boolean).join(", ");
+
+      const option = document.createElement("option");
+      option.value = id;
+      option.textContent = label || `Property ${id}`;
+      dropdown.appendChild(option);
+    });
+
+    if (dropdown.options.length === 1) {
+      const option = document.createElement("option");
+      option.disabled = true;
+      option.textContent = "No owned properties available";
+      dropdown.appendChild(option);
+    }
+
+    // ✅ return owned IDs for external use
+    return ownedIds;
+
+  } catch (err) {
+    console.error("❌ Error calling select property:", err);
+    return [];
+  }
+}
+
+export function getSelectedPropertyIds(dropdownId) {
+  const dropdown = document.getElementById(dropdownId);
+  if (!dropdown) return [];
+
+  const selectedValue = dropdown.value;
+
+  if (selectedValue === "") {
+    // Collect all *numeric* options
+    const ids = Array.from(dropdown.options)
+      .map(opt => opt.value.trim())
+      .filter(v => v !== "" && !isNaN(Number(v)))
+      .map(v => Number(v));
+
+    return ids; // always pure int[]
+  }
+
+  const num = Number(selectedValue);
+  return Number.isInteger(num) ? [num] : [];
+}
+

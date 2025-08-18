@@ -1,5 +1,7 @@
 export const idlFactory = ({ IDL }) => {
-  const Listing = IDL.Rec();
+  const Invoice = IDL.Rec();
+  const Property = IDL.Rec();
+  const What = IDL.Rec();
   const ContractLength = IDL.Variant({
     'Rolling' : IDL.Null,
     'SixMonths' : IDL.Null,
@@ -41,10 +43,10 @@ export const idlFactory = ({ IDL }) => {
     'monthlyRent' : IDL.Opt(IDL.Nat),
     'leaseStartDate' : IDL.Opt(IDL.Int),
   });
-  const Actions_6 = IDL.Variant({
-    'Delete' : IDL.Nat,
-    'Create' : TenantCArg,
-    'Update' : IDL.Tuple(TenantUArg, IDL.Nat),
+  const Actions_11 = IDL.Variant({
+    'Delete' : IDL.Vec(IDL.Int),
+    'Create' : IDL.Vec(TenantCArg),
+    'Update' : IDL.Tuple(TenantUArg, IDL.Vec(IDL.Int)),
   });
   const InspectionRecordCArg = IDL.Record({
     'date' : IDL.Opt(IDL.Int),
@@ -60,10 +62,85 @@ export const idlFactory = ({ IDL }) => {
     'actionRequired' : IDL.Opt(IDL.Text),
     'followUpDate' : IDL.Opt(IDL.Int),
   });
-  const Actions_2 = IDL.Variant({
-    'Delete' : IDL.Nat,
-    'Create' : InspectionRecordCArg,
-    'Update' : IDL.Tuple(InspectionRecordUArg, IDL.Nat),
+  const Actions_3 = IDL.Variant({
+    'Delete' : IDL.Vec(IDL.Int),
+    'Create' : IDL.Vec(InspectionRecordCArg),
+    'Update' : IDL.Tuple(InspectionRecordUArg, IDL.Vec(IDL.Int)),
+  });
+  const Account = IDL.Record({
+    'owner' : IDL.Principal,
+    'subaccount' : IDL.Opt(IDL.Vec(IDL.Nat8)),
+  });
+  const ExpenseCategory = IDL.Variant({
+    'Legal' : IDL.Null,
+    'CapitalImprovements' : IDL.Null,
+    'Insurance' : IDL.Null,
+    'ManagementFees' : IDL.Null,
+    'OtherExpense' : IDL.Text,
+    'Repairs' : IDL.Null,
+    'Maintenance' : IDL.Null,
+    'Utilities' : IDL.Null,
+  });
+  const IncomeCategory = IDL.Variant({
+    'LateFee' : IDL.Null,
+    'Deposit' : IDL.Null,
+    'Rent' : IDL.Null,
+    'OtherIncome' : IDL.Text,
+    'ServiceCharge' : IDL.Null,
+  });
+  const InvoiceDirection = IDL.Variant({
+    'Outgoing' : IDL.Record({
+      'to' : Account,
+      'accountReference' : IDL.Text,
+      'category' : ExpenseCategory,
+      'proposalId' : IDL.Nat,
+    }),
+    'Incoming' : IDL.Record({
+      'accountReference' : IDL.Text,
+      'from' : Account,
+      'category' : IncomeCategory,
+    }),
+  });
+  const PeriodicRecurrence = IDL.Variant({
+    'BiAnnually' : IDL.Null,
+    'Weekly' : IDL.Null,
+    'None' : IDL.Null,
+    'Quarterly' : IDL.Null,
+    'Daily' : IDL.Null,
+    'Custom' : IDL.Record({ 'interval' : IDL.Nat }),
+    'Monthly' : IDL.Null,
+    'Annually' : IDL.Null,
+  });
+  const RecurrenceType = IDL.Record({
+    'endDate' : IDL.Opt(IDL.Int),
+    'period' : PeriodicRecurrence,
+    'count' : IDL.Nat,
+    'previousInvoiceIds' : IDL.Vec(IDL.Nat),
+  });
+  const InvoiceCArg = IDL.Record({
+    'title' : IDL.Text,
+    'direction' : InvoiceDirection,
+    'paymentMethod' : IDL.Opt(AcceptedCryptos),
+    'dueDate' : IDL.Int,
+    'description' : IDL.Text,
+    'recurrence' : RecurrenceType,
+    'amount' : IDL.Nat,
+  });
+  const InvoiceUArg = IDL.Record({
+    'title' : IDL.Opt(IDL.Text),
+    'direction' : IDL.Opt(InvoiceDirection),
+    'paymentMethod' : IDL.Opt(AcceptedCryptos),
+    'dueDate' : IDL.Opt(IDL.Int),
+    'description' : IDL.Opt(IDL.Text),
+    'recurrence' : IDL.Opt(RecurrenceType),
+    'preApprovedByAdmin' : IDL.Opt(IDL.Bool),
+    'amount' : IDL.Opt(IDL.Nat),
+    'process' : IDL.Bool,
+  });
+  const Actions_5 = IDL.Variant({
+    'Delete' : IDL.Vec(IDL.Int),
+    'Create' : IDL.Vec(InvoiceCArg),
+    'Update' : IDL.Tuple(InvoiceUArg, IDL.Vec(IDL.Int)),
   });
   const PaymentFrequency = IDL.Variant({
     'Weekly' : IDL.Null,
@@ -90,15 +167,15 @@ export const idlFactory = ({ IDL }) => {
     'policyNumber' : IDL.Opt(IDL.Text),
     'startDate' : IDL.Opt(IDL.Int),
   });
-  const Actions_3 = IDL.Variant({
-    'Delete' : IDL.Nat,
-    'Create' : InsurancePolicyCArg,
-    'Update' : IDL.Tuple(InsurancePolicyUArg, IDL.Nat),
+  const Actions_4 = IDL.Variant({
+    'Delete' : IDL.Vec(IDL.Int),
+    'Create' : IDL.Vec(InsurancePolicyCArg),
+    'Update' : IDL.Tuple(InsurancePolicyUArg, IDL.Vec(IDL.Int)),
   });
-  const Actions_1 = IDL.Variant({
-    'Delete' : IDL.Nat,
-    'Create' : IDL.Text,
-    'Update' : IDL.Tuple(IDL.Text, IDL.Nat),
+  const Actions_2 = IDL.Variant({
+    'Delete' : IDL.Vec(IDL.Int),
+    'Create' : IDL.Vec(IDL.Text),
+    'Update' : IDL.Tuple(IDL.Text, IDL.Vec(IDL.Int)),
   });
   const NoteCArg = IDL.Record({
     'title' : IDL.Text,
@@ -110,10 +187,10 @@ export const idlFactory = ({ IDL }) => {
     'content' : IDL.Opt(IDL.Text),
     'date' : IDL.Opt(IDL.Int),
   });
-  const Actions_5 = IDL.Variant({
-    'Delete' : IDL.Nat,
-    'Create' : NoteCArg,
-    'Update' : IDL.Tuple(NoteUArg, IDL.Nat),
+  const Actions_10 = IDL.Variant({
+    'Delete' : IDL.Vec(IDL.Int),
+    'Create' : IDL.Vec(NoteCArg),
+    'Update' : IDL.Tuple(NoteUArg, IDL.Vec(IDL.Int)),
   });
   const DocumentType = IDL.Variant({
     'AST' : IDL.Null,
@@ -134,9 +211,9 @@ export const idlFactory = ({ IDL }) => {
     'description' : IDL.Opt(IDL.Text),
   });
   const Actions = IDL.Variant({
-    'Delete' : IDL.Nat,
-    'Create' : DocumentCArg,
-    'Update' : IDL.Tuple(DocumentUArg, IDL.Nat),
+    'Delete' : IDL.Vec(IDL.Int),
+    'Create' : IDL.Vec(DocumentCArg),
+    'Update' : IDL.Tuple(DocumentUArg, IDL.Vec(IDL.Int)),
   });
   const ValuationMethod = IDL.Variant({
     'Online' : IDL.Null,
@@ -151,10 +228,10 @@ export const idlFactory = ({ IDL }) => {
     'method' : IDL.Opt(ValuationMethod),
     'value' : IDL.Opt(IDL.Nat),
   });
-  const Actions_7 = IDL.Variant({
-    'Delete' : IDL.Nat,
-    'Create' : ValuationRecordCArg,
-    'Update' : IDL.Tuple(ValuationRecordUArg, IDL.Nat),
+  const Actions_12 = IDL.Variant({
+    'Delete' : IDL.Vec(IDL.Int),
+    'Create' : IDL.Vec(ValuationRecordCArg),
+    'Update' : IDL.Tuple(ValuationRecordUArg, IDL.Vec(IDL.Int)),
   });
   const MaintenanceStatus = IDL.Variant({
     'InProgress' : IDL.Null,
@@ -179,49 +256,70 @@ export const idlFactory = ({ IDL }) => {
     'dateReported' : IDL.Opt(IDL.Int),
     'contractor' : IDL.Opt(IDL.Text),
   });
-  const Actions_4 = IDL.Variant({
-    'Delete' : IDL.Nat,
-    'Create' : MaintenanceRecordCArg,
-    'Update' : IDL.Tuple(MaintenanceRecordUArg, IDL.Nat),
+  const Actions_6 = IDL.Variant({
+    'Delete' : IDL.Vec(IDL.Int),
+    'Create' : IDL.Vec(MaintenanceRecordCArg),
+    'Update' : IDL.Tuple(MaintenanceRecordUArg, IDL.Vec(IDL.Int)),
   });
   const FinancialsArg = IDL.Record({ 'currentValue' : IDL.Nat });
-  const AdditionalDetails = IDL.Record({
-    'schoolScore' : IDL.Nat,
-    'affordability' : IDL.Nat,
-    'floodZone' : IDL.Bool,
-    'crimeScore' : IDL.Nat,
+  const AdditionalDetailsUArg = IDL.Record({
+    'schoolScore' : IDL.Opt(IDL.Nat),
+    'affordability' : IDL.Opt(IDL.Nat),
+    'floodZone' : IDL.Opt(IDL.Bool),
+    'crimeScore' : IDL.Opt(IDL.Nat),
   });
-  const PhysicalDetails = IDL.Record({
-    'lastRenovation' : IDL.Nat,
-    'beds' : IDL.Nat,
-    'squareFootage' : IDL.Nat,
-    'baths' : IDL.Nat,
-    'yearBuilt' : IDL.Nat,
+  const VoteArgs = IDL.Record({ 'vote' : IDL.Bool, 'proposalId' : IDL.Nat });
+  const ImplementationCategory = IDL.Variant({
+    'Day' : IDL.Null,
+    'BiWeek' : IDL.Null,
+    'Week' : IDL.Null,
+    'FourDays' : IDL.Null,
+    'Month' : IDL.Null,
+    'Quick' : IDL.Null,
+  });
+  const ProposalCategory = IDL.Variant({
+    'Valuation' : IDL.Null,
+    'Invoice' : IDL.Record({ 'invoiceId' : IDL.Nat }),
+    'Maintenance' : IDL.Null,
+    'Operations' : IDL.Null,
+    'Tenancy' : IDL.Null,
+    'Admin' : IDL.Null,
+    'Other' : IDL.Text,
+  });
+  const ProposalCArg = IDL.Record({
+    'title' : IDL.Text,
+    'startAt' : IDL.Int,
+    'implementation' : ImplementationCategory,
+    'description' : IDL.Text,
+    'actions' : IDL.Vec(What),
+    'category' : ProposalCategory,
+  });
+  const ProposalUArg = IDL.Record({
+    'title' : IDL.Opt(IDL.Text),
+    'startAt' : IDL.Opt(IDL.Int),
+    'implementation' : IDL.Opt(ImplementationCategory),
+    'description' : IDL.Opt(IDL.Text),
+    'actions' : IDL.Opt(IDL.Vec(What)),
+    'category' : IDL.Opt(ProposalCategory),
+  });
+  const Actions_1 = IDL.Variant({
+    'Delete' : IDL.Vec(IDL.Int),
+    'Create' : IDL.Vec(ProposalCArg),
+    'Update' : IDL.Tuple(ProposalUArg, IDL.Vec(IDL.Int)),
+  });
+  const PhysicalDetailsUArg = IDL.Record({
+    'lastRenovation' : IDL.Opt(IDL.Nat),
+    'beds' : IDL.Opt(IDL.Nat),
+    'squareFootage' : IDL.Opt(IDL.Nat),
+    'baths' : IDL.Opt(IDL.Nat),
+    'yearBuilt' : IDL.Opt(IDL.Nat),
   });
   const BidArg = IDL.Record({
     'listingId' : IDL.Nat,
     'buyer_subaccount' : IDL.Opt(IDL.Vec(IDL.Nat8)),
     'bidAmount' : IDL.Nat,
   });
-  const CancelledReason = IDL.Variant({
-    'CalledByAdmin' : IDL.Null,
-    'ReserveNotMet' : IDL.Null,
-    'NoBids' : IDL.Null,
-    'Expired' : IDL.Null,
-    'CancelledBySeller' : IDL.Null,
-  });
-  const CancelArg = IDL.Record({
-    'listingId' : IDL.Nat,
-    'cancelledBy_subaccount' : IDL.Opt(IDL.Vec(IDL.Nat8)),
-    'reason' : CancelledReason,
-  });
-  const FixedPriceUArg = IDL.Record({
-    'quoteAsset' : IDL.Opt(AcceptedCryptos),
-    'expiresAt' : IDL.Opt(IDL.Int),
-    'listingId' : IDL.Nat,
-    'price' : IDL.Opt(IDL.Nat),
-  });
-  const LaunchArg = IDL.Record({
+  const LaunchCArg = IDL.Record({
     'quoteAsset' : IDL.Opt(AcceptedCryptos),
     'maxListed' : IDL.Opt(IDL.Nat),
     'transferType' : IDL.Variant({
@@ -233,12 +331,15 @@ export const idlFactory = ({ IDL }) => {
     'price' : IDL.Nat,
     'endsAt' : IDL.Opt(IDL.Int),
   });
-  const FixedPriceCArg = IDL.Record({
+  const LaunchUArg = IDL.Record({
     'quoteAsset' : IDL.Opt(AcceptedCryptos),
-    'tokenId' : IDL.Nat,
-    'expiresAt' : IDL.Opt(IDL.Int),
-    'seller_subaccount' : IDL.Opt(IDL.Vec(IDL.Nat8)),
-    'price' : IDL.Nat,
+    'price' : IDL.Opt(IDL.Nat),
+    'endsAt' : IDL.Opt(IDL.Int),
+  });
+  const Actions_9 = IDL.Variant({
+    'Delete' : IDL.Vec(IDL.Int),
+    'Create' : IDL.Vec(LaunchCArg),
+    'Update' : IDL.Tuple(LaunchUArg, IDL.Vec(IDL.Int)),
   });
   const AuctionCArg = IDL.Record({
     'startTime' : IDL.Int,
@@ -259,37 +360,60 @@ export const idlFactory = ({ IDL }) => {
     'buyNowPrice' : IDL.Opt(IDL.Nat),
     'endsAt' : IDL.Opt(IDL.Int),
   });
-  const MarketplaceAction = IDL.Variant({
-    'Bid' : BidArg,
-    'CancelListing' : CancelArg,
-    'UpdateLaunch' : FixedPriceUArg,
-    'LaunchProperty' : LaunchArg,
-    'CreateFixedListing' : FixedPriceCArg,
-    'UpdateFixedListing' : FixedPriceUArg,
-    'CreateAuctionListing' : AuctionCArg,
-    'UpdateAuctionListing' : AuctionUArg,
+  const Actions_7 = IDL.Variant({
+    'Delete' : IDL.Vec(IDL.Int),
+    'Create' : IDL.Vec(AuctionCArg),
+    'Update' : IDL.Tuple(AuctionUArg, IDL.Vec(IDL.Int)),
   });
-  const What = IDL.Variant({
-    'Tenant' : Actions_6,
-    'Inspection' : Actions_2,
-    'Insurance' : Actions_3,
-    'Images' : Actions_1,
-    'Note' : Actions_5,
-    'Description' : IDL.Text,
-    'Document' : Actions,
-    'Valuations' : Actions_7,
-    'Maintenance' : Actions_4,
-    'MonthlyRent' : IDL.Nat,
-    'Financials' : FinancialsArg,
-    'AdditionalDetails' : AdditionalDetails,
-    'PhysicalDetails' : PhysicalDetails,
-    'NFTMarketplace' : MarketplaceAction,
+  const FixedPriceCArg = IDL.Record({
+    'quoteAsset' : IDL.Opt(AcceptedCryptos),
+    'tokenId' : IDL.Nat,
+    'expiresAt' : IDL.Opt(IDL.Int),
+    'seller_subaccount' : IDL.Opt(IDL.Vec(IDL.Nat8)),
+    'price' : IDL.Nat,
   });
+  const FixedPriceUArg = IDL.Record({
+    'quoteAsset' : IDL.Opt(AcceptedCryptos),
+    'expiresAt' : IDL.Opt(IDL.Int),
+    'listingId' : IDL.Nat,
+    'price' : IDL.Opt(IDL.Nat),
+  });
+  const Actions_8 = IDL.Variant({
+    'Delete' : IDL.Vec(IDL.Int),
+    'Create' : IDL.Vec(FixedPriceCArg),
+    'Update' : IDL.Tuple(FixedPriceUArg, IDL.Vec(IDL.Int)),
+  });
+  What.fill(
+    IDL.Variant({
+      'Tenant' : Actions_11,
+      'Inspection' : Actions_3,
+      'Invoice' : Actions_5,
+      'Insurance' : Actions_4,
+      'Images' : Actions_2,
+      'Note' : Actions_10,
+      'Description' : IDL.Text,
+      'Document' : Actions,
+      'Valuations' : Actions_12,
+      'Maintenance' : Actions_6,
+      'MonthlyRent' : IDL.Nat,
+      'Financials' : FinancialsArg,
+      'AdditionalDetails' : AdditionalDetailsUArg,
+      'Governance' : IDL.Variant({ 'Vote' : VoteArgs, 'Proposal' : Actions_1 }),
+      'PhysicalDetails' : PhysicalDetailsUArg,
+      'NftMarketplace' : IDL.Variant({
+        'Bid' : BidArg,
+        'Launch' : Actions_9,
+        'Auction' : Actions_7,
+        'FixedPrice' : Actions_8,
+      }),
+    })
+  );
   const WhatWithPropertyId = IDL.Record({
     'what' : What,
     'propertyId' : IDL.Nat,
   });
   const Reason = IDL.Variant({
+    'AlreadyVoted' : IDL.Null,
     'JSONParseError' : IDL.Null,
     'CannotBeSetInThePast' : IDL.Null,
     'FailedToDecodeResponseBody' : IDL.Null,
@@ -297,6 +421,7 @@ export const idlFactory = ({ IDL }) => {
     'InvalidInput' : IDL.Null,
     'DataMismatch' : IDL.Null,
     'CannotBeSetInTheFuture' : IDL.Null,
+    'InvalidRecipient' : IDL.Null,
     'BuyerAndSellerCannotMatch' : IDL.Null,
     'CannotBeNull' : IDL.Null,
     'CannotBeZero' : IDL.Null,
@@ -330,6 +455,7 @@ export const idlFactory = ({ IDL }) => {
     'InvalidElementId' : IDL.Null,
     'InsufficientBid' : IDL.Record({ 'minimum_bid' : IDL.Nat }),
     'ImmutableLiveAuction' : IDL.Null,
+    'AsyncIdLost' : IDL.Null,
     'InvalidPropertyId' : IDL.Null,
     'InvalidData' : IDL.Record({ 'field' : IDL.Text, 'reason' : Reason }),
     'Unauthorized' : IDL.Null,
@@ -338,7 +464,10 @@ export const idlFactory = ({ IDL }) => {
     'ListingExpired' : IDL.Null,
     'OverWritingData' : IDL.Null,
   });
-  const UpdateResultNat = IDL.Variant({ 'Ok' : IDL.Nat, 'Err' : UpdateError });
+  const UpdateResultNat = IDL.Variant({
+    'Ok' : IDL.Nat,
+    'Err' : IDL.Vec(IDL.Tuple(IDL.Opt(IDL.Nat), UpdateError)),
+  });
   const MintError = IDL.Variant({
     'GenericError' : IDL.Record({
       'message' : IDL.Text,
@@ -357,20 +486,17 @@ export const idlFactory = ({ IDL }) => {
     'TooOld' : IDL.Null,
   });
   const MintResult = IDL.Variant({ 'Ok' : IDL.Nat, 'Err' : MintError });
-  const Account = IDL.Record({
-    'owner' : IDL.Principal,
-    'subaccount' : IDL.Opt(IDL.Vec(IDL.Nat8)),
-  });
   const Launch = IDL.Record({
     'id' : IDL.Nat,
     'quoteAsset' : AcceptedCryptos,
+    'listIds' : IDL.Vec(IDL.Nat),
     'maxListed' : IDL.Nat,
     'tokenIds' : IDL.Vec(IDL.Nat),
     'listedAt' : IDL.Int,
-    'args' : IDL.Vec(IDL.Tuple(IDL.Nat, Listing)),
     'seller' : Account,
     'caller' : IDL.Principal,
     'price' : IDL.Nat,
+    'endsAt' : IDL.Opt(IDL.Int),
   });
   const Bid = IDL.Record({
     'bidAmount' : IDL.Nat,
@@ -397,6 +523,7 @@ export const idlFactory = ({ IDL }) => {
     'to' : Account,
     'attempted_at' : IDL.Int,
     'result' : GenericTransferResult,
+    'asset' : AcceptedCryptos,
     'from' : Account,
     'amount' : IDL.Nat,
   });
@@ -431,6 +558,13 @@ export const idlFactory = ({ IDL }) => {
     'seller' : Account,
     'price' : IDL.Nat,
   });
+  const CancelledReason = IDL.Variant({
+    'CalledByAdmin' : IDL.Null,
+    'ReserveNotMet' : IDL.Null,
+    'NoBids' : IDL.Null,
+    'Expired' : IDL.Null,
+    'CancelledBySeller' : IDL.Null,
+  });
   const CancelledFixedPrice = IDL.Record({
     'id' : IDL.Nat,
     'quoteAsset' : AcceptedCryptos,
@@ -441,6 +575,21 @@ export const idlFactory = ({ IDL }) => {
     'cancelledAt' : IDL.Int,
     'cancelledBy' : Account,
     'price' : IDL.Nat,
+    'reason' : CancelledReason,
+  });
+  const CancelledLaunch = IDL.Record({
+    'id' : IDL.Nat,
+    'quoteAsset' : AcceptedCryptos,
+    'listIds' : IDL.Vec(IDL.Nat),
+    'maxListed' : IDL.Nat,
+    'tokenIds' : IDL.Vec(IDL.Nat),
+    'listedAt' : IDL.Int,
+    'seller' : Account,
+    'cancelledAt' : IDL.Int,
+    'cancelledBy' : Account,
+    'caller' : IDL.Principal,
+    'price' : IDL.Nat,
+    'endsAt' : IDL.Opt(IDL.Int),
     'reason' : CancelledReason,
   });
   const Auction = IDL.Record({
@@ -478,21 +627,21 @@ export const idlFactory = ({ IDL }) => {
     'endsAt' : IDL.Int,
     'reason' : CancelledReason,
   });
-  Listing.fill(
-    IDL.Variant({
-      'LaunchedProperty' : Launch,
-      'SoldFixedPrice' : SoldFixedPrice,
-      'SoldAuction' : SoldAuction,
-      'LiveFixedPrice' : FixedPrice,
-      'SoldLaunchFixedPrice' : SoldFixedPrice,
-      'CancelledLaunch' : CancelledFixedPrice,
-      'LiveAuction' : Auction,
-      'CancelledAuction' : CancelledAuction,
-      'CancelledFixedPrice' : CancelledFixedPrice,
-      'LaunchFixedPrice' : FixedPrice,
-    })
-  );
+  const Listing = IDL.Variant({
+    'LaunchedProperty' : Launch,
+    'SoldFixedPrice' : SoldFixedPrice,
+    'SoldAuction' : SoldAuction,
+    'LiveFixedPrice' : FixedPrice,
+    'SoldLaunchFixedPrice' : SoldFixedPrice,
+    'CancelledLaunch' : CancelledFixedPrice,
+    'CancelledLaunchedProperty' : CancelledLaunch,
+    'LiveAuction' : Auction,
+    'CancelledAuction' : CancelledAuction,
+    'CancelledFixedPrice' : CancelledFixedPrice,
+    'LaunchFixedPrice' : FixedPrice,
+  });
   const NFTMarketplace = IDL.Record({
+    'timerIds' : IDL.Vec(IDL.Tuple(IDL.Nat, IDL.Nat)),
     'collectionId' : IDL.Principal,
     'listings' : IDL.Vec(IDL.Tuple(IDL.Nat, Listing)),
     'royalty' : IDL.Nat,
@@ -570,11 +719,32 @@ export const idlFactory = ({ IDL }) => {
     'maintenance' : IDL.Vec(IDL.Tuple(IDL.Nat, MaintenanceRecord)),
     'tenants' : IDL.Vec(IDL.Tuple(IDL.Nat, Tenant)),
   });
-  const Result = IDL.Variant({ 'Ok' : What, 'Err' : UpdateError });
+  const Result__1 = IDL.Variant({
+    'ok' : IDL.Opt(IDL.Nat),
+    'err' : IDL.Tuple(IDL.Opt(IDL.Nat), UpdateError),
+  });
+  const OkUpdateResult = IDL.Record({
+    'what' : What,
+    'results' : IDL.Vec(Result__1),
+  });
+  const Result = IDL.Variant({ 'Ok' : OkUpdateResult, 'Err' : UpdateError });
   const Miscellaneous = IDL.Record({
     'description' : IDL.Text,
     'imageId' : IDL.Nat,
     'images' : IDL.Vec(IDL.Tuple(IDL.Nat, IDL.Text)),
+  });
+  const AdditionalDetails = IDL.Record({
+    'schoolScore' : IDL.Nat,
+    'affordability' : IDL.Nat,
+    'floodZone' : IDL.Bool,
+    'crimeScore' : IDL.Nat,
+  });
+  const PhysicalDetails = IDL.Record({
+    'lastRenovation' : IDL.Nat,
+    'beds' : IDL.Nat,
+    'squareFootage' : IDL.Nat,
+    'baths' : IDL.Nat,
+    'yearBuilt' : IDL.Nat,
   });
   const LocationDetails = IDL.Record({
     'postcode' : IDL.Text,
@@ -604,24 +774,147 @@ export const idlFactory = ({ IDL }) => {
     'date' : IDL.Int,
     'appraiser' : IDL.Principal,
   });
+  const InvoiceStatus = IDL.Variant({
+    'Failed' : IDL.Null,
+    'Paid' : IDL.Null,
+    'Approved' : IDL.Null,
+    'Draft' : IDL.Null,
+    'Rejected' : IDL.Null,
+    'PreApproved' : IDL.Principal,
+    'Pending' : IDL.Null,
+  });
+  const PaymentStatus = IDL.Variant({
+    'Failed' : IDL.Record({ 'attempted_at' : IDL.Int, 'reason' : UpdateError }),
+    'Confirmed' : IDL.Record({
+      'paid_at' : IDL.Int,
+      'transactionId' : IDL.Nat,
+    }),
+    'WaitingApproval' : IDL.Null,
+    'Pending' : IDL.Record({ 'timerId' : IDL.Opt(IDL.Nat) }),
+  });
+  const InvoiceLogAction = IDL.Variant({
+    'PaymentStatusChange' : IDL.Record({
+      'to' : PaymentStatus,
+      'from' : PaymentStatus,
+    }),
+    'PaymentFailed' : IDL.Record({ 'reason' : IDL.Text }),
+    'ProposalLinked' : IDL.Record({ 'proposalId' : IDL.Nat }),
+    'PaymentConfirmed' : IDL.Record({ 'transactionId' : IDL.Opt(IDL.Text) }),
+    'Edited' : IDL.Record({
+      'fieldsChanged' : IDL.Vec(IDL.Text),
+      'newInvoice' : Invoice,
+      'oldInvoice' : Invoice,
+    }),
+    'Custom' : IDL.Text,
+    'Created' : Invoice,
+    'StatusChange' : IDL.Record({
+      'to' : InvoiceStatus,
+      'from' : InvoiceStatus,
+    }),
+    'Recurring' : IDL.Record({
+      'count' : IDL.Nat,
+      'newDueDate' : IDL.Int,
+      'previousInvoiceId' : IDL.Nat,
+    }),
+  });
+  const InvoiceLog = IDL.Record({
+    'changedBy' : IDL.Principal,
+    'actionType' : InvoiceLogAction,
+    'timestamp' : IDL.Int,
+    'details' : IDL.Opt(IDL.Text),
+  });
+  Invoice.fill(
+    IDL.Record({
+      'id' : IDL.Nat,
+      'due' : IDL.Int,
+      'status' : InvoiceStatus,
+      'title' : IDL.Text,
+      'direction' : InvoiceDirection,
+      'paymentStatus' : PaymentStatus,
+      'paymentMethod' : AcceptedCryptos,
+      'logs' : IDL.Vec(InvoiceLog),
+      'description' : IDL.Text,
+      'recurrence' : RecurrenceType,
+      'amount' : IDL.Nat,
+    })
+  );
   const Financials = IDL.Record({
     'valuationId' : IDL.Nat,
     'investment' : InvestmentDetails,
     'pricePerSqFoot' : IDL.Nat,
+    'invoiceId' : IDL.Nat,
     'currentValue' : IDL.Nat,
     'valuations' : IDL.Vec(IDL.Tuple(IDL.Nat, ValuationRecord)),
+    'account' : Account,
+    'invoices' : IDL.Vec(IDL.Tuple(IDL.Nat, Invoice)),
     'monthlyRent' : IDL.Nat,
     'yield' : IDL.Float64,
   });
-  const Property = IDL.Record({
-    'id' : IDL.Nat,
-    'nftMarketplace' : NFTMarketplace,
-    'administrative' : AdministrativeInfo,
-    'operational' : OperationalInfo,
-    'updates' : IDL.Vec(Result),
-    'details' : PropertyDetails,
-    'financials' : Financials,
+  const UpdateResult__1 = IDL.Variant({
+    'Ok' : Property,
+    'Err' : IDL.Vec(IDL.Tuple(IDL.Opt(IDL.Nat), UpdateError)),
   });
+  const ProposalOutcome = IDL.Variant({
+    'Accepted' : IDL.Vec(UpdateResult__1),
+    'Refused' : IDL.Text,
+  });
+  const ExecutedProposalArgs = IDL.Record({
+    'noVotes' : IDL.Nat,
+    'executedAt' : IDL.Int,
+    'yesVotes' : IDL.Nat,
+    'totalVotesCast' : IDL.Nat,
+    'outcome' : ProposalOutcome,
+  });
+  const LiveProposalArgs = IDL.Record({
+    'noVotes' : IDL.Nat,
+    'eligibleVoterCount' : IDL.Nat,
+    'endTime' : IDL.Int,
+    'yesVotes' : IDL.Nat,
+    'totalVotesCast' : IDL.Nat,
+    'timerId' : IDL.Opt(IDL.Nat),
+  });
+  const ProposalStatus = IDL.Variant({
+    'RejectedEarly' : IDL.Record({ 'reason' : IDL.Text }),
+    'Executed' : ExecutedProposalArgs,
+    'LiveProposal' : LiveProposalArgs,
+  });
+  const Proposal = IDL.Record({
+    'id' : IDL.Nat,
+    'status' : ProposalStatus,
+    'title' : IDL.Text,
+    'creator' : IDL.Principal,
+    'startAt' : IDL.Int,
+    'votes' : IDL.Vec(IDL.Tuple(IDL.Principal, IDL.Bool)),
+    'createdAt' : IDL.Int,
+    'implementation' : ImplementationCategory,
+    'description' : IDL.Text,
+    'totalEligibleVoters' : IDL.Nat,
+    'actions' : IDL.Vec(What),
+    'category' : ProposalCategory,
+    'eligibleVoters' : IDL.Vec(IDL.Principal),
+  });
+  const Governance = IDL.Record({
+    'quorumPercentage' : IDL.Nat,
+    'minTurnout' : IDL.Nat,
+    'proposalCost' : IDL.Nat,
+    'minYesVotes' : IDL.Nat,
+    'assetCost' : AcceptedCryptos,
+    'proposals' : IDL.Vec(IDL.Tuple(IDL.Nat, Proposal)),
+    'proposalId' : IDL.Nat,
+    'requireNftToPropose' : IDL.Bool,
+  });
+  Property.fill(
+    IDL.Record({
+      'id' : IDL.Nat,
+      'nftMarketplace' : NFTMarketplace,
+      'administrative' : AdministrativeInfo,
+      'operational' : OperationalInfo,
+      'updates' : IDL.Vec(Result),
+      'details' : PropertyDetails,
+      'financials' : Financials,
+      'governance' : Governance,
+    })
+  );
   const ReadErrors = IDL.Variant({
     'InvalidElementId' : IDL.Null,
     'DidNotMatchConditions' : IDL.Null,
@@ -631,13 +924,13 @@ export const idlFactory = ({ IDL }) => {
     'EmptyArray' : IDL.Null,
     'Filtered' : IDL.Null,
   });
-  const ElementResult_19 = IDL.Record({
+  const ElementResult_21 = IDL.Record({
     'id' : IDL.Nat,
     'value' : IDL.Variant({ 'Ok' : ValuationRecord, 'Err' : ReadErrors }),
   });
-  const PropertyResult_10 = IDL.Record({
+  const PropertyResult_12 = IDL.Record({
     'result' : IDL.Variant({
-      'Ok' : IDL.Vec(ElementResult_19),
+      'Ok' : IDL.Vec(ElementResult_21),
       'Err' : ReadErrors,
     }),
     'propertyId' : IDL.Nat,
@@ -653,13 +946,13 @@ export const idlFactory = ({ IDL }) => {
     }),
     'propertyId' : IDL.Nat,
   });
-  const ElementResult_7 = IDL.Record({
+  const ElementResult_8 = IDL.Record({
     'id' : IDL.Nat,
     'value' : IDL.Variant({ 'Ok' : Listing, 'Err' : ReadErrors }),
   });
-  const PropertyResult_4 = IDL.Record({
+  const PropertyResult_5 = IDL.Record({
     'result' : IDL.Variant({
-      'Ok' : IDL.Vec(ElementResult_7),
+      'Ok' : IDL.Vec(ElementResult_8),
       'Err' : ReadErrors,
     }),
     'propertyId' : IDL.Nat,
@@ -675,21 +968,21 @@ export const idlFactory = ({ IDL }) => {
     }),
     'propertyId' : IDL.Nat,
   });
-  const ElementResult_10 = IDL.Record({
+  const ElementResult_11 = IDL.Record({
     'id' : IDL.Nat,
     'value' : IDL.Variant({ 'Ok' : Miscellaneous, 'Err' : ReadErrors }),
   });
-  const ElementResult_12 = IDL.Record({
+  const ElementResult_13 = IDL.Record({
     'id' : IDL.Nat,
     'value' : IDL.Variant({ 'Ok' : IDL.Vec(IDL.Nat), 'Err' : ReadErrors }),
   });
-  const ElementResult_13 = IDL.Record({
+  const ElementResult_14 = IDL.Record({
     'id' : IDL.Nat,
     'value' : IDL.Variant({ 'Ok' : Note, 'Err' : ReadErrors }),
   });
-  const PropertyResult_6 = IDL.Record({
+  const PropertyResult_7 = IDL.Record({
     'result' : IDL.Variant({
-      'Ok' : IDL.Vec(ElementResult_13),
+      'Ok' : IDL.Vec(ElementResult_14),
       'Err' : ReadErrors,
     }),
     'propertyId' : IDL.Nat,
@@ -705,6 +998,17 @@ export const idlFactory = ({ IDL }) => {
     }),
     'propertyId' : IDL.Nat,
   });
+  const ElementResult_17 = IDL.Record({
+    'id' : IDL.Nat,
+    'value' : IDL.Variant({ 'Ok' : Proposal, 'Err' : ReadErrors }),
+  });
+  const PropertyResult_9 = IDL.Record({
+    'result' : IDL.Variant({
+      'Ok' : IDL.Vec(ElementResult_17),
+      'Err' : ReadErrors,
+    }),
+    'propertyId' : IDL.Nat,
+  });
   const ElementResult_2 = IDL.Record({
     'id' : IDL.Nat,
     'value' : IDL.Variant({ 'Ok' : Document, 'Err' : ReadErrors }),
@@ -716,28 +1020,39 @@ export const idlFactory = ({ IDL }) => {
     }),
     'propertyId' : IDL.Nat,
   });
-  const ElementResult_18 = IDL.Record({
+  const ElementResult_20 = IDL.Record({
     'id' : IDL.Nat,
     'value' : IDL.Variant({ 'Ok' : IDL.Vec(Result), 'Err' : ReadErrors }),
   });
-  const ElementResult_9 = IDL.Record({
+  const ElementResult_10 = IDL.Record({
     'id' : IDL.Nat,
     'value' : IDL.Variant({ 'Ok' : MaintenanceRecord, 'Err' : ReadErrors }),
   });
-  const PropertyResult_5 = IDL.Record({
+  const PropertyResult_6 = IDL.Record({
     'result' : IDL.Variant({
-      'Ok' : IDL.Vec(ElementResult_9),
+      'Ok' : IDL.Vec(ElementResult_10),
       'Err' : ReadErrors,
     }),
     'propertyId' : IDL.Nat,
   });
-  const ElementResult_17 = IDL.Record({
+  const ElementResult_7 = IDL.Record({
+    'id' : IDL.Nat,
+    'value' : IDL.Variant({ 'Ok' : Invoice, 'Err' : ReadErrors }),
+  });
+  const PropertyResult_4 = IDL.Record({
+    'result' : IDL.Variant({
+      'Ok' : IDL.Vec(ElementResult_7),
+      'Err' : ReadErrors,
+    }),
+    'propertyId' : IDL.Nat,
+  });
+  const ElementResult_19 = IDL.Record({
     'id' : IDL.Nat,
     'value' : IDL.Variant({ 'Ok' : Tenant, 'Err' : ReadErrors }),
   });
-  const PropertyResult_9 = IDL.Record({
+  const PropertyResult_11 = IDL.Record({
     'result' : IDL.Variant({
-      'Ok' : IDL.Vec(ElementResult_17),
+      'Ok' : IDL.Vec(ElementResult_19),
       'Err' : ReadErrors,
     }),
     'propertyId' : IDL.Nat,
@@ -746,11 +1061,11 @@ export const idlFactory = ({ IDL }) => {
     'id' : IDL.Nat,
     'value' : IDL.Variant({ 'Ok' : IDL.Principal, 'Err' : ReadErrors }),
   });
-  const ElementResult_15 = IDL.Record({
+  const ElementResult_16 = IDL.Record({
     'id' : IDL.Nat,
     'value' : IDL.Variant({ 'Ok' : PhysicalDetails, 'Err' : ReadErrors }),
   });
-  const ElementResult_11 = IDL.Record({
+  const ElementResult_12 = IDL.Record({
     'id' : IDL.Nat,
     'value' : IDL.Variant({ 'Ok' : IDL.Nat, 'Err' : ReadErrors }),
   });
@@ -758,18 +1073,18 @@ export const idlFactory = ({ IDL }) => {
     'id' : IDL.Nat,
     'value' : IDL.Variant({ 'Ok' : Financials, 'Err' : ReadErrors }),
   });
-  const ElementResult_16 = IDL.Record({
+  const ElementResult_18 = IDL.Record({
     'id' : IDL.Nat,
     'value' : IDL.Variant({ 'Ok' : IDL.Vec(Refund), 'Err' : ReadErrors }),
   });
-  const PropertyResult_8 = IDL.Record({
+  const PropertyResult_10 = IDL.Record({
     'result' : IDL.Variant({
-      'Ok' : IDL.Vec(ElementResult_16),
+      'Ok' : IDL.Vec(ElementResult_18),
       'Err' : ReadErrors,
     }),
     'propertyId' : IDL.Nat,
   });
-  const ElementResult_8 = IDL.Record({
+  const ElementResult_9 = IDL.Record({
     'id' : IDL.Nat,
     'value' : IDL.Variant({ 'Ok' : LocationDetails, 'Err' : ReadErrors }),
   });
@@ -777,38 +1092,40 @@ export const idlFactory = ({ IDL }) => {
     'id' : IDL.Nat,
     'value' : IDL.Variant({ 'Ok' : AdditionalDetails, 'Err' : ReadErrors }),
   });
-  const ElementResult_14 = IDL.Record({
+  const ElementResult_15 = IDL.Record({
     'id' : IDL.Nat,
     'value' : IDL.Variant({ 'Ok' : IDL.Vec(Payment), 'Err' : ReadErrors }),
   });
-  const PropertyResult_7 = IDL.Record({
+  const PropertyResult_8 = IDL.Record({
     'result' : IDL.Variant({
-      'Ok' : IDL.Vec(ElementResult_14),
+      'Ok' : IDL.Vec(ElementResult_15),
       'Err' : ReadErrors,
     }),
     'propertyId' : IDL.Nat,
   });
   const ReadResult = IDL.Variant({
-    'Valuation' : IDL.Vec(PropertyResult_10),
+    'Valuation' : IDL.Vec(PropertyResult_12),
     'Inspection' : IDL.Vec(PropertyResult_2),
-    'Listings' : IDL.Vec(PropertyResult_4),
+    'Listings' : IDL.Vec(PropertyResult_5),
     'Insurance' : IDL.Vec(PropertyResult_3),
-    'Misc' : IDL.Vec(ElementResult_10),
-    'NFTs' : IDL.Vec(ElementResult_12),
-    'Note' : IDL.Vec(PropertyResult_6),
+    'Misc' : IDL.Vec(ElementResult_11),
+    'NFTs' : IDL.Vec(ElementResult_13),
+    'Note' : IDL.Vec(PropertyResult_7),
     'Image' : IDL.Vec(PropertyResult_1),
+    'Proposals' : IDL.Vec(PropertyResult_9),
     'Document' : IDL.Vec(PropertyResult),
-    'UpdateResults' : IDL.Vec(ElementResult_18),
-    'Maintenance' : IDL.Vec(PropertyResult_5),
-    'Tenants' : IDL.Vec(PropertyResult_9),
+    'UpdateResults' : IDL.Vec(ElementResult_20),
+    'Maintenance' : IDL.Vec(PropertyResult_6),
+    'Invoices' : IDL.Vec(PropertyResult_4),
+    'Tenants' : IDL.Vec(PropertyResult_11),
     'CollectionIds' : IDL.Vec(ElementResult_1),
-    'Physical' : IDL.Vec(ElementResult_15),
-    'MonthlyRent' : IDL.Vec(ElementResult_11),
+    'Physical' : IDL.Vec(ElementResult_16),
+    'MonthlyRent' : IDL.Vec(ElementResult_12),
     'Financials' : IDL.Vec(ElementResult_3),
-    'Refunds' : IDL.Vec(PropertyResult_8),
-    'Location' : IDL.Vec(ElementResult_8),
+    'Refunds' : IDL.Vec(PropertyResult_10),
+    'Location' : IDL.Vec(ElementResult_9),
     'Additional' : IDL.Vec(ElementResult),
-    'PaymentHistory' : IDL.Vec(PropertyResult_7),
+    'PaymentHistory' : IDL.Vec(PropertyResult_8),
   });
   const GetPropertyResult = IDL.Variant({ 'Ok' : Property, 'Err' : IDL.Null });
   const NotificationType = IDL.Variant({
@@ -825,12 +1142,6 @@ export const idlFactory = ({ IDL }) => {
   const NotificationResult = IDL.Variant({
     'Ok' : Notification,
     'Err' : IDL.Tuple(IDL.Nat, UpdateError),
-  });
-  const LaunchProperty = IDL.Record({
-    'quoteAsset' : IDL.Opt(AcceptedCryptos),
-    'propertyId' : IDL.Nat,
-    'price' : IDL.Nat,
-    'endsAt' : IDL.Opt(IDL.Int),
   });
   const Selected = IDL.Opt(IDL.Vec(IDL.Int));
   const ScopedProperties = IDL.Record({
@@ -851,6 +1162,7 @@ export const idlFactory = ({ IDL }) => {
     'LiveAuction' : IDL.Null,
     'PropertyLaunch' : IDL.Null,
     'CancelledAuction' : IDL.Null,
+    'CancelledPropertyLaunch' : IDL.Null,
     'CancelledFixedPrice' : IDL.Null,
     'LaunchFixedPrice' : IDL.Null,
   });
@@ -864,9 +1176,108 @@ export const idlFactory = ({ IDL }) => {
     }),
     'account' : IDL.Opt(Account),
   });
-  const ConditionalBaseRead = IDL.Record({
+  const ConditionalBaseRead_1 = IDL.Record({
     'base' : BaseRead,
     'conditionals' : ListingConditionals,
+  });
+  const ProposalStatusFlag = IDL.Variant({
+    'RejectedEarly' : IDL.Null,
+    'Executed' : IDL.Null,
+    'LiveProposal' : IDL.Null,
+  });
+  const EqualityFlag = IDL.Variant({
+    'MoreThan' : IDL.Int,
+    'LessThan' : IDL.Int,
+  });
+  const WhatFlag = IDL.Variant({
+    'Tenant' : IDL.Null,
+    'Inspection' : IDL.Null,
+    'Invoice' : IDL.Null,
+    'Insurance' : IDL.Null,
+    'Images' : IDL.Null,
+    'Note' : IDL.Null,
+    'Description' : IDL.Null,
+    'Document' : IDL.Null,
+    'Valuations' : IDL.Null,
+    'Maintenance' : IDL.Null,
+    'MonthlyRent' : IDL.Null,
+    'Financials' : IDL.Null,
+    'AdditionalDetails' : IDL.Null,
+    'Governance' : IDL.Variant({ 'Vote' : IDL.Null, 'Proposal' : IDL.Null }),
+    'PhysicalDetails' : IDL.Null,
+    'NftMarketplace' : IDL.Variant({
+      'Bid' : IDL.Null,
+      'Launch' : IDL.Null,
+      'Auction' : IDL.Null,
+      'FixedPrice' : IDL.Null,
+    }),
+  });
+  const ProposalCategoryFlag = IDL.Variant({
+    'Valuation' : IDL.Null,
+    'Invoice' : IDL.Null,
+    'RentPolicy' : IDL.Null,
+    'Maintenance' : IDL.Null,
+    'Other' : IDL.Null,
+  });
+  const ProposalOutcomeFlag = IDL.Variant({
+    'Accepted' : IDL.Null,
+    'Refused' : IDL.Null,
+  });
+  const ProposalConditionals = IDL.Record({
+    'status' : IDL.Opt(ProposalStatusFlag),
+    'noVotes' : IDL.Opt(EqualityFlag),
+    'creator' : IDL.Opt(IDL.Principal),
+    'startAt' : IDL.Opt(EqualityFlag),
+    'yesVotes' : IDL.Opt(EqualityFlag),
+    'voted' : IDL.Opt(
+      IDL.Tuple(
+        IDL.Principal,
+        IDL.Variant({ 'HasVoted' : IDL.Null, 'NotVoted' : IDL.Null }),
+      )
+    ),
+    'actions' : IDL.Opt(WhatFlag),
+    'implementationCategory' : IDL.Opt(ImplementationCategory),
+    'totalVoterCount' : IDL.Opt(EqualityFlag),
+    'category' : IDL.Opt(ProposalCategoryFlag),
+    'eligibleCount' : IDL.Opt(EqualityFlag),
+    'outcome' : IDL.Opt(ProposalOutcomeFlag),
+  });
+  const ConditionalBaseRead_2 = IDL.Record({
+    'base' : BaseRead,
+    'conditionals' : ProposalConditionals,
+  });
+  const InvoiceDirectionFlag = IDL.Variant({
+    'Outgoing' : IDL.Record({
+      'to' : IDL.Opt(Account),
+      'accountReference' : IDL.Opt(IDL.Text),
+      'category' : IDL.Opt(ExpenseCategory),
+    }),
+    'Incoming' : IDL.Record({
+      'accountReference' : IDL.Opt(IDL.Text),
+      'from' : IDL.Opt(Account),
+      'category' : IDL.Opt(IncomeCategory),
+    }),
+  });
+  const PaymentStatusFlag = IDL.Variant({
+    'Failed' : IDL.Null,
+    'Confirmed' : IDL.Null,
+    'WaitingApproval' : IDL.Null,
+    'Pending' : IDL.Null,
+  });
+  const InvoiceConditionals = IDL.Record({
+    'due' : IDL.Opt(EqualityFlag),
+    'status' : IDL.Opt(InvoiceStatus),
+    'direction' : IDL.Opt(InvoiceDirectionFlag),
+    'paymentStatus' : IDL.Opt(PaymentStatusFlag),
+    'paymentMethod' : IDL.Opt(AcceptedCryptos),
+    'notRecurrenceType' : IDL.Vec(PeriodicRecurrence),
+    'recurrenceEndAt' : IDL.Opt(EqualityFlag),
+    'recurrenceType' : IDL.Vec(PeriodicRecurrence),
+    'amount' : IDL.Opt(EqualityFlag),
+  });
+  const ConditionalBaseRead = IDL.Record({
+    'base' : BaseRead,
+    'conditionals' : InvoiceConditionals,
   });
   const ScopedNestedProperties = IDL.Record({
     'ids' : Selected,
@@ -890,11 +1301,12 @@ export const idlFactory = ({ IDL }) => {
   const Read2 = IDL.Variant({
     'Valuation' : BaseRead,
     'Inspection' : BaseRead,
-    'Listings' : ConditionalBaseRead,
+    'Listings' : ConditionalBaseRead_1,
     'Insurance' : BaseRead,
     'Images' : BaseRead,
     'Misc' : Selected,
     'Note' : BaseRead,
+    'Proposals' : ConditionalBaseRead_2,
     'Document' : BaseRead,
     'UpdateResults' : IDL.Record({
       'conditional' : IDL.Variant({
@@ -905,6 +1317,7 @@ export const idlFactory = ({ IDL }) => {
       'selected' : Selected,
     }),
     'Maintenance' : BaseRead,
+    'Invoices' : ConditionalBaseRead,
     'Tenants' : BaseRead,
     'CollectionIds' : Selected,
     'Physical' : Selected,
@@ -933,7 +1346,7 @@ export const idlFactory = ({ IDL }) => {
     'location' : IDL.Opt(IDL.Text),
   });
   const Error = IDL.Variant({ 'InvalidPropertyId' : IDL.Null });
-  const Result__1 = IDL.Variant({ 'ok' : Property, 'err' : Error });
+  const Result__1_1 = IDL.Variant({ 'ok' : Property, 'err' : Error });
   const TestOption = IDL.Variant({
     'All' : IDL.Null,
     'TenantDelete' : IDL.Null,
@@ -989,7 +1402,6 @@ export const idlFactory = ({ IDL }) => {
     'body' : IDL.Vec(IDL.Nat8),
     'headers' : IDL.Vec(http_header),
   });
-  const UpdateResult = IDL.Variant({ 'Ok' : Property, 'Err' : UpdateError });
   const TransferFromError = IDL.Variant({
     'GenericError' : IDL.Record({
       'message' : IDL.Text,
@@ -1042,6 +1454,7 @@ export const idlFactory = ({ IDL }) => {
       ),
     'getProperty' : IDL.Func([IDL.Nat], [GetPropertyResult], []),
     'getTime' : IDL.Func([], [IDL.Nat64], ['query']),
+    'getURLs' : IDL.Func([], [IDL.Vec(IDL.Text)], []),
     'getUserNotification' : IDL.Func([Account], [IDL.Vec(Notification)], []),
     'getUserNotificationResults' : IDL.Func(
         [Account],
@@ -1053,17 +1466,12 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(Notification)],
         [],
       ),
-    'launchProperty' : IDL.Func(
-        [LaunchProperty],
-        [IDL.Vec(UpdateResultNat)],
-        [],
-      ),
     'readProperties' : IDL.Func(
         [IDL.Vec(Read2), IDL.Opt(FilterProperties)],
         [IDL.Vec(ReadResult)],
         ['query'],
       ),
-    'removeProperty' : IDL.Func([IDL.Nat], [Result__1], []),
+    'removeProperty' : IDL.Func([IDL.Nat], [Result__1_1], []),
     'runTests' : IDL.Func([TestOption], [], []),
     'transferAllNFTs' : IDL.Func([], [IDL.Vec(IDL.Opt(TransferResult))], []),
     'transferNFT' : IDL.Func(
@@ -1087,8 +1495,8 @@ export const idlFactory = ({ IDL }) => {
         [NotificationResult],
         [],
       ),
-    'updateProperty' : IDL.Func([WhatWithPropertyId], [UpdateResult], []),
-    'updatePropertyValuations' : IDL.Func([], [IDL.Vec(UpdateResult)], []),
+    'updateProperty' : IDL.Func([WhatWithPropertyId], [UpdateResult__1], []),
+    'updatePropertyValuations' : IDL.Func([], [IDL.Vec(UpdateResult__1)], []),
     'updateSavedListings' : IDL.Func([IDL.Nat, IDL.Nat], [], ['oneway']),
     'userVerified' : IDL.Func([Account], [IDL.Bool], ['query']),
     'verifyKYC' : IDL.Func([IDL.Bool], [], []),

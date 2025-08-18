@@ -168,6 +168,25 @@ module {
         };
     };
 
+    public func createAdditionalDetailsUArg(): Types.AdditionalDetailsUArg {
+        {
+            crimeScore = ?150;
+            schoolScore = ?5;
+            affordability = ?0;
+            floodZone = ?false;
+        }
+    };
+
+    public func createPhysicalDetailsUArg(): Types.PhysicalDetailsUArg {
+        {
+            lastRenovation = ?2000;
+            yearBuilt = ?0;
+            squareFootage = ?100;
+            beds = ?0;
+            baths = ?0;
+        }
+    };
+
     public func createFixedPriceCArg(): FixedPriceCArg {
         {
             tokenId = 123;
@@ -233,4 +252,66 @@ module {
             currentValue = 300000;
         };
     };
+
+    public func createProposalCArg(): Types.ProposalCArg {
+        {
+          title = "new proposal";
+          description = "new proposal description";
+          category = #Maintenance;
+          implementation = #Week;
+          startAt = Time.now() + 100000000;
+          actions = [#Valuations(#Create([createValuationRecordCArg()]))];                      // The proposed mutations
+        };
+    };
+
+    public func createProposalUArg(): Types.ProposalUArg {
+        {
+          title = ?"updated proposal";
+          description = ?"updated proposal description";
+          category = null;
+          implementation = null;
+          startAt = null;
+          actions = null;                      // The proposed mutations
+        };
+    };
+
+    public func createInvoiceCArg(): Types.InvoiceCArg {
+        {
+          title = "New Invoice";
+          description = "New Invoice Description";
+          amount = 10000;
+          dueDate = Time.now() + 100000;
+          direction = #Outgoing{
+            category = #Repairs;
+            to = {owner = Principal.fromText("2e7fg-mfyxt-iivfx-l7pim-ysvwq-qetwz-h4rhz-t76tr-5zob4-oopr3-hae"); subaccount = null};
+            accountReference = "account reference";
+            proposalId = 0;
+          };             // #Incoming(Account) or #Outgoing(Account)
+          recurrence = {
+            period = #None;
+            endDate = null;
+            previousInvoiceIds = [];
+            count = 0;
+          };             // Can be #None
+          paymentMethod = ?#ICP;          // Optional: CKUSDC, HGB, etc.
+        };
+    };
+
+    public func createInvoiceUArg(): Types.InvoiceUArg {
+        {
+          title = ?"Updated Invoice";
+          description = ?"Updated Invoice Description";
+          amount = null;
+          dueDate = null;
+          direction = null;    // #Incoming(Account) or #Outgoing(Account)
+          paymentMethod = null;          // Optional: CKUSDC, HGB, etc.
+          recurrence = null;  // Can be #None
+          preApprovedByAdmin = null;
+          process = false;
+        };
+    };
+
+
+
+    
 };

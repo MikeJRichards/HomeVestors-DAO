@@ -1,0 +1,447 @@
+:root{
+   --background: #f2fefb;
+   --hover:#d9fbf3;
+   --mainText: #0F1D2A;
+   --lightText: #0f1d2aba;
+   --HVDcolourPop: #00E4B0;
+   --HVDbase:  #3A6A99;
+   --lightHVDpop: #A7F6D6;
+   --heroSubFont: #8C9299;
+   --lightHVDbase: #9DB5CC;
+   --hoverBase: #E2E9F0;
+   --transpBase:#3a6999a2;
+   --borderLine: #e0e0e0;
+ }
+
+
+.page_content{
+   padding-top: 80px;
+}
+/* header bar */
+#proposals-header {
+   display: flex;
+   justify-content:end;
+   padding: 1rem 3rem;
+   border-top: 1px solid var(--borderLine);
+   border-bottom: 1px solid var(--borderLine);
+   background-color: var(--HVDbase);
+   }
+  
+.header-btns {
+   color: white;
+   padding: 0.5rem 1rem;
+   font-family: 'Open Sans', sans-serif;
+   font-size: 1rem;
+   font-weight: 500;
+   width: 8rem;
+   border: 0px;
+   background-color: transparent;
+   cursor: pointer;
+   transition: all 0.2s ease;
+   }
+.header-btns:hover {
+   font-weight: 600;
+   box-shadow: 0 2px 0px var(--HVDcolourPop);
+   }
+header-btns:hover #filter-icon, .header-btns:hover .sort-icon{
+   color: var(--HVDcolourPop);
+   transition: ease-in-out 0.2s;
+   }
+.header-btns.active {
+   font-weight: 600;
+   box-shadow: 0 2px 0px var(--HVDcolourPop);
+   }
+.sort-container.active .sort-icon, #filters-btn.active .sort-icon {
+   transform: rotate(180deg);
+   color: var(--HVDcolourPop);
+   transition: ease-in-out 0.2s;
+   }
+.sort-container {
+   position: relative;
+   display: inline-block;
+   font-family: 'Open Sans', sans-serif;
+   }     
+#sort-btn {
+   width: 14rem;
+   display: flex;
+   align-items: center;
+   gap:1rem;
+   }
+.sort-dropdown {
+   display: none;
+   position: absolute;
+   top: 110%; /* below the button */
+   left: 0;
+   background-color: white;
+   border: 1px solid #ccc;
+   box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+   border-radius: 8px;
+   z-index: 100;
+   width: 180px;
+   }
+.sort-container:hover .sort-dropdown {
+   display: block;
+   }
+.sort-option {
+   padding: 0.75rem 1rem;
+   cursor: pointer;
+   }     
+.sort-option:hover {
+   background-color: var(--hover);
+   font-weight: 600;
+   }      
+
+
+/* Filters Bar */
+.filters-bar {
+   padding: 1rem 6rem;
+   margin: 0rem;
+   background-color: var(--lightHVDbase);
+   font-family: 'Open Sans', sans-serif;
+   line-height: 2.5rem;
+   color: var(--mainText);
+   }
+   .fb-form-container {
+       display: flex;
+       justify-content: space-between;
+       gap: 1rem;
+   }
+   .filter-labels { font-weight: 600;}
+   #filters-btn {
+   display: flex;
+   gap:1rem;
+   align-items: center;
+   }
+   #filters-btn-container{
+   display: flex;
+   justify-content: center;
+   gap: 1rem;
+   }
+   .filtersbar-btns{
+       margin: 1rem;
+       background-color: var(--hoverBase);
+       color:var(--lightText);
+       font-size: 1rem;
+       width: 160px;
+       height: 48px;
+       font-weight: 600;
+       font-size: 1rem;
+       border-radius: 8px;
+       outline: 2px;
+       border-color:var(--HVDbase);
+       padding: 0.5rem ;
+       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.326);
+       align-items: center;
+       cursor: pointer;
+       }
+   .filtersbar-btns:hover {
+       transition: ease-in-out 0.2s;
+       transform: scale(1.05);
+       cursor: pointer;
+       font-weight: 900;
+       color: white;
+       background-color: var(--HVDbase);
+       }
+  
+   .filter {
+       display: flex;
+       align-items: center;
+       }
+   .filter-flex {
+       display: flex;
+       align-items: center;
+       gap: 0.5rem;
+       }
+  
+   input[type="checkbox"] {
+       width: 20px;
+       height: 20px;
+       accent-color: var(--HVDcolourPop);
+       color: white;
+     }
+   .filter-flex select {
+       height: 1.4rem;
+       }
+   #filter-radiobtn {
+       gap: 0.5rem;
+   }
+
+
+
+
+/* create Proposal btn */
+#createProp-container {
+   display: flex;
+   justify-content: center;
+   padding-top: 2rem ;
+   padding-bottom: -1rem;
+}
+.CreateProp-btn {
+   border-color: var(--HVDcolourPop);
+   color: white;
+   width: 208px;
+   height: 48px;
+   background-color: var(--HVDbase);
+   font-weight: 600;
+   font-size: 1.1rem;
+   border-radius: 8px;
+   outline: 2px;
+   padding: 0.75rem ;
+   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.326);
+   }  
+.CreateProp-btn:hover {
+   transform: scale(1.05);
+   cursor: pointer;
+   font-weight: 700;
+   color: var(--mainText);
+   background-image: linear-gradient(45deg, var(--HVDcolourPop), var(--lightHVDpop), var(--hover));
+   border-color: var(--HVDcolourPop);
+   transform: scale(1.05);
+   cursor: pointer;
+   }
+
+
+/* Proposals Table */
+#prop-table-container {
+   display: flex;
+   justify-content: center;
+}
+#proposals-table {
+   margin: 3rem;
+   border: solid 2px var(--lightHVDbase);
+   border-collapse: collapse;
+ 
+ }
+
+
+tbody tr:hover{background-color: var(--hover);}
+
+
+th{
+   font-family: 'Open Sans', sans-serif;
+   font-size: 1rem;
+   font-weight: 600;
+   line-height: 1.2;
+   color: var(--mainText);
+   padding: 1.5rem;
+   text-transform: uppercase;
+   border: solid 2px var(--lightHVDbase);
+   background-color: var(--lightHVDpop);
+}
+td{
+   text-align: center;
+   border: solid 2px var(--lightHVDbase);
+   color: var(--HVDbase);
+}
+ul {text-align: start;}
+
+
+#proposalVote-container {
+   display: flex;
+   justify-content: center;
+   align-items: center;
+   gap: 2rem;
+   margin-bottom: 0.5rem;
+}
+
+
+
+
+.Votebtn { border-color: var(--HVDcolourPop);
+   color: var(--HVDcolourPop);
+   width: 208px;
+   height: 48px;
+   background-color: white;
+   font-weight: 600;
+   font-size: 1rem;
+   border-radius: 8px;
+   outline: 2px;
+   padding: 0.75rem ;
+   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.326);
+   margin-bottom: 1rem;
+}
+.Votebtn:hover {
+   transform: scale(1.05);
+   cursor: pointer;
+   font-weight: 700;
+   color: white;
+   background-color: var(--HVDbase);
+   border-color: var(--HVDcolourPop);
+   transform: scale(1.05);
+   cursor: pointer;
+}
+.fa-check {
+ margin-left: 1rem;
+ color: rgb(52, 177, 52);
+ font-weight: 900;
+ font-size: 1.5rem;
+}
+.fa-xmark {
+ margin-left: 1rem;
+ color: red;
+ font-weight: 900;
+ font-size: 1.5rem;
+}
+
+
+  
+
+
+/* Modals Modals Modals Modals Modals Modals Modals Modals Modals */
+.modal {
+   position: fixed;
+   z-index: 9999;
+   top: 0; left: 0;
+   width: 100vw;
+   height: 100vh;
+   background-color: rgba(0, 0, 0, 0.6);
+ }
+ .modalTitle-container {
+   display: flex;
+   justify-content: center;
+ }
+ .modal-title {
+   color: var(--HVDbase);
+   letter-spacing: 0px;
+   word-spacing: 8px;
+ }
+ .modal-content {
+   background: white;
+   margin: 5% auto;
+   padding: 2rem;
+   border-radius: 12px;
+   width: 90%;
+   max-width: 600px;
+   max-height: 80vh;
+   overflow: hidden;
+   position: relative;
+   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+ }
+ /* Scrollable content inside modal */
+  .close {
+   position: absolute;
+   top: 1rem;
+   right: 1.5rem;
+   font-size: 1.8rem;
+   cursor: pointer;
+   color: #999;
+   font-weight: bold;
+ }
+ .close:hover {
+   color: var(--HVDbase);
+ }
+  /* Proposal form */
+ #create-proposal-form {
+   display: grid;
+   gap: 14px;
+   font: 14px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, sans-serif;
+ }
+ .form-row {
+   display: grid;
+   gap: 6px;
+   }
+ label, legend {
+   font-weight: 600;
+   color: #111827;
+   }
+ .req {
+   color: #ef4444;
+   }
+ .help {
+   color: #6b7280;
+   }
+
+
+ input[type="text"], textarea {
+   width: 100%;
+   border: 1px solid #d1d5db;
+   border-radius: 8px;
+   padding: 10px 12px;
+   font: inherit;
+   background: #fff;
+ }
+ input[type="text"]:focus, textarea:focus, fieldset:focus-within {
+   outline: none;
+   border-color: var(--HVDcolourPop);
+   box-shadow: 0 0 0 3px rgba(59,130,246,.15);
+ }
+
+
+ fieldset { border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px 12px; }
+ .radio-grid {
+   display: grid;
+   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+   gap: 8px 16px;
+   margin-top: 6px;
+ }
+ .radio-grid label {
+   font-weight: 500;
+   color: #1f2937;
+   }
+ .meta {
+   display: flex;
+   justify-content: flex-end;
+   color: #6b7280;
+   }
+
+
+ .form-actions {
+   display: flex;
+   gap: 2rem;
+   justify-content: center;
+   margin-top: 6px;
+   margin-bottom: 2rem;
+ }
+ .btn {
+   border: 1px solid #d1d5db;
+   border-radius: 10px;
+   padding: 10px 14px;
+   background: #fff;
+   cursor: pointer;
+   font-weight: 600;
+ }
+  .btn.primary {
+   background: var(--HVDbase);
+   color: #fff;
+   border-color: var(--HVDcolourPop);
+ }
+ .btn.primary:hover {
+   background-image: linear-gradient(45deg, var(--HVDcolourPop), var(--lightHVDpop), var(--hover));
+   color: var(--mainText);
+   }
+
+
+ #createProp-Modal input[type="radio"] {
+   accent-color: var(--HVDbase);
+ }
+  /* ENABLES SCROLL */
+   /* Make the modal a 2-row grid: title + scrollable body */
+   #createProp-Modal .modal-content {
+       display: grid;
+       grid-template-rows: auto 1fr;  /* title, then body */
+       max-height: 85vh;
+       width: min(720px, 95vw);
+       overflow: hidden;              /* hide outer scroll */
+   }
+  
+   /* Make just the form area scroll */
+   #ProposalForm {
+       overflow-y: auto;
+       padding-right: 4px;            /* room for scrollbar */
+       -webkit-overflow-scrolling: touch;
+   }
+  
+   /* Keep the action buttons visible while scrolling */
+   #create-proposal-form .form-actions {
+       position: sticky;
+       bottom: 0;
+       background: linear-gradient(to top, #ffffff, rgba(255,255,255,0.9));
+       padding-top: 8px;
+       z-index: 1;
+       /* Optional border on top for separation */
+       border-top: 1px solid #e5e7eb;
+   }
+ 
+       
+      
+

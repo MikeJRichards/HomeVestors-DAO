@@ -1,6 +1,14 @@
-import { getCanister, getPrincipal} from "./Main.js";
+import { getCanister, getPrincipal, logout} from "./Main.js";
 import { Principal } from "@dfinity/principal";
 import { setupModal, fromE8s, fromE6s, groupByFields, shortenPrincipal } from "./All.js";
+
+async function logoutOfAccount(){
+  document.getElementById("connect_btn").addEventListener("click",()=>{
+    logout();
+  });
+};
+
+logoutOfAccount();
 
 function tabToggle(){
   const tabs = document.querySelectorAll('.mp-header-toggle-btn');

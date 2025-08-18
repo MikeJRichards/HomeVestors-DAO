@@ -6,10 +6,13 @@ import Time "mo:base/Time";
 import Option "mo:base/Option";
 import Principal "mo:base/Principal";
 import UnstableTypes "Tests/unstableTypes";
+import Stables "Tests/stables";
+import HashMap "mo:base/HashMap";
+import Debug "mo:base/Debug";
 
 module {
     type AdministrativeInfo = Types.AdministrativeInfo;
-    type Handler<C, U, T> = UnstableTypes.Handler<C, U, T>;
+    type Handler<T, StableT> = UnstableTypes.Handler<T, StableT>;
     type InsurancePolicyCArg = Types.InsurancePolicyCArg;
     type InsurancePolicyUArg = Types.InsurancePolicyUArg;
     type InsurancePolicyUnstable = UnstableTypes.InsurancePolicyUnstable;
@@ -33,14 +36,31 @@ module {
         }
     };
 
-    public func createInsuranceHandler(): Handler<InsurancePolicyCArg, InsurancePolicyUArg, InsurancePolicyUnstable> {
-      {
-        map = func(p: PropertyUnstable) = p.administrative.insurance;
 
-        getId = func(p: PropertyUnstable) = p.administrative.insuranceId;
+    
 
-        incrementId = func(p: PropertyUnstable) = p.administrative.insuranceId += 1;
+    type Arg = Types.Arg;
+    type UpdateResult = Types.UpdateResult;
+    type Actions<C,U> = Types.Actions<C,U>;
+    type CrudHandler<C, U, T, StableT> = UnstableTypes.CrudHandler<C, U, T, StableT>;
 
+
+
+    public func createInsuranceHandler(args: Arg, action: Actions<InsurancePolicyCArg, InsurancePolicyUArg>): async UpdateResult {
+      type C = InsurancePolicyCArg;
+      type U = InsurancePolicyUArg;
+      type T = InsurancePolicyUnstable;
+      type StableT = Types.InsurancePolicy;
+      type S = UnstableTypes.AdministrativeInfoPartialUnstable;
+      let administrative = Stables.toPartialStableAdministrativeInfo(args.property.administrative);
+      let map = administrative.insurance;
+      let crudHandler: CrudHandler<C, U, T, StableT> = {
+        map;
+        var id = administrative.insuranceId;
+        setId = func(id: Nat) = administrative.insuranceId := id;
+        assignId = func(id: Nat, el: StableT) = (id, {el with id = id;});
+        delete = PropHelper.makeDelete(map);
+        fromStable = Stables.fromStableInsurancePolicy;
         mutate = func(arg: InsurancePolicyUArg, insurance: InsurancePolicyUnstable): InsurancePolicyUnstable {
             insurance.policyNumber       := PropHelper.get(arg.policyNumber, insurance.policyNumber);
             insurance.provider           := PropHelper.get(arg.provider, insurance.provider);
@@ -53,7 +73,7 @@ module {
             insurance;
         };
 
-        create = func(arg: InsurancePolicyCArg, id: Nat, caller: Principal): InsurancePolicyUnstable {
+        create = func(arg: InsurancePolicyCArg, id: Nat): T {
             {
                 var id;
                 var policyNumber = arg.policyNumber;  // Unique policy number
@@ -67,7 +87,7 @@ module {
             }
         };
 
-        validate = func(maybeInsurance: ?InsurancePolicyUnstable): Result.Result<InsurancePolicyUnstable, UpdateError> {
+        validate = func(maybeInsurance: ?T): Result.Result<T, UpdateError> {
             let insurance = switch(maybeInsurance){case(null) return #err(#InvalidElementId); case(?insurance) insurance};
             if(Text.equal(insurance.policyNumber, "")) return #err(#InvalidData{field = "policy Number"; reason = #EmptyString;});
             if(Text.equal(insurance.provider, "")) return #err(#InvalidData{field = "policy Provider"; reason = #EmptyString;});
@@ -77,18 +97,28 @@ module {
             if(Text.equal(insurance.contactInfo, "")) return #err(#InvalidData{field = "Contact Info"; reason = #EmptyString;});
             return #ok(insurance);
         }
-      }
+      };      
+  
+      let handler = PropHelper.generateGenericHandler<C, U, T, StableT, S>(crudHandler, action, Stables.toStableInsurancePolicy, func(s: S) = #Administrative(Stables.fromPartialStableAdministrativeInfo(s)), administrative);
+      await PropHelper.applyHandler<T, StableT>(args, handler);
     };
 
-    public func createDocumentHandler(): Handler<DocumentCArg, DocumentUArg, DocumentUnstable> {
-      {
-        map = func(p: PropertyUnstable) = p.administrative.documents;
-
-        getId = func(p: PropertyUnstable) = p.administrative.documentId;
-
-        incrementId = func(p: PropertyUnstable) = p.administrative.documentId += 1;
-
-        mutate = func(arg: DocumentUArg, document: DocumentUnstable): DocumentUnstable {
+    public func createDocumentHandler(args: Arg, action: Actions<DocumentCArg, DocumentUArg>): async UpdateResult {
+      type C = DocumentCArg;
+      type U = DocumentUArg;
+      type T = DocumentUnstable;
+      type StableT = Types.Document;
+      type S = UnstableTypes.AdministrativeInfoPartialUnstable;
+      let administrative : S = Stables.toPartialStableAdministrativeInfo(args.property.administrative);
+      let map = administrative.documents;
+      let crudHandler: CrudHandler<C, U, T, StableT> = {
+        map;
+        var id = administrative.documentId;
+        setId = func(id: Nat) = administrative.documentId := id;
+        assignId = func(id: Nat, el: StableT) = (id, {el with id = id;});
+        delete = PropHelper.makeDelete(map);
+        fromStable = Stables.fromStableDocument;
+        mutate = func(arg: U, document: T): T {
             document.title           := PropHelper.get(arg.title, document.title);
             document.description     := PropHelper.get(arg.description, document.description);
             document.url             := PropHelper.get(arg.url, document.url);
@@ -96,7 +126,7 @@ module {
             document;
         };
 
-        create = func(arg: DocumentCArg, id: Nat, caller: Principal): DocumentUnstable {
+        create = func(arg: C, id: Nat): T {
             {
                 var id;
                 var uploadDate = Time.now();
@@ -107,34 +137,45 @@ module {
              }
         };
 
-        validate = func(maybeDoc: ?DocumentUnstable): Result.Result<DocumentUnstable, UpdateError> {
+        validate = func(maybeDoc: ?T): Result.Result<T, UpdateError> {
             let doc = switch(maybeDoc){case(null) return #err(#InvalidElementId); case(?doc) doc};
             if(Text.equal(doc.title, "")) return #err(#InvalidData{field = "title"; reason = #EmptyString;});
             if(Text.equal(doc.description, "")) return #err(#InvalidData{field = "description"; reason = #EmptyString;});
             if(Text.equal(doc.url, "")) return #err(#InvalidData{field = "URL"; reason = #EmptyString;});
             return #ok(doc);
         }
-      }
+      };      
+  
+      let handler = PropHelper.generateGenericHandler<C, U, T, StableT, S>(crudHandler, action, Stables.toStableDocument, func(s: S) = #Administrative(Stables.fromPartialStableAdministrativeInfo(s)), administrative);
+      await PropHelper.applyHandler<T, StableT>(args, handler);
     };
 
-    public func createNoteHandler(): Handler<NoteCArg, NoteUArg, NoteUnstable> {
-      {
-        map = func(p: PropertyUnstable) = p.administrative.notes;
-
-        getId = func(p: PropertyUnstable) = p.administrative.notesId;
-
-        incrementId = func(p: PropertyUnstable) = p.administrative.notesId += 1;
-
-        mutate = func(arg: NoteUArg, note: NoteUnstable): NoteUnstable {
+    public func createNoteHandler(args: Arg, action: Actions<NoteCArg, NoteUArg>): async UpdateResult {
+      type C = NoteCArg;
+      type U = NoteUArg;
+      type T = NoteUnstable;
+      type StableT = Types.Note;
+      type S = UnstableTypes.AdministrativeInfoPartialUnstable;
+      let administrative : S = Stables.toPartialStableAdministrativeInfo(args.property.administrative);
+      let map = administrative.notes;
+      //Debug.print("MAP: "# debug_show(args.property.administrative.notes));
+      let crudHandler: CrudHandler<C, U, T, StableT> = {
+        map;
+        var id = administrative.notesId;
+        setId = func(id: Nat) = administrative.notesId := id;
+        assignId = func(id: Nat, el: StableT) = (id, {el with id = id;});
+        delete = PropHelper.makeDelete(map);
+        fromStable = Stables.fromStableNote;
+        mutate = func(arg: U, note: T): T {
           note.title   := PropHelper.get(arg.title, note.title);
           note.content := PropHelper.get(arg.content, note.content);
           note.date    := PropHelper.getNullable(arg.date, note.date);
           note;
         };
 
-        create = func(arg: NoteCArg, id: Nat, caller: Principal): NoteUnstable {
+        create = func(arg: C, id: Nat): T {
           {
-            var author = caller;
+            var author = args.caller;
             var content = arg.content;
             var date = arg.date;
             var id = id;
@@ -142,7 +183,7 @@ module {
           }
         };
 
-        validate = func(maybeNote: ?NoteUnstable): Result.Result<NoteUnstable, UpdateError> {
+        validate = func(maybeNote: ?T): Result.Result<T, UpdateError> {
           let note = switch (maybeNote) {case (?n) n; case (null) return #err(#InvalidElementId);};
           if (Text.equal(note.title, "")) return #err(#InvalidData { field = "title"; reason = #EmptyString });
           if (Text.equal(note.content, "")) return #err(#InvalidData { field = "content"; reason = #EmptyString });
@@ -150,6 +191,9 @@ module {
           if (Principal.isAnonymous(note.author)) return #err(#InvalidData { field = "author"; reason = #Anonymous });
           #ok(note);
         }
-      }
+      };      
+  
+      let handler = PropHelper.generateGenericHandler<C, U, T, StableT, S>(crudHandler, action, Stables.toStableNote, func(s: S) = #Administrative(Stables.fromPartialStableAdministrativeInfo(s)), administrative);
+      await PropHelper.applyHandler<T, StableT>(args, handler);
     };
 }

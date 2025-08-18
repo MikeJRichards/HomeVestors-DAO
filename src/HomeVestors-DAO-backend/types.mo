@@ -1,8 +1,23 @@
 import HashMap "mo:base/HashMap";
+import Result "mo:base/Result";
 
 module {
+    public type Arg = {
+        what: What;
+        caller: Principal;
+        property: Property;
+        handlePropertyUpdate: (WhatWithPropertyId, Principal) -> async UpdateResult;
+        testing: Bool;
+    };
+
+    public type UpdateResults = {#Ok: ?Nat; #Err: (?Nat, UpdateError)};
+    public type OkUpdateResult = {
+        what: What;
+        results: [Result.Result<?Nat, (?Nat, UpdateError)>];
+    };
+
     public type Result = {
-        #Ok: What;
+        #Ok: OkUpdateResult;
         #Err: UpdateError;
     };
 
@@ -12,6 +27,7 @@ module {
         #Administrative : AdministrativeInfo;
         #Operational : OperationalInfo;
         #NFTMarketplace: NFTMarketplace;
+        #Governance: Governance;
     };
 
     public type Error = {
@@ -53,6 +69,7 @@ module {
         administrative: AdministrativeInfo;  // Grouped administrative information
         operational: OperationalInfo;  // Grouped operational information
         nftMarketplace: NFTMarketplace;
+        governance: Governance;
         updates : [Result];
     };
 
@@ -87,11 +104,26 @@ module {
         baths: Nat;
     };
 
+    public type PhysicalDetailsUArg = {
+        lastRenovation: ?Nat;
+        yearBuilt: ?Nat;
+        squareFootage: ?Nat;
+        beds: ?Nat;
+        baths: ?Nat;
+    };
+
    public type AdditionalDetails = {
        crimeScore: Nat;
        schoolScore: Nat;
        affordability: Nat;
        floodZone: Bool;
+   };
+
+   public type AdditionalDetailsUArg = {
+       crimeScore: ?Nat;
+       schoolScore: ?Nat;
+       affordability: ?Nat;
+       floodZone: ?Bool;
    };
 
     // Financials Structure
@@ -100,10 +132,13 @@ module {
     };
 
     public type Financials = FinancialsArg and {
+        account: Account;
         investment: InvestmentDetails;  // Separate structure for investment-related details
         pricePerSqFoot: Nat;  // Price per square foot of the property
         valuationId: Nat; //Id of the valuations
         valuations: [(Nat, ValuationRecord)];  // Array of property valuation records
+        invoiceId: Nat; //Id of the valuations
+        invoices: [(Nat, Invoice)];  // Array of property valuation records
         monthlyRent: Nat;  // Monthly rent collected from the property
         yield: Float;  // Yield based on rental income
     };
@@ -439,7 +474,8 @@ module {
         #ImmutableLiveAuction;
         #Transfer: ?GenericTransferError;
         #Unauthorized;
-        #InsufficientBid : {minimum_bid: Nat}
+        #InsufficientBid : {minimum_bid: Nat};
+        #AsyncIdLost;
     };
 
     public type GenericTransferError = TransferFromError or {
@@ -473,6 +509,8 @@ module {
         #FailedToDecodeResponseBody;
         #JSONParseError;
         #BuyerAndSellerCannotMatch;
+        #AlreadyVoted;
+        #InvalidRecipient;
     };
 
     public type ReadErrors = {
@@ -530,6 +568,8 @@ module {
         #Listings: ConditionalBaseRead<ListingConditionals>;
         #Refunds: NestedConditionalRead<{#All; #Ok; #Err}>;
         #CollectionIds: Selected;
+        #Proposals: ConditionalBaseRead<ProposalConditionals>;
+        #Invoices: ConditionalBaseRead<InvoiceConditionals>;
     };
 
     public type ReadArg = {
@@ -603,6 +643,8 @@ module {
         #Refunds: [PropertyResult<[Refund]>];
         #NFTs: [ElementResult<[Nat]>];
         #CollectionIds : [ElementResult<Principal>];
+        #Proposals : [PropertyResult<Proposal>];
+        #Invoices : [PropertyResult<Invoice>];
     };
     
     public type Intent<T> = {
@@ -612,9 +654,9 @@ module {
     };
 
     public type Actions<C, U> = {
-        #Create: C;
-        #Update: U;
-        #Delete: Nat;
+        #Create: [C];
+        #Update: (U, [Int]);
+        #Delete: [Int];
     };
 
     public type WhatWithPropertyId = {
@@ -623,20 +665,57 @@ module {
     };
 
     public type What = {
-        #Insurance: Actions<InsurancePolicyCArg, (InsurancePolicyUArg, Nat)>;
-        #Document: Actions<DocumentCArg, (DocumentUArg, Nat)>;
-        #Note: Actions<NoteCArg, (NoteUArg, Nat)>;
-        #Maintenance: Actions<MaintenanceRecordCArg, (MaintenanceRecordUArg, Nat)>;
-        #Inspection: Actions<InspectionRecordCArg, (InspectionRecordUArg, Nat)>;
-        #Tenant: Actions<TenantCArg, (TenantUArg, Nat)>;
-        #Valuations: Actions<ValuationRecordCArg, (ValuationRecordUArg, Nat)>;
+        #Insurance: Actions<InsurancePolicyCArg, InsurancePolicyUArg>;
+        #Document: Actions<DocumentCArg, DocumentUArg>;
+        #Note: Actions<NoteCArg, NoteUArg>;
+        #Maintenance: Actions<MaintenanceRecordCArg, MaintenanceRecordUArg>;
+        #Inspection: Actions<InspectionRecordCArg, InspectionRecordUArg>;
+        #Tenant: Actions<TenantCArg, TenantUArg>;
+        #Valuations: Actions<ValuationRecordCArg, ValuationRecordUArg>;
         #Financials: FinancialsArg;
         #MonthlyRent: Nat;
-        #PhysicalDetails : PhysicalDetails;
-        #AdditionalDetails : AdditionalDetails;
-        #NFTMarketplace: MarketplaceAction;
-        #Images: Actions<Text, (Text, Nat)>;
+        #PhysicalDetails : PhysicalDetailsUArg;
+        #AdditionalDetails : AdditionalDetailsUArg;
+        #NftMarketplace: {
+            #FixedPrice: Actions<FixedPriceCArg, FixedPriceUArg>;
+            #Auction: Actions<AuctionCArg, AuctionUArg>;
+            #Launch: Actions<LaunchCArg, LaunchUArg>;
+            #Bid: BidArg;
+        };
+        #Images: Actions<Text, Text>;
         #Description : Text;
+        #Governance:{
+            #Vote: VoteArgs;
+            #Proposal: Actions<ProposalCArg, ProposalUArg>;
+        };
+        #Invoice: Actions<InvoiceCArg, InvoiceUArg>;
+    };
+
+    public type WhatFlag = {
+        #Insurance;
+        #Document;
+        #Note;
+        #Maintenance;
+        #Inspection;
+        #Tenant;
+        #Valuations;
+        #Financials;
+        #MonthlyRent;
+        #PhysicalDetails;
+        #AdditionalDetails;
+        #NftMarketplace: {
+            #FixedPrice;
+            #Auction;
+            #Launch;
+            #Bid;
+        };
+        #Images;
+        #Description;
+        #Governance:{
+            #Vote;
+            #Proposal;
+        };
+        #Invoice;
     };
 
     public type FinancialIntentAction = {
@@ -654,12 +733,12 @@ module {
 
     public type UpdateResult = {
         #Ok: Property; 
-        #Err : UpdateError;
+        #Err : [(?Nat, UpdateError)];
     };
 
     public type UpdateResultNat = {
         #Ok: Nat; 
-        #Err : UpdateError;
+        #Err : [(?Nat, UpdateError)];
     };
 
     //Marketplace structs
@@ -667,11 +746,13 @@ module {
         collectionId: Principal;
         listId: Nat;
         listings: [(Nat, Listing)];
+        timerIds: [(Nat, Nat)]; //listingId, timerId
         royalty : Nat;
     };
 
     public type Ref = {
         id: Nat;
+        asset: AcceptedCryptos;
         from: Account;
         to: Account;
         amount: Nat;
@@ -681,30 +762,41 @@ module {
 
     public type Listing = {
         #LaunchedProperty: Launch;
+        #CancelledLaunchedProperty: CancelledLaunch;
         #LaunchFixedPrice: FixedPrice;
         #CancelledLaunch: CancelledFixedPrice;
         #SoldLaunchFixedPrice: SoldFixedPrice;
+        
         #LiveFixedPrice: FixedPrice;
         #SoldFixedPrice: SoldFixedPrice;
         #CancelledFixedPrice: CancelledFixedPrice;
+        
         #LiveAuction: Auction;
         #SoldAuction: SoldAuction;
         #CancelledAuction: CancelledAuction;
     };
+
 
     public type Launch = {
         id: Nat;
         seller: Account;
         caller: Principal;
         tokenIds: [Nat];
-        args: [(Nat, Listing)];
+        listIds: [Nat];
         maxListed: Nat;
         listedAt: Int;
+        endsAt: ?Int;
         price: Nat;
         quoteAsset: AcceptedCryptos;
     };
 
-    public type LaunchArg = {
+     public type LaunchUArg = {
+        price: ?Nat;
+        endsAt: ?Int;
+        quoteAsset: ?AcceptedCryptos;
+    };
+
+    public type LaunchCArg = {
         transferType: {#TransferFrom; #Transfer};
         maxListed: ?Nat;
         price: Nat;
@@ -713,6 +805,16 @@ module {
         seller_subaccount: ?Blob;
         quoteAsset: ?AcceptedCryptos;
     };
+
+   
+
+    public type CancelledLaunch = Launch and {
+        cancelledBy: Account;
+        cancelledAt: Int;
+        reason: CancelledReason;
+    };
+
+
 
     public type MarketplaceOptions = {
         #PropertyLaunch;
@@ -725,6 +827,7 @@ module {
         #LiveAuction;
         #SoldAuction;
         #CancelledAuction;
+        #CancelledPropertyLaunch;
     };
 
     public type BaseListing = {
@@ -844,15 +947,17 @@ module {
         reason: CancelledReason;
     };
 
-    public type MarketplaceAction = {
-        #LaunchProperty: LaunchArg;
-        #UpdateLaunch: FixedPriceUArg;
-        #CreateFixedListing : FixedPriceCArg;
-        #UpdateFixedListing: FixedPriceUArg;
-        #CreateAuctionListing : AuctionCArg;
-        #UpdateAuctionListing: AuctionUArg;
+    public type CreateListing = {
+        #Fixed: FixedPriceCArg;
+        #Auction: AuctionCArg;
+        #Launch: LaunchCArg;
+    };
+
+    public type UpdateListing = {
+        #Fixed: FixedPriceUArg;
+        #Auction: AuctionUArg;
+        #Launch: FixedPriceUArg;
         #Bid: BidArg;
-        #CancelListing: CancelArg;
     };
 
     public type LaunchProperty = {
@@ -864,6 +969,22 @@ module {
 
     public type MarketplaceIntent = Intent<Listing>;
     public type MarketplaceIntentResult = IntentResult<MarketplaceIntent>;
+//    public type FixedListings = ListingTypes<FixedPrice, SoldFixedPrice, CancelledFixedPrice>;
+//    public type AuctionListings = ListingTypes<Auction, SoldAuction, CancelledAuction>;
+//    public type LaunchListings = ListingTypes<FixedPrice, CancelledFixedPrice, SoldFixedPrice>;
+//
+//    public type Listing2 = {
+//        #Fixed: FixedListings;
+//        #Auction : AuctionListings;
+//        #Launch: LaunchListings;
+//        #LaunchedProperty: Launch;
+//    };
+//
+//    public type ListingTypes<L, S, C> = {
+//        #Live: L;
+//        #Sold: S;
+//        #Cancelled: C;
+//    };
 
 //    //////Transfering NFTs
     public type TransferFromResult = {
@@ -892,4 +1013,309 @@ module {
         #Ok : Nat; // Transaction index for successful transfer
         #Err : TransferError;
     };
+
+////////////////////////////////////////////////
+////////DAO
+////////////////////////////////////////////////
+public type Governance = {
+    proposalId: Nat;
+    proposals: [(Nat, Proposal)];
+    assetCost: AcceptedCryptos;
+    proposalCost: Nat;              // in e8s or base units
+    requireNftToPropose: Bool;      // must own an NFT from this property to propose
+    minYesVotes: Nat;           // Absolute vote count threshold
+    minTurnout: Nat;               // % turnout requirement
+    quorumPercentage: Nat;         // e.g. 51
+};
+
+public type Proposal = {
+  id: Nat;
+
+  title: Text;
+  description: Text;
+  creator: Principal;
+  createdAt: Int;
+  startAt: Int;
+  eligibleVoters: [Principal];
+  totalEligibleVoters: Nat;            // ← stored for convenience
+  votes: [(Principal, Bool)];          // One vote per principal
+  status: ProposalStatus;               // Draft | Live | Executed | Rejected
+
+  category: ProposalCategory;
+  implementation: ImplementationCategory;
+  actions: [What];
+};
+
+public type ProposalConditionals = {
+    category: ?ProposalCategoryFlag;
+    implementationCategory: ?ImplementationCategory;
+    actions: ?WhatFlag;
+    status: ?ProposalStatusFlag;
+    creator: ?Principal;
+    eligibleCount: ?EqualityFlag;
+    totalVoterCount: ?EqualityFlag;
+    yesVotes: ?EqualityFlag;
+    noVotes: ?EqualityFlag;
+    startAt: ?EqualityFlag;
+    outcome: ?ProposalOutcomeFlag;
+    voted: ?(Principal, {#HasVoted; #NotVoted});
+};
+
+public type EqualityFlag = {
+    #LessThan: Int;
+    #MoreThan: Int;
+};
+
+public type ProposalCategoryFlag = {
+  #Maintenance;
+  #Operations;
+  #Admin;
+  #Valuation;
+  #Invoice;
+  #Tenancy;
+  #Other;
+};
+
+public type ProposalCategory ={
+  #Maintenance;
+  #Operations;
+  #Admin;
+  #Valuation;
+  #Invoice: { invoiceId: Nat };
+  #Tenancy;
+  #Other: Text;
+};
+
+public type ImplementationCategory ={
+  #Quick;     // 6 hours
+  #Day;      // 24 hours
+  #FourDays;
+  #Week;
+  #BiWeek;
+  #Month;
+};
+
+
+type LiveProposalArgs = {
+    endTime: Int;
+    yesVotes: Nat;
+    noVotes: Nat;
+    eligibleVoterCount: Nat;
+    totalVotesCast: Nat;                 // ← explicit for analytics / UI
+    timerId: ?Nat;
+};
+
+type ExecutedProposalArgs = {
+    outcome: ProposalOutcome;              // true = passed, false = rejected
+    executedAt: Int;
+    yesVotes: Nat;
+    noVotes: Nat;
+    totalVotesCast: Nat;                 // ← explicit for analytics / UI
+};
+
+type ProposalOutcome = {
+    #Refused: Text;
+    #Accepted: [UpdateResult];
+};
+
+public type ProposalOutcomeFlag = {
+    #Refused;
+    #Accepted;
+};
+
+public type ProposalStatus = {
+  #LiveProposal: LiveProposalArgs;
+  #Executed: ExecutedProposalArgs;
+  #RejectedEarly: { reason: Text };
+};
+
+public type ProposalStatusFlag = {
+  #LiveProposal;
+  #Executed;
+  #RejectedEarly;
+};
+
+public type ProposalCArg = {
+  title: Text;
+  description: Text;
+  category: ProposalCategory;
+  implementation: ImplementationCategory;
+  startAt: Int;
+  actions: [What];                      // The proposed mutations
+};
+
+public type ProposalUArg = {
+  title: ?Text;
+  startAt: ?Int;
+  description: ?Text;
+  category: ?ProposalCategory;
+  implementation: ?ImplementationCategory;
+  actions: ?[What];
+};
+
+public type VoteArgs = {
+  proposalId: Nat;
+  vote: Bool; // true = yes, false = no
+};
+
+
+
+
+
+////////////////////
+/////Invoices
+/////////////////////
+
+public type Invoice = {
+  id: Nat;
+  status: InvoiceStatus;
+  direction: InvoiceDirection;       // includes category + counterparty
+  title: Text;
+  description: Text;
+  amount: Nat;
+  due: Int;
+  paymentStatus: PaymentStatus;
+  paymentMethod: AcceptedCryptos;
+  recurrence: RecurrenceType;
+  logs: [InvoiceLog];
+};
+
+public type InvoiceConditionals = {
+    status: ?InvoiceStatus;
+    direction: ?InvoiceDirectionFlag;
+    amount: ?EqualityFlag;
+    due: ?EqualityFlag;
+    paymentStatus: ?PaymentStatusFlag;
+    paymentMethod: ?AcceptedCryptos;
+    recurrenceType: [PeriodicRecurrence];
+    notRecurrenceType: [PeriodicRecurrence];
+    recurrenceEndAt: ?EqualityFlag;
+};
+
+public type InvoiceDirection = {
+  #Incoming: { category: IncomeCategory; from: Account; accountReference: Text; };
+  #Outgoing: { category: ExpenseCategory; to: Account; accountReference: Text; proposalId: Nat; };
+};
+
+public type InvoiceDirectionFlag = {
+    #Incoming: { category: ?IncomeCategory; from: ?Account; accountReference: ?Text; };
+    #Outgoing: { category: ?ExpenseCategory; to: ?Account; accountReference: ?Text;};
+};
+
+public type ExpenseCategory = {
+  #Repairs;
+  #Maintenance;
+  #Insurance;
+  #Legal;
+  #ManagementFees;
+  #Utilities;
+  #CapitalImprovements;
+  #OtherExpense: Text;
+};
+
+public type IncomeCategory = {
+  #Rent;
+  #Deposit;
+  #LateFee;
+  #ServiceCharge;
+  #OtherIncome: Text;
+};
+
+public type InvoiceStatus = {
+  #Draft;
+  #Pending;
+  #Approved;
+  #Rejected;
+  #Paid;
+  #Failed;
+  #PreApproved: Principal;
+};
+
+public type PaymentStatus = {
+  #WaitingApproval;
+  #Pending: {timerId: ?Nat};
+  #Confirmed: { transactionId: Nat; paid_at: Int; };
+  #Failed: { reason: UpdateError; attempted_at: Int };
+};
+
+public type PaymentStatusFlag = {
+  #WaitingApproval;
+  #Pending;
+  #Confirmed;
+  #Failed;
+};
+
+public type RecurrenceType = {
+  period: PeriodicRecurrence;
+  endDate: ?Int;
+  previousInvoiceIds: [Nat];
+  count: Nat;
+};
+
+public type PeriodicRecurrence = {
+    #None;
+    #Daily; 
+    #Weekly;
+    #Monthly;
+    #Quarterly;
+    #BiAnnually;
+    #Annually;
+    #Custom: { interval: Nat };
+};
+
+
+
+public type InvoiceLog = {
+  timestamp: Int;
+  changedBy: Principal;
+  actionType: InvoiceLogAction;
+  details: ?Text;
+};
+
+public type InvoiceLogAction = {
+  #Created: Invoice;
+  #Edited: { oldInvoice: Invoice; newInvoice: Invoice; fieldsChanged: [Text] };
+  #StatusChange: { from: InvoiceStatus; to: InvoiceStatus };
+  #PaymentStatusChange: { from: PaymentStatus; to: PaymentStatus };
+  #ProposalLinked: { proposalId: Nat };
+  #PaymentConfirmed: { transactionId: ?Text };
+  #PaymentFailed: { reason: Text };
+  #Recurring: { previousInvoiceId: Nat; newDueDate: Int; count: Nat };
+  #Custom: Text;
+};
+
+public type InvoiceCArg = {
+  title: Text;
+  description: Text;
+  amount: Nat;
+  dueDate: Int;
+  direction: InvoiceDirection;             // #Incoming(Account) or #Outgoing(Account)
+  recurrence: RecurrenceType;             // Can be #None
+  paymentMethod: ?AcceptedCryptos;          // Optional: CKUSDC, HGB, etc.
+};
+
+public type InvoiceUArg = {
+    title: ?Text;
+    description: ?Text;
+    amount: ?Nat;
+    dueDate: ?Int;
+    direction: ?InvoiceDirection;             // #Incoming(Account) or #Outgoing(Account)
+    paymentMethod: ?AcceptedCryptos;
+    recurrence: ?RecurrenceType;
+    preApprovedByAdmin: ?Bool;               // If true: skip DAO proposal, mark as PreApproved
+    process: Bool;
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
 }

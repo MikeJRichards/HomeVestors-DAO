@@ -106,7 +106,6 @@ module NFTCollections {
         await nftActor.icrc7_transfer(transferArg);
     };
 
-
     public func verifyTransferFrom(canisterId: Principal, from: Account, to: Account, token_id: Nat): async ?TransferFromResult {
         let arg = createTransferFromArg(from, to, token_id);
         let nftActor : NFTActor = actor(Principal.toText(canisterId));

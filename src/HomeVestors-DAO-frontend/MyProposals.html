@@ -9,44 +9,373 @@
  <title>IC Home Page</title>
 
 
- <link rel="stylesheet" href="homepage.css">
- <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
- <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
- <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
-
-<link rel="stylesheet" href="./src/styles/All.css">
- <link rel="stylesheet" href="./src/styles/MyHomes.css">
+ <link rel="stylesheet" href="./src/styles/All.css">
+ <link rel="stylesheet" href="./src/styles/myProposals.css">
+ <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer" />
+ <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 
 
 <body>
-
-
  <nav>
-   <a class="logo" href="./index.html" >
+   <a class="logo" href="">
      <img id="logo" src="assets/FullLogo_Transparent_NoBuffer (4).png" alt="Logo">
-     <h1><span class="hvdao">H</span><span class="other">ome</span><span class="hvdao">V</span><span class="other">estors</span> <span class="hvdao">DAO</span></h1>
+     <h1 class="hvd-title"><span class="hvdao">H</span><span class="other">ome</span><span class="hvdao">V</span><span class="other">estors</span> <span class="hvdao">DAO</span></h1>
    </a>
-   <div class="nav_end">
+
+
+   <div id="nav_end">
      <div class="nav_menu">
-       <a class="nav_headings"  href="./AboutUs.html">About Us</a>
-       <a class="nav_headings"  href="./marketplace.html">Market Place</a>
-       <a class="nav_headings"  href="./MyHomes.html">My Homes</a>
-       <a class="nav_headings"  href="./MyProposals.html">My Proposals</a>
+       <a class="nav_headings" href="./AboutUs.html">About Us</a>
+       <a class="nav_headings" href="./marketplace.html">Market Place</a>
+       <a class="nav_headings" href="./MyHomes.html">My Homes</a>
+       <a class="nav_headings" href="./MyProposals.html">My Proposals</a>
      </div>
-     <button class="btn" id="connect_btn">Connect</button>
+     <i id="hamburger" class="fas fa-bars"></i>
+     <button id="connect_btn">Connect</button>
+     <a  id="NavWallet" class="nav_headings active hidden" href="./Balance.html"><i class="fa-solid fa-wallet" id="wallet_cp"></i></a>
    </div>
-</nav>
+ </nav>
 
 
-<div class="page_content">
+ <div class="page_content">
+
+
+   <div id="proposals-header">
+     <button id="filters-btn" class="header-btns" >
+       Filters
+       <i  id="filter-icon" class="fa-solid fa-chevron-down sort-icon"></i></button>
+     </button>
+      
+     <div class="sort-container">
+       <button id="sort-btn" class="sort-btn header-btns"> 
+         Sort: <span id="sortValue">Newest</span>
+         <i class="fa-solid fa-chevron-down sort-icon"></i>
+       </button>
+       <div class="sort-dropdown">
+         <div class="sort-option" data-value="Newest">Newest</div>
+         <div class="sort-option" data-value="Oldest">Oldest</div>
+       </div>
+     </div>
+   </div> 
+   <!-- Filters -->
+   <div id="filtersBar" class="filters-bar hidden">
+     <div class="fb-form-container" >
+       <div class="fb-contentcontainer fb-left">
+         <div class="filter-flex">
+           <label for="propertyDropdown" class="property-dropdown-label">Select Property DAO</label>
+           <select id="propertyDropdown" class="property-dropdown">
+             <option value="prop1">All</option>
+             <option value="prop1">123 Rose Street, Sheffield</option>
+             <option value="prop2">45 Elm Grove, Manchester</option>
+             <option value="prop3">78 Oak Avenue, Birmingham</option>
+           </select>
+         </div>
+       </div>
+       <div class="fb-contentcontainer fb-right">
+         <div class="filter-flex">
+           <span class="filter-labels">Show:</span>
+           <label for="" class="filter" id="filter-radiobtn">
+             All <input type="checkbox">
+             Live Proposals <input type="checkbox">
+             Pending Proposals  <input type="checkbox">
+             Accepted Proposals <input type="checkbox">
+             Declined Proposals <input type="checkbox">
+           </label>
+         </div>
+       </div>
+     </div>
+
+
+     <div id="filters-btn-container" >
+       <button id="filters-clear" class="filtersbar-btns" >Clear all Filters</button>
+       <button id="filters-done" class="filtersbar-btns"> Done </button>
+     </div>
+
+
+   </div >
+   <div id="createProp-container">
+     <button id = "createProposalBtn" class="CreateProp-btn small">Create Proposal</button>
+   </div>
+
+
   
-</div>
+   <div id="prop-table-container">
+     <table id="proposals-table">
+       <thead>
+         <tr>
+           <th>date created</th>
+           <th>Subject</th>
+           <th>catagory</th>
+           <th>Status</th>
+           <th>Your Vote</th>
+           <th>votes for/against</th>
+           <th>percentage of dao voted</th>
+           <th>time until vote ends</th>
+         </tr>
+       </thead>
+       <tbody>
+         <tr class="expandable" data-details-id="details-1" aria-expanded="false">
+           <td>1/3/2023</td>
+           <td>Boiler Options </td>
+           <td>Maintenance</td>
+           <td>Live</td>
+           <td>For</td>
+           <td>120/100</td>
+           <td>85%</td>
+           <td>24 hours</td>
+         </tr>
+         <tr id="details-1" class="details-row" aria-hidden="true">
+           <td colspan="8">
+             <div class="details-content">
+               <strong>Proposal #1024 â€” Boiler replacement options</strong>
+               <ul>
+                 <li><b>Description:</b> There have been ongoing problems with the boiler. I think that we should replace the 12-year-old combi with A-rated unit. Two quotes attached.</li>
+                 <li><b>Attachments:</b> <a href="#">Quote_A.pdf</a>, <a href="#">Quote_B.pdf</a></li>
+                 <li><b>Created by:</b> alice.neuron</li>
+                 <li><b>Quorum:</b> 60% (met)</li>
+                 <li><b>Closes:</b> 2023-03-02 18:00 UTC</li>
+               </ul>
+               <div id="proposalVote-container">
+                 <button class="Votebtn btn small"><span>Vote For</span><i class="fa-solid fa-check"></i></button>
+                 <button class="Votebtn btn small"><span>Vote Against</span><i class="fa-solid fa-xmark"></i></button>
+               </div>
+             </div>
+           </td>
+         </tr>
+         <tr class="expandable" data-details-id="details-2" aria-expanded="false">
+           <td>1/3/2023</td>
+           <td>Boiler Options </td>
+           <td>Maintenance</td>
+           <td>Live</td>
+           <td><div id="for"><span>For</span><i class="fa-solid fa-check"></i></div></td>
+           <td>120/100</td>
+           <td>85%</td>
+           <td>24 hours</td>
+         </tr>
+         <tr class="expandable" data-details-id="details-3" aria-expanded="false">
+           <td>1/3/2023</td>
+           <td>Boiler Options </td>
+           <td>Maintenance</td>
+           <td>Live</td>
+           <td><div id="for"><span>For</span><i class="fa-solid fa-check"></i></div></td>
+           <td>120/100</td>
+           <td>85%</td>
+           <td>24 hours</td>
+         </tr>
+         <tr class="expandable" data-details-id="details-4" aria-expanded="false">
+           <td>1/3/2023</td>
+           <td>Boiler Options </td>
+           <td>Maintenance</td>
+           <td>Live</td>
+           <td><div><span>Against</span><i class="fa-solid fa-xmark"></i></div></td>
+           <td>120/100</td>
+           <td>85%</td>
+           <td>24 hours</td>
+         </tr>
+       </tbody>
+     </table>
+   </div>
 
+
+
+
+
+
+
+
+
+
+
+
+ </div>
+
+
+ <!-- MODALS-->
+ <div id="createProp-Modal" class="modal hidden">
+   <div class="modal-content">
+     <span id="closeModalProp" class="close">&times;</span>
+     <div class="modalTitle-container">
+       <h3 class="h3 bold-text-p modal-title">Create A Proposal</h3>
+     </div>
+     <div id="ProposalForm" >
+       <form id="create-proposal-form" novalidate>
+        <div class="property-dropdown-container">
+          <label for="propertyDropdownModal" class="property-dropdown-label">Select Property</label>
+          <select id="propertyDropdownModal" class="property-dropdown">
+            <option value="prop1">123 Rose Street, Sheffield</option>
+            <option value="prop2">45 Elm Grove, Manchester</option>
+            <option value="prop3">78 Oak Avenue, Birmingham</option>
+          </select>
+        </div> 
+        <!-- Subject -->
+         <div class="form-row">
+           <label for="prop-subject">Subject <span class="req" aria-hidden="true">*</span></label>
+           <input
+             type="text"
+             id="prop-subject"
+             name="subject"
+             placeholder="e.g. Replace boiler in Flat 2"
+             maxlength="100"
+             required
+             aria-describedby="subject-help"
+           />
+           <small id="subject-help" class="help">Keep it short and clear. Max 100 characters.</small>
+         </div>
+      
+         <!-- Category -->
+         <fieldset class="form-row">
+           <legend>Category <span class="req" aria-hidden="true">*</span></legend>
+           <div class="radio-grid">
+             <label><input type="radio" name="category" value="Maintenance" required> Maintenance</label>
+             <label><input type="radio" name="category" value="Operations"> Operations</label>
+             <label><input type="radio" name="category" value="Admin">Admin</label>
+             <label><input type="radio" name="category" value="Valuation">Property Valuation</label>
+             <label><input type="radio" name="category" value="Invoice">Invoice</label>
+             <label><input type="radio" name="category" value="Tenancy">Tenancy</label>
+             <label><input type="radio" name="category" value="Other">Other</label>
+           </div>
+         </fieldset>
+
+         <div id="dynamic-what-form"></div>
+        <button type="button" id="add-what-btn">Add What</button>
+
+         <fieldset class="form-row">
+           <legend>Implementation TimeFrame <span class="req" aria-hidden="true">*</span></legend>
+           <div class="radio-grid">
+             <label><input type="radio" name="Implementation" value="Quick" required> 6 hours</label>
+             <label><input type="radio" name="Implementation" value="Day" required>Day</label>
+             <label><input type="radio" name="Implementation" value="FourDays">Four Days</label>
+             <label><input type="radio" name="Implementation" value="Week">Week</label>
+             <label><input type="radio" name="Implementation" value="BiWeek">Two Weeks</label>
+             <label><input type="radio" name="Implementation" value="Month">Month</label>
+           </div>
+         </fieldset>
+      
+         <!-- Comments / Details -->
+         <div class="form-row">
+           <label for="prop-comments">Details</label>
+           <textarea
+             id="prop-comments"
+             name="comments"
+             rows="5"
+             placeholder="Add context, quotes, links, or anything the DAO should considerâ€¦"
+             maxlength="2000"
+             required
+             aria-describedby="comments-count"
+           ></textarea>
+           <div class="meta">
+             <small id="comments-count">0/2000</small>
+           </div>
+         </div>
+         
+         <div>
+          <label for="start-time">Start at:</label>
+          <input type="datetime-local" id="start-time" name="start-time" required>
+         </div>
+
+          <!-- Attachments -->
+ <fieldset class="form-row">
+   <legend>Attachments (optional)</legend>
+
+
+   <!-- Visually hidden real input (kept for accessibility) -->
+   <input
+     type="file"
+     id="prop-files"
+     name="attachments"
+     class="sr-only"
+     multiple
+     accept="image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/plain,text/csv"
+     aria-describedby="attach-help"
+   />
+
+
+   <!-- Dropzone / click target -->
+   <div id="prop-dropzone" class="dropzone" role="button" tabindex="0" aria-controls="prop-files">
+     <div class="dz-inner">
+       <div class="dz-icon">placeholder</div>
+       <div class="dz-text">
+         <strong>Drag & drop files</strong> or <span class="linklike">click to browse</span>
+         <div id="attach-help" class="help">Up to 10 files, max 10&nbsp;MB each. Allowed: images, PDF, DOC/DOCX, XLS/XLSX, CSV, TXT.</div>
+       </div>
+     </div>
+   </div>
+
+
+   <!-- Selected files list -->
+   <ul id="prop-file-list" class="file-list" aria-live="polite"></ul>
+
+
+   <!-- Error area -->
+   <p id="prop-file-error" class="error" role="alert" hidden></p>
+ </fieldset>
+      
+    <!-- Actions -->
+         <div class="form-actions">
+           <button type="button" class="btn secondary" id="cancelProposalCreate">Cancel</button>
+           <button class="btn primary" id="submitNewProposal">Submit proposal</button>
+         </div>
+       </form>
+      
+     </div>
+   </div>
+
+
+ </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ <!-- FOOTER-->
+ <footer>
+   <div class="footer-social">
+     <a href="https://x.com/yourhandle" aria-label="Twitter"><i class="fab fa-x-twitter"></i></a>
+     <a href="https://facebook.com/yourpage" aria-label="Facebook"><i class="fab fa-facebook"></i></a>
+     <a href="https://instagram.com/yourpage" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+     <a href="https://oc.app/yourchat" aria-label="OpenChat"><i class="fas fa-comments"></i></a>
+     <a href="https://github.com/yourrepo" aria-label="GitHub"><i class="fab fa-github"></i></a>
+   </div>
+  
+   <div class="footer-content">
+     <div class="footer-left">
+       <div id="footer-logo-div">
+         <img id="footer-logo" src="assets/FullLogo_Transparent_NoBuffer (4).png" alt="logo">
+         <p><strong><span class="hvdao">H</span>ome<span class="hvdao">V</span>estors <span class="hvdao">DAO</span></strong></p>
+       </div>
+       <p>Â© 2025 HomeVestors DAO. All rights reserved.</p>
+     </div>
+  
+     <div class="footer-links">
+       <a href="/whitepaper.pdf">Whitepaper</a>
+       <a href="/faqs.html">FAQs</a>
+     </div>
+   </div>
+  
+   <div class="footer-disclaimer">
+     <p>Participation in governance is required to receive any rental rewards.</p>
+     <p>NFTs do not represent ownership or passive income rights.</p>
+   </div>
+ </footer>
 
  <script src="./src/main.js" type="module"></script>
 <script src="./src/scripts/MyProposals.js" type="module"></script>
-
 </body>
 
 

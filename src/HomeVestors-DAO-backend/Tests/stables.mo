@@ -7,6 +7,7 @@ import Iter "mo:base/Iter";
 import Nat "mo:base/Nat";
 import Array "mo:base/Array";
 import Text "mo:base/Text";
+import Order "mo:base/Order";
 
 module {
     type PropertyUnstable = UnstableTypes.PropertyUnstable;
@@ -35,6 +36,7 @@ module {
             administrative = toStableAdministrativeInfo(pu.administrative);
             operational = toStableOperationalInfo(pu.operational);
             nftMarketplace = toStableNFTMarketplace(pu.nftMarketplace);
+            governance = fromPartialStableGovernance(pu.governance);
             updates = Buffer.toArray(pu.updates);
         }
     };
@@ -44,6 +46,7 @@ module {
             collectionId = m.collectionId;
             listId = m.listId;
             listings = Iter.toArray(m.listings.entries());
+            timerIds = Iter.toArray(m.timerIds.entries());
             royalty = m.royalty;
         }
     };
@@ -134,10 +137,13 @@ module {
 
     public func toStableFinancials(f: FinancialsUnstable): Types.Financials {
         {
+            account = f.account;
             currentValue = f.currentValue;
             investment = toStableInvestmentDetails(f.investment);
             pricePerSqFoot = f.pricePerSqFoot;
             valuationId = f.valuationId;
+            invoiceId = f.invoiceId;
+            invoices = sortedArrayConverter<UnstableTypes.InvoiceUnstable, Types.Invoice>(f.invoices, toStableInvoice);
             valuations = sortedArrayConverter<ValuationRecordUnstable, Types.ValuationRecord>(f.valuations, toStableValuationRecord);
             monthlyRent = f.monthlyRent;
             yield = f.yield;
@@ -258,6 +264,7 @@ module {
             var administrative = fromStableAdministrativeInfo(p.administrative);
             var operational = fromStableOperationalInfo(p.operational);
             var nftMarketplace = fromStableNFTMarketplace(p.nftMarketplace);
+            var governance = toPartialStableGovernance(p.governance);
             var updates = Buffer.fromArray(p.updates);
         }
     };
@@ -267,6 +274,7 @@ module {
             var collectionId = m.collectionId;
             var listId = m.listId;
             var listings = HashMap.fromIter<Nat, Types.Listing>(m.listings.vals(), 0, Nat.equal, PropHelper.natToHash);
+            var timerIds = HashMap.fromIter<Nat, Nat>(m.timerIds.vals(), 0, Nat.equal, PropHelper.natToHash);
             var royalty = m.royalty;
         }
     };
@@ -377,12 +385,20 @@ module {
 
     public func fromStableFinancials(f: Types.Financials): UnstableTypes.FinancialsUnstable {
         {
+            var account = f.account;
             var investment = fromStableInvestmentDetails(f.investment);
             var pricePerSqFoot = f.pricePerSqFoot;
             var valuationId = f.valuationId;
             var valuations = HashMap.fromIter<Nat, UnstableTypes.ValuationRecordUnstable>(
                 Iter.map<(Nat, Types.ValuationRecord), (Nat, UnstableTypes.ValuationRecordUnstable)>(f.valuations.vals(), func ((k, v)) = (k, fromStableValuationRecord(v))),
                 0,
+                Nat.equal,
+                PropHelper.natToHash
+            );
+            var invoiceId = f.invoiceId;
+            var invoices = HashMap.fromIter<Nat, UnstableTypes.InvoiceUnstable>(
+                Iter.map<(Nat, Types.Invoice), (Nat, UnstableTypes.InvoiceUnstable)>(f.invoices.vals(), func((k, v)) = (k, fromStableInvoice(v))),
+                f.invoices.size(), 
                 Nat.equal,
                 PropHelper.natToHash
             );
@@ -495,4 +511,531 @@ module {
             var appraiser = x.appraiser;
         }
     };
+
+    ////////////////////////////////////////////////
+    /////Partial Unstables
+    ///////////////////////////////////////////////
+    type MiscellaneousPartialUnstable = UnstableTypes.MiscellaneousPartialUnstable;
+    type FinancialsPartialUnstable = UnstableTypes.FinancialsPartialUnstable;
+    type AdministrativeInfoPartialUnstable = UnstableTypes.AdministrativeInfoPartialUnstable;
+    type OperationalInfoPartialUnstable = UnstableTypes.OperationalInfoPartialUnstable;
+    type GovernanceUnstable = UnstableTypes.GovernanceUnstable;
+    type NftMarketplacePartialUnstable = UnstableTypes.NftMarketplacePartialUnstable;
+    type BaseListingUnstable = UnstableTypes.BaseListingUnstable;
+    type FixedPriceUnstable = UnstableTypes.FixedPriceUnstable;
+    type SoldFixedPriceUnstable = UnstableTypes.SoldFixedPriceUnstable;
+    type CancelledFixedPriceUnstable = UnstableTypes.CancelledFixedPriceUnstable;
+    type AuctionUnstable = UnstableTypes.AuctionUnstable;
+    type SoldAuctionUnstable = UnstableTypes.SoldAuctionUnstable;
+    type CancelledAuctionUnstable = UnstableTypes.CancelledAuctionUnstable;
+    type LaunchUnstable = UnstableTypes.LaunchUnstable;
+    type ListingUnstable = UnstableTypes.ListingUnstable;
+    type CancelledLaunchUnstable = UnstableTypes.CancelledLaunchUnstable;
+
+    public func toPartailStableOperationalInfo(o: Types.OperationalInfo):OperationalInfoPartialUnstable{
+        {
+            var tenantId = o.tenantId;
+            var maintenanceId = o.maintenanceId;
+            var inspectionsId = o.inspectionsId;
+            var tenants = HashMap.fromIter<Nat, Types.Tenant>(o.tenants.vals(), o.tenants.size(), Nat.equal, PropHelper.natToHash);
+            var maintenance = HashMap.fromIter<Nat, Types.MaintenanceRecord>(o.maintenance.vals(), o.maintenance.size(), Nat.equal, PropHelper.natToHash);
+            var inspections = HashMap.fromIter<Nat, Types.InspectionRecord>(o.inspections.vals(), o.inspections.size(), Nat.equal, PropHelper.natToHash);
+        }
+    };
+
+    public func fromPartailStableOperationalInfo(o: OperationalInfoPartialUnstable):Types.OperationalInfo{
+        {
+            tenantId = o.tenantId;
+            maintenanceId = o.maintenanceId;
+            inspectionsId = o.inspectionsId;
+            tenants = sortedEntries(o.tenants);
+            maintenance = sortedEntries(o.maintenance);
+            inspections = sortedEntries(o.inspections);
+        }
+    };
+
+        // ------------------ MISCELLANEOUS ------------------
+    public func toPartialStableMiscellaneous(m: Types.Miscellaneous): MiscellaneousPartialUnstable {
+        {
+            var description = m.description;
+            var imageId = m.imageId;
+            var images = HashMap.fromIter<Nat, Text>(m.images.vals(), m.images.size(), Nat.equal, PropHelper.natToHash);
+        }
+    };
+
+    public func fromPartialStableMiscellaneous(m: MiscellaneousPartialUnstable): Types.Miscellaneous {
+        {
+            description = m.description;
+            imageId = m.imageId;
+            images = sortedEntries(m.images);
+        }
+    };
+
+    // ------------------ FINANCIALS ------------------
+    public func toPartialStableFinancials(f: Types.Financials): FinancialsPartialUnstable {
+        {
+            var account = f.account;
+            var currentValue = f.currentValue;
+            var investment = f.investment;
+            var pricePerSqFoot = f.pricePerSqFoot;
+            var valuationId = f.valuationId;
+            var invoiceId = f.invoiceId;
+            var valuations = HashMap.fromIter<Nat, Types.ValuationRecord>(f.valuations.vals(), f.valuations.size(), Nat.equal, PropHelper.natToHash);
+            var invoices = HashMap.fromIter<Nat, Types.Invoice>(f.invoices.vals(), f.invoices.size(), Nat.equal, PropHelper.natToHash);
+            var monthlyRent = f.monthlyRent;
+            var yield = f.yield;
+        }
+    };
+
+    public func fromPartialStableFinancials(f: FinancialsPartialUnstable): Types.Financials {
+        {
+            account = f.account;
+            currentValue = f.currentValue;
+            investment = f.investment;
+            pricePerSqFoot = f.pricePerSqFoot;
+            valuationId = f.valuationId;
+            valuations = sortedEntries(f.valuations);
+            invoiceId = f.invoiceId;
+            invoices = sortedEntries(f.invoices);
+            monthlyRent = f.monthlyRent;
+            yield = f.yield;
+        }
+    };
+
+    public func toStableInvoice(i: UnstableTypes.InvoiceUnstable): Types.Invoice {
+        {
+          id = i.id;
+          status = i.status;
+          direction = i.direction;
+          title = i.title;
+          description = i.description;
+          amount = i.amount;
+          due =i.due;
+          paymentStatus = i.paymentStatus;
+          paymentMethod = i.paymentMethod;
+          recurrence= i.recurrence;
+          logs = i.logs;
+        };
+    };
+
+    public func fromStableInvoice(i: Types.Invoice): UnstableTypes.InvoiceUnstable {
+        {
+          var id = i.id;
+          var status=i.status;
+          var direction = i.direction;
+          var title = i.title;
+          var description = i.description;
+          var amount = i.amount;
+          var due =i.due;
+          var paymentStatus = i.paymentStatus;
+          var paymentMethod = i.paymentMethod;
+          var recurrence= i.recurrence;
+          var logs = i.logs;
+        };
+    };
+
+    // ------------------ ADMINISTRATIVE INFO ------------------
+    public func toPartialStableAdministrativeInfo(a: Types.AdministrativeInfo): AdministrativeInfoPartialUnstable {
+        {
+            var documentId = a.documentId;
+            var insuranceId = a.insuranceId;
+            var notesId = a.notesId;
+            var insurance = HashMap.fromIter<Nat, Types.InsurancePolicy>(a.insurance.vals(), a.insurance.size(), Nat.equal, PropHelper.natToHash);
+            var documents = HashMap.fromIter<Nat, Types.Document>(a.documents.vals(), a.documents.size(), Nat.equal, PropHelper.natToHash);
+            var notes = HashMap.fromIter<Nat, Types.Note>(a.notes.vals(), a.notes.size(), Nat.equal, PropHelper.natToHash);
+        }
+    };
+
+    public func sortedEntries<T>(map: HashMap.HashMap<Nat, T>) : [(Nat, T)] {
+        Array.sort(
+            Iter.toArray(map.entries()),
+            func((id1, _) : (Nat, T), (id2, _) : (Nat, T)): Order.Order {
+                Nat.compare(id1, id2)
+            }
+        )
+    };
+
+    public func fromPartialStableAdministrativeInfo(a: AdministrativeInfoPartialUnstable): Types.AdministrativeInfo {
+        {
+            documentId = a.documentId;
+            insuranceId = a.insuranceId;
+            notesId = a.notesId;
+            insurance = sortedEntries(a.insurance);
+            documents = sortedEntries(a.documents);
+            notes = sortedEntries(a.notes);
+        }
+    };
+
+    //--------------------- Governance ---------------------
+    public func toPartialStableGovernance(g: Types.Governance): GovernanceUnstable {
+        {
+            var proposalId = g.proposalId;
+            var proposals = HashMap.fromIter<Nat, Types.Proposal>(g.proposals.vals(), g.proposals.size(), Nat.equal, PropHelper.natToHash);
+            var assetCost = g.assetCost;
+            var proposalCost = g.proposalCost;
+            var requireNftToPropose = g.requireNftToPropose;
+            var minYesVotes = g.minYesVotes;
+            var minTurnout= g.minTurnout;
+            var quorumPercentage = g.quorumPercentage;
+        }
+    };
+
+    public func fromPartialStableGovernance(g: GovernanceUnstable): Types.Governance {
+        {
+            proposalId = g.proposalId;
+            proposals = sortedEntries(g.proposals);
+            assetCost = g.assetCost;
+            proposalCost = g.proposalCost;
+            requireNftToPropose = g.requireNftToPropose;
+            minYesVotes = g.minYesVotes;
+            minTurnout= g.minTurnout;
+            quorumPercentage = g.quorumPercentage;
+        }
+    };
+
+    public func toStableProposal(p: UnstableTypes.ProposalUnstable): Types.Proposal {
+        {
+            id = p.id;
+            title = p.title;
+            description = p.description;
+            creator = p.creator;
+            createdAt = p.createdAt;
+            startAt = p.startAt;
+            eligibleVoters = p.eligibleVoters;
+            totalEligibleVoters = p.totalEligibleVoters;            // ← stored for convenience
+            votes = p.votes;
+            status = p.status;
+            category = p.category;
+            implementation = p.implementation;
+            actions = p.actions;
+        }
+    };
+
+    public func fromStableProposal(p: Types.Proposal): UnstableTypes.ProposalUnstable {
+        {
+            var id = p.id;
+            var title = p.title;
+            var description = p.description;
+            var creator = p.creator;
+            var startAt = p.startAt;
+            var createdAt = p.createdAt;
+            var eligibleVoters = p.eligibleVoters;
+            var totalEligibleVoters = p.totalEligibleVoters;            // ← stored for convenience
+            var votes = p.votes;
+            var status = p.status;
+            var category = p.category;
+            var implementation = p.implementation;
+            var actions = p.actions;
+        }
+    };
+
+
+
+    // ------------------ NFT MARKETPLACE ------------------
+    public func toPartialStableNftMarketplace(n: Types.NFTMarketplace): NftMarketplacePartialUnstable {
+        {
+            var collectionId = n.collectionId;
+            var listId = n.listId;
+            var listings = HashMap.fromIter<Nat, Types.Listing>(n.listings.vals(), n.listings.size(), Nat.equal, PropHelper.natToHash);
+            var timerIds = HashMap.fromIter<Nat, Nat>(n.timerIds.vals(), n.timerIds.size(), Nat.equal, PropHelper.natToHash);
+            var royalty = n.royalty;
+        }
+    };
+
+    public func fromPartialStableNftMarketplace(n: NftMarketplacePartialUnstable): Types.NFTMarketplace {
+        {
+            collectionId = n.collectionId;
+            listId = n.listId;
+            listings = sortedEntries(n.listings);
+            timerIds = sortedEntries(n.timerIds);
+            royalty = n.royalty;
+        }
+    };
+
+    ////////////Listing
+
+    public func fromStableBaseListing<X <:Types.BaseListing>(base: X): BaseListingUnstable {
+        {
+            var id = base.id;
+            var tokenId = base.tokenId;
+            var listedAt = base.listedAt;
+            var seller = base.seller;
+            var quoteAsset = base.quoteAsset;
+        };
+    };
+
+    public func toStableBaseListing<X <: BaseListingUnstable>(base: X): Types.BaseListing {
+        {
+            id = base.id;
+            tokenId = base.tokenId;
+            listedAt = base.listedAt;
+            seller = base.seller;
+            quoteAsset = base.quoteAsset;
+        };
+    };
+
+    public func fromStableFixedPrice<X <: Types.FixedPrice>(fixed: X): FixedPriceUnstable {
+        {
+            var id = fixed.id;
+            var tokenId = fixed.tokenId;
+            var listedAt = fixed.listedAt;
+            var seller = fixed.seller;
+            var quoteAsset = fixed.quoteAsset;
+            var price = fixed.price;
+            var expiresAt = fixed.expiresAt;
+        }
+    };
+
+    public func toStableFixedPrice<X <: FixedPriceUnstable>(fixed: X): Types.FixedPrice {
+        {
+            toStableBaseListing(fixed) with
+            price = fixed.price;
+            expiresAt = fixed.expiresAt;
+        }
+    };
+
+    public func fromStableSoldFixedPrice(sold: Types.SoldFixedPrice): SoldFixedPriceUnstable {
+        {
+            var id = sold.id;
+            var tokenId = sold.tokenId;
+            var listedAt = sold.listedAt;
+            var seller = sold.seller;
+            var quoteAsset = sold.quoteAsset;
+            var price = sold.price;
+            var expiresAt = sold.expiresAt;
+            var bid = sold.bid;
+            var royaltyBps = sold.royaltyBps;
+        }
+    };
+
+    public func toStableSoldFixedPrice(sold: SoldFixedPriceUnstable): Types.SoldFixedPrice {
+        {
+            toStableFixedPrice(sold) with
+            bid = sold.bid;
+            royaltyBps = sold.royaltyBps;
+        }
+    };
+
+  
+
+    public func fromStableCancelledFixedPrice(cancelled: Types.CancelledFixedPrice): CancelledFixedPriceUnstable {
+        {
+            var id = cancelled.id;
+            var tokenId = cancelled.tokenId;
+            var listedAt = cancelled.listedAt;
+            var seller = cancelled.seller;
+            var quoteAsset = cancelled.quoteAsset;
+            var price = cancelled.price;
+            var expiresAt = cancelled.expiresAt;
+            var cancelledBy = cancelled.cancelledBy;
+            var cancelledAt = cancelled.cancelledAt;
+            var reason = cancelled.reason;
+        }
+    };
+
+    public func toStableCancelledFixedPrice(cancelled: CancelledFixedPriceUnstable): Types.CancelledFixedPrice {
+        {
+            toStableFixedPrice(cancelled) with
+            cancelledBy = cancelled.cancelledBy;
+            cancelledAt = cancelled.cancelledAt;
+            reason = cancelled.reason;
+        }
+    };
+
+    public func fromStableAuctions<X <:Types.Auction>(auction: X): AuctionUnstable {
+        {
+            var id = auction.id;
+            var tokenId = auction.tokenId;
+            var listedAt = auction.listedAt;
+            var seller = auction.seller;
+            var quoteAsset = auction.quoteAsset;
+            var startingPrice = auction.startingPrice;
+            var buyNowPrice = auction.buyNowPrice;
+            var bidIncrement = auction.bidIncrement;
+            var reservePrice = auction.reservePrice;
+            var startTime = auction.startTime;
+            var endsAt = auction.endsAt;
+            var highestBid = auction.highestBid;
+            var previousBids = Buffer.fromArray(auction.previousBids);
+            var refunds = Buffer.fromArray(auction.refunds);
+        }
+    };
+
+    public func toStableAuctions<X <:AuctionUnstable>(auction: X): Types.Auction {
+        {
+            toStableBaseListing(auction) with
+            startingPrice = auction.startingPrice;
+            buyNowPrice = auction.buyNowPrice;
+            bidIncrement = auction.bidIncrement;
+            reservePrice = auction.reservePrice;
+            startTime = auction.startTime;
+            endsAt = auction.endsAt;
+            highestBid = auction.highestBid;
+            previousBids = Buffer.toArray(auction.previousBids);
+            refunds = Buffer.toArray(auction.refunds);
+        }
+    };
+
+    public func fromStableSoldAuction(sold: Types.SoldAuction): SoldAuctionUnstable {
+        {
+            var id = sold.id;
+            var tokenId = sold.tokenId;
+            var listedAt = sold.listedAt;
+            var seller = sold.seller;
+            var quoteAsset = sold.quoteAsset;
+            var startingPrice = sold.startingPrice;
+            var buyNowPrice = sold.buyNowPrice;
+            var bidIncrement = sold.bidIncrement;
+            var reservePrice = sold.reservePrice;
+            var startTime = sold.startTime;
+            var endsAt = sold.endsAt;
+            var highestBid = sold.highestBid;
+            var previousBids = Buffer.fromArray(sold.previousBids);
+            var refunds = Buffer.fromArray(sold.refunds); 
+            var auctionEndTime = sold.auctionEndTime;
+            var soldFor = sold.soldFor;
+            var boughtNow = sold.boughtNow;
+            var buyer = sold.buyer;
+            var royaltyBps = sold.royaltyBps;
+        }
+    };
+
+    public func toStableSoldAuction(sold: SoldAuctionUnstable): Types.SoldAuction {
+        {
+            toStableAuctions(sold) with 
+            auctionEndTime = sold.auctionEndTime;
+            soldFor = sold.soldFor;
+            boughtNow = sold.boughtNow;
+            buyer = sold.buyer;
+            royaltyBps = sold.royaltyBps;
+        }
+    };
+
+    public func fromStableCancelledAuction(cancelled: Types.CancelledAuction): CancelledAuctionUnstable {
+        {
+            var id = cancelled.id;
+            var tokenId = cancelled.tokenId;
+            var listedAt = cancelled.listedAt;
+            var seller = cancelled.seller;
+            var quoteAsset = cancelled.quoteAsset;
+            var startingPrice = cancelled.startingPrice;
+            var buyNowPrice = cancelled.buyNowPrice;
+            var bidIncrement = cancelled.bidIncrement;
+            var reservePrice = cancelled.reservePrice;
+            var startTime = cancelled.startTime;
+            var endsAt = cancelled.endsAt;
+            var highestBid = cancelled.highestBid;
+            var previousBids = Buffer.fromArray(cancelled.previousBids);
+            var refunds = Buffer.fromArray(cancelled.refunds);
+            var cancelledBy = cancelled.cancelledBy;
+            var cancelledAt = cancelled.cancelledAt;
+            var reason = cancelled.reason;
+        }
+    };
+
+    public func toStableCancelledAuction(cancelled: CancelledAuctionUnstable): Types.CancelledAuction {
+        {
+            toStableAuctions(cancelled) with 
+            cancelledBy = cancelled.cancelledBy;
+            cancelledAt = cancelled.cancelledAt;
+            reason = cancelled.reason;
+        }
+    };
+
+    public func fromStableLaunch(launch: Types.Launch): LaunchUnstable {
+        {
+            var id = launch.id;
+            var seller = launch.seller;
+            var caller = launch.caller;
+            var tokenIds = Buffer.fromArray(launch.tokenIds);
+            var listIds = Buffer.fromArray(launch.listIds);
+            var maxListed = launch.maxListed;
+            var listedAt = launch.listedAt;
+            var price = launch.price;
+            var quoteAsset = launch.quoteAsset;
+            var endsAt = launch.endsAt;
+        }
+    };
+
+    public func fromStableCancelledLaunch(launch: Types.CancelledLaunch): CancelledLaunchUnstable {
+        {
+            var id = launch.id;
+            var seller = launch.seller;
+            var caller = launch.caller;
+            var tokenIds = Buffer.fromArray(launch.tokenIds);
+            var listIds = Buffer.fromArray(launch.listIds);
+            var maxListed = launch.maxListed;
+            var listedAt = launch.listedAt;
+            var price = launch.price;
+            var quoteAsset = launch.quoteAsset;
+            var endsAt = launch.endsAt;
+            var cancelledBy = launch.cancelledBy;
+            var cancelledAt = launch.cancelledAt;
+            var reason = launch.reason;
+        }
+    };
+
+    public func toStableCancelledLaunch(launch: CancelledLaunchUnstable): Types.CancelledLaunch {
+        {
+            toStableLaunch(launch) with
+            cancelledBy = launch.cancelledBy;
+            cancelledAt = launch.cancelledAt;
+            reason = launch.reason;
+        }
+    };
+
+    public func toStableLaunch<X <: LaunchUnstable>(launch: X): Types.Launch {
+        {
+            id = launch.id;
+            seller = launch.seller;
+            caller = launch.caller;
+            tokenIds = Buffer.toArray(launch.tokenIds);
+            listIds = Buffer.toArray(launch.listIds);
+            maxListed = launch.maxListed;
+            listedAt = launch.listedAt;
+            price = launch.price;
+            quoteAsset = launch.quoteAsset;
+            endsAt = launch.endsAt;
+        }
+    };
+
+    
+
+    public func fromStableListing(listing: Types.Listing): ListingUnstable{
+        switch(listing){
+            case(#LaunchedProperty(arg)) #LaunchedProperty(fromStableLaunch(arg));
+            case(#CancelledLaunchedProperty(arg)) #CancelledLaunchedProperty(fromStableCancelledLaunch(arg));
+            case(#LaunchFixedPrice(arg)) #LaunchFixedPrice(fromStableFixedPrice(arg));
+            case(#CancelledLaunch(arg)) #CancelledLaunch(fromStableCancelledFixedPrice(arg));
+            case(#SoldLaunchFixedPrice(arg)) #SoldLaunchFixedPrice(fromStableSoldFixedPrice(arg));
+            case(#LiveFixedPrice(arg)) #LiveFixedPrice(fromStableFixedPrice(arg));
+            case(#SoldFixedPrice(arg)) #SoldFixedPrice(fromStableSoldFixedPrice(arg));
+            case(#CancelledFixedPrice(arg)) #CancelledFixedPrice(fromStableCancelledFixedPrice(arg));
+            case(#LiveAuction(arg)) #LiveAuction(fromStableAuctions(arg));
+            case(#SoldAuction(arg)) #SoldAuction(fromStableSoldAuction(arg));
+            case(#CancelledAuction(arg)) #CancelledAuction(fromStableCancelledAuction(arg));
+        }
+    };
+
+    public func toStableListing(listing: ListingUnstable): Types.Listing{
+        switch(listing){
+            case(#LaunchedProperty(arg)) #LaunchedProperty(toStableLaunch(arg));
+            case(#CancelledLaunchedProperty(arg)) #CancelledLaunchedProperty(toStableCancelledLaunch(arg));
+            case(#LaunchFixedPrice(arg)) #LaunchFixedPrice(toStableFixedPrice(arg));
+            case(#CancelledLaunch(arg)) #CancelledLaunch(toStableCancelledFixedPrice(arg));
+            case(#SoldLaunchFixedPrice(arg)) #SoldLaunchFixedPrice(toStableSoldFixedPrice(arg));
+            case(#LiveFixedPrice(arg)) #LiveFixedPrice(toStableFixedPrice(arg));
+            case(#SoldFixedPrice(arg)) #SoldFixedPrice(toStableSoldFixedPrice(arg));
+            case(#CancelledFixedPrice(arg)) #CancelledFixedPrice(toStableCancelledFixedPrice(arg));
+            case(#LiveAuction(arg)) #LiveAuction(toStableAuctions(arg));
+            case(#SoldAuction(arg)) #SoldAuction(toStableSoldAuction(arg));
+            case(#CancelledAuction(arg)) #CancelledAuction(toStableCancelledAuction(arg));
+        }
+    };
+
+
+
+
+
 };
+

@@ -85,6 +85,8 @@ module {
         await tokenActor.icrc2_transfer_from(arg);
     };
 
+
+
     public func transferFromBackend(token: AcceptedCryptos, maxAmount: Nat, to: Account, from_subaccount:?Blob): async TransferResult {
         let tokenActor : TokenActor = actor(getTokenPrincipal(token));
         let fee = await tokenActor.icrc1_fee();
@@ -100,6 +102,19 @@ module {
         };
         
         await tokenActor.icrc1_transfer(arg);
+    };
+
+    public func transfer(token: AcceptedCryptos, from_subaccount: ?Blob, to: Account, amount: Nat): async TransferResult {
+      let tokenActor : TokenActor = actor(getTokenPrincipal(token));
+      let arg : TransferArg = {
+        from_subaccount;
+        to;
+        amount;
+        fee = null;
+        memo = null;
+        created_at_time = ?Nat64.fromIntWrap(Time.now());
+      };
+      await tokenActor.icrc1_transfer(arg);
     };
 
 }

@@ -1,3 +1,4 @@
 [dependencies]
-base = "0.13.7"
+base = "0.14.0"
 json = "1.2.1"
+sha2 = "0.1.2"

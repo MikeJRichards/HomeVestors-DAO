@@ -1,0 +1,29 @@
+async function createProposal(){
+    let btn = document.getElementById("submitNewProposal");
+  btn.addEventListener('click', async ()=> {
+    let arg = {
+        propertyId: 0,
+        what: {
+            Governance: {
+                Proposal: {
+                    Create:
+                        [{
+                            title = document.getElementById("prop-subject").value,
+                            description = document.getElementById("prop-comments").value,
+                            category = document.querySelector('input[name="category"]:checked')?.value,
+                            implementation = document.querySelector('input[name="Implementation"]:checked')?.value,
+                            startAt = Math.floor(new Date(document.getElementById("start-time").value).getTime() / 1000),
+                            actions: []
+                        }]
+                }
+            }
+        }
+
+    } 
+
+  })
+}
+
+import {setupModal, currency, carousel } from "./All.js";
+
+setupModal("createProposalBtn", "createProp-Modal", "closeModalProp");

@@ -8,26 +8,35 @@ module {
     type Result = Types.Result;
     type What = Types.What;
     type UpdateError = Types.UpdateError;
+    type Update = Types.Update;
 
-    public type Handler<C,U,T> = {
-        map: PropertyUnstable -> HashMap.HashMap<Nat, T>;
-        getId : PropertyUnstable -> Nat;
-        incrementId : PropertyUnstable -> ();
-        create: (C, Nat, Principal) -> T;
+    public type Handler<T, StableT> = {
+        validateAndPrepare: () -> [(?Nat, Result.Result<T, Types.UpdateError>)];
+        asyncEffect:  [(?Nat, Result.Result<T, UpdateError>)] -> async [(?Nat, Result.Result<(), UpdateError>)];
+        applyAsyncEffects: (?Nat, Result.Result<T, Types.UpdateError>) -> [(?Nat, Result.Result<StableT, Types.UpdateError>)];
+        applyUpdate: (?Nat, StableT) -> ?Nat;
+        getUpdate: () -> Update;
+        finalAsync: [Result.Result<?Nat, (?Nat, UpdateError)>] -> async ();
+    };
+
+    public type CrudHandler<C, U, T, StableT> = {
+        map: HashMap.HashMap<Nat, StableT>;
+        var id: Nat;
+        setId: Nat -> ();
+        assignId: (Nat, StableT) -> (Nat, StableT); //increment property id, assign id to el, return (id, el)
+        delete: (Nat, StableT) -> ();
+        fromStable: StableT -> T;
+        create: (C, Nat) -> T;
         mutate: (U, T) -> T;
         validate: ?T -> Result.Result<T, UpdateError>;
     };
+
 
     public type SimpleHandler<T> = {
       validate: (val: T) -> Result.Result<T, UpdateError>;
       apply: (val: T, p: PropertyUnstable) -> ();
     };
 
-    public type Arg = {
-        what: What;
-        caller: Principal;
-        property: PropertyUnstable;
-    };
 
     public type PropertyUnstable = {
         var id: Nat;
@@ -36,6 +45,7 @@ module {
         var administrative: AdministrativeInfoUnstable;
         var operational: OperationalInfoUnstable;
         var nftMarketplace: NFTMarketplaceUnstable;
+        var governance: GovernanceUnstable;
         var updates: Buffer.Buffer<Result>;
     };
 
@@ -96,10 +106,13 @@ module {
     };
 
     public type FinancialsUnstable = {
+        var account: Account;
         var investment: InvestmentDetailsUnstable;
         var pricePerSqFoot: Nat;
         var valuationId: Nat;
         var valuations: HashMap.HashMap<Nat, ValuationRecordUnstable>;
+        var invoiceId: Nat;
+        var invoices: HashMap.HashMap<Nat, InvoiceUnstable>;
         var monthlyRent: Nat;
         var yield: Float;
         var currentValue: Nat;
@@ -237,8 +250,198 @@ module {
         var collectionId: Principal;
         var listId: Nat;
         var listings: HashMap.HashMap<Nat, Listing>;
+        var timerIds: HashMap.HashMap<Nat, Nat>; //listId, timerIds
         var royalty : Nat;
     };
 
+    public type InvoiceUnstable = {
+      var id: Nat;
+      var status: Types.InvoiceStatus;
+      var direction: Types.InvoiceDirection;       // includes category + counterparty
+      var title: Text;
+      var description: Text;
+      var amount: Nat;
+      var due: Int;
+      var paymentStatus: Types.PaymentStatus;
+      var paymentMethod: Types.AcceptedCryptos;
+      var recurrence: Types.RecurrenceType;
+      var logs: [Types.InvoiceLog];
+    };
+
     type Listing = Types.Listing;
+    type InvestmentDetails = Types.InvestmentDetails;
+    type ValuationRecord = Types.ValuationRecord;
+
+    public type MiscellaneousPartialUnstable = {
+        var description: Text;
+        var imageId: Nat;
+        var images: HashMap.HashMap<Nat, Text>;
+    };
+
+    public type FinancialsPartialUnstable = {
+        var account : Account;
+        var currentValue: Nat;
+        var investment: InvestmentDetails;
+        var pricePerSqFoot: Nat;
+        var valuationId: Nat;
+        var valuations : HashMap.HashMap<Nat, ValuationRecord>;
+        var invoiceId: Nat;
+        var invoices : HashMap.HashMap<Nat, Types.Invoice>;
+        var monthlyRent: Nat;
+        var yield: Float;
+    };
+    type InsurancePolicy = Types.InsurancePolicy;
+    type Document = Types.Document;
+    type Note = Types.Note;
+
+    public type AdministrativeInfoPartialUnstable = {
+        var documentId: Nat;
+        var insuranceId: Nat;
+        var notesId: Nat;
+        var insurance: HashMap.HashMap<Nat, InsurancePolicy>;
+        var documents: HashMap.HashMap<Nat, Document>;
+        var notes: HashMap.HashMap<Nat, Note>;
+    };
+
+    type Tenant = Types.Tenant;
+    type MaintenanceRecord = Types.MaintenanceRecord;
+    type InspectionRecord = Types.InspectionRecord;
+
+    public type OperationalInfoPartialUnstable = {
+        var tenantId: Nat;
+        var maintenanceId: Nat;
+        var inspectionsId: Nat;
+        var tenants: HashMap.HashMap<Nat, Tenant>;
+        var maintenance: HashMap.HashMap<Nat, MaintenanceRecord>;
+        var inspections: HashMap.HashMap<Nat, InspectionRecord>;
+    };
+
+    public type GovernanceUnstable = {
+        var proposalId: Nat;
+        var proposals: HashMap.HashMap<Nat, Types.Proposal>;
+        var assetCost: AcceptedCryptos;
+        var proposalCost: Nat;              // in e8s or base units
+        var requireNftToPropose: Bool;      // must own an NFT from this property to propose
+        var minYesVotes: Nat;           // Absolute vote count threshold
+        var minTurnout: Nat;               // % turnout requirement
+        var quorumPercentage: Nat;         // e.g. 51
+    };
+
+    public type ProposalUnstable = {
+      var id: Nat;
+      var title: Text;
+      var description: Text;
+      var creator: Principal;
+      var createdAt: Int;
+      var startAt: Int;
+      var eligibleVoters: [Principal];
+      var totalEligibleVoters: Nat;            // ← stored for convenience
+      var votes: [(Principal, Bool)];          // One vote per principal
+      var status: Types.ProposalStatus;               // Draft | Live | Executed | Rejected
+      var category: Types.ProposalCategory;
+      var implementation: Types.ImplementationCategory;
+      var actions: [What];
+    };
+
+
+
+    public type NftMarketplacePartialUnstable = {
+        var collectionId: Principal;
+        var listId: Nat;
+        var listings: HashMap.HashMap<Nat, Listing>;
+        var timerIds: HashMap.HashMap<Nat, Nat>;
+        var royalty: Nat;
+    };
+
+    type Account = Types.Account;
+    public type BaseListingUnstable = {
+        var id: Nat;
+        var tokenId: Nat;
+        var listedAt: Int;
+        var seller: Account;
+        var quoteAsset: AcceptedCryptos;
+    };
+  
+    public type FixedPriceUnstable = BaseListingUnstable and {
+        var price: Nat;
+        var expiresAt: ?Int;
+    };
+
+    type Bid = Types.Bid;
+    public type SoldFixedPriceUnstable = FixedPriceUnstable and {
+        var bid: Bid;
+        var royaltyBps: ?Nat;
+    };
+
+    type CancelledReason = Types.CancelledReason;
+    public type CancelledFixedPriceUnstable = FixedPriceUnstable and {
+        var cancelledBy: Account;
+        var cancelledAt: Int;
+        var reason: CancelledReason;
+    };
+
+    type Refund = Types.Refund;
+    public type AuctionUnstable = BaseListingUnstable and {
+        var startingPrice: Nat;
+        var buyNowPrice: ?Nat;
+        var bidIncrement: Nat;
+        var reservePrice: ?Nat;
+        var startTime: Int;
+        var endsAt: Int;
+        var highestBid: ?Bid;
+        var previousBids: Buffer.Buffer<Bid>;
+        var refunds: Buffer.Buffer<Refund>;
+    };
+
+    public type SoldAuctionUnstable = AuctionUnstable and {
+        var auctionEndTime: Int;
+        var soldFor: Nat;
+        var boughtNow: Bool;
+        var buyer: Account;
+        var royaltyBps: ?Nat;
+    };
+
+    public type CancelledAuctionUnstable = AuctionUnstable and {
+        var cancelledBy: Account;
+        var cancelledAt: Int;
+        var reason: CancelledReason;
+    };
+
+    public type LaunchUnstable = {
+        var id: Nat;
+        var seller: Account;
+        var caller: Principal;
+        var tokenIds: Buffer.Buffer<Nat>;
+        var listIds: Buffer.Buffer<Nat>;
+        var maxListed: Nat;
+        var listedAt: Int;
+        var price: Nat;
+        var quoteAsset: AcceptedCryptos;
+        var endsAt: ?Int;
+    };
+
+    public type CancelledLaunchUnstable = LaunchUnstable and {
+        var cancelledBy: Account;
+        var cancelledAt: Int;
+        var reason: CancelledReason;
+    };
+
+    public type ListingUnstable = {
+        #LaunchedProperty: LaunchUnstable;
+        #LaunchFixedPrice: FixedPriceUnstable;
+        #CancelledLaunch: CancelledFixedPriceUnstable;
+        #CancelledLaunchedProperty: CancelledLaunchUnstable;
+        #SoldLaunchFixedPrice: SoldFixedPriceUnstable;
+        #LiveFixedPrice: FixedPriceUnstable;
+        #SoldFixedPrice: SoldFixedPriceUnstable;
+        #CancelledFixedPrice: CancelledFixedPriceUnstable;
+        #LiveAuction: AuctionUnstable;
+        #SoldAuction: SoldAuctionUnstable;
+        #CancelledAuction: CancelledAuctionUnstable;
+    };
+
+
+
+
+
 }
