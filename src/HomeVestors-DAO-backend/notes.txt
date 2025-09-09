@@ -1,0 +1,204 @@
+Unified flow: 
+{
+  "Proposals": {
+    "KeyEnums": {
+      "ProposalStatus": {
+        "#LiveProposal": "Voting is open; tracks yes/no votes, turnout, endTime. Flow → wait for threshold/quorum check.",
+        "#Executed": "Proposal passed and actions executed. Flow → mutates property state via actions array.",
+        "#RejectedEarly": "Fails before vote ends (e.g. invalid conditions). Flow → no state changes."
+      },
+      "ProposalOutcome": {
+        "#Accepted": "DAO approved; actions applied to property state.",
+        "#Refused": "DAO rejected; no actions applied.",
+        "#AwaitingTenantApproval": "Special case for tenancy/maintenance/rent; requires tenant confirmation after DAO approval."
+      },
+      "ProposalCategory": {
+        "Normal": "Operations, Admin, Valuation → standard DAO vote → execute actions.",
+        "Invoice": "Links to an invoice; flow affects invoice.status.",
+        "Tenancy/Rent/Maintenance": "May require tenantApproved = true → multi-approval system."
+      },
+      "ImplementationCategory": {
+        "Short (Quick, Day)": "Low-impact proposals resolve fast.",
+        "Longer (Week, Month)": "Higher-impact decisions require more time to gather votes."
+      }
+    },
+    "ActionsArray": {
+      "Definition": "[What] - array of state mutations to execute if proposal passes",
+      "Flow": [
+        "1. Proposal passes vote thresholds.",
+        "2. Governance engine iterates over each action in the array.",
+        "3. Each action calls its domain-specific Handler/CrudHandler.",
+        "4. Validations + async effects run (e.g. payments).",
+        "5. State mutations applied immutably to property."
+      ],
+      "Examples": [
+        "Create or approve an invoice",
+        "Update rent amount",
+        "Record new valuation",
+        "Add/remove tenant",
+        "Distribute rent to investors"
+      ],
+      "KeyPoint": "The actions array makes proposals the *only pathway* to mutate property state."
+    },
+    "WhyItMatters": [
+      "DAO governance controls all property state changes.",
+      "Some categories enforce dual approvals (DAO + Tenant).",
+      "ImplementationCategory determines voting duration.",
+      "Actions array guarantees transparency and immutability of state mutations."
+    ]
+  },
+
+  "Invoices": {
+    "KeyEnums": {
+      "InvoiceDirection": {
+        "#Incoming": "Money into DAO (e.g. rent). Flow → may auto-confirm if valid.",
+        "#Outgoing": "Expenses (repairs, insurance). Flow → usually linked to Proposal for DAO approval.",
+        "#ToInvestors": "Distributions. Flow → always requires Proposal approval."
+      },
+      "InvoiceStatus": {
+        "#Draft": "Created but not yet active.",
+        "#Pending": "Awaiting DAO or admin approval.",
+        "#Approved": "DAO (or admin pre-approval) accepted. Flow → triggers paymentStatus pipeline.",
+        "#Rejected": "DAO/admin rejected. Flow ends.",
+        "#Paid": "Funds successfully transferred.",
+        "#PreApproved": "Bypasses DAO proposal if trusted admin approves."
+      },
+      "PaymentStatus": {
+        "#WaitingApproval": "Blocked until DAO or admin approves.",
+        "#Pending": "Payment initiated but not confirmed.",
+        "#Confirmed": "Funds transferred. Flow ends.",
+        "#TransferAttempted": "Partial attempts to investors recorded.",
+        "#Failed": "Error in transfer; requires new DAO action."
+      },
+      "RecurrenceType": {
+        "#None": "Single-use invoice.",
+        "#Periodic": "Generates future invoices automatically (rent, insurance). Flow → links back to previousInvoiceIds."
+      }
+    },
+    "WhyItMatters": [
+      "Direction defines whether money flows in, out, or to investors — and determines if DAO approval is required.",
+      "Status and PaymentStatus combine to form the invoice lifecycle: Draft → Approved → Paid/Failed.",
+      "Recurring invoices simplify repetitive DAO-approved flows (e.g. rent collection, utilities).",
+      "Invoice–Proposal link ensures DAO governance over all outgoing payments and distributions."
+    ]
+  }
+}
+
+{
+  "ProposalFlow": {
+    "ExecutionOfActions": {
+      "Definition": "When a proposal is executed and its outcome is #Accepted, every item in the `actions: [What]` array is applied to the property state.",
+      "Steps": [
+        "1. Proposal status changes to #Executed with outcome = #Accepted.",
+        "2. Governance iterates over all actions in `actions`.",
+        "3. Each action is wrapped in WhatWithPropertyId and passed to handlePropertyUpdate.",
+        "4. Handlers (e.g. InvoiceHandler, TenancyHandler) validate, apply async effects (like payments), and commit changes.",
+        "5. Results of each action are stored in the final Proposal outcome for full auditability."
+      ],
+      "KeyPoint": "This guarantees proposals are the *only entry point* for mutating property state."
+    },
+
+    "CreateUpdateDelete": {
+      "Create": {
+        "Flow": [
+          "Proposal created with category, implementation, and actions.",
+          "Eligible voters fetched (e.g. via NFT ownership).",
+          "Status set to #LiveProposal with calculated endTime.",
+          "DAO votes → if thresholds met → status becomes #Executed."
+        ]
+      },
+      "Update": {
+        "Flow": [
+          "Proposal still in #LiveProposal.",
+          "Title, description, category, implementation, or actions can be updated.",
+          "Timer recalculated if implementation duration changes.",
+          "Votes already cast remain; updated proposal continues voting."
+        ]
+      },
+      "Delete": {
+        "Flow": [
+          "Admin may cancel while live (status → #RejectedEarly).",
+          "If proposal ends naturally: yes > no = #Executed with #Accepted or #AwaitingTenantApproval.",
+          "Else → #Executed with #Refused."
+        ]
+      }
+    },
+
+    "VotingSystem": {
+      "DAO_Members": {
+        "Mechanism": "Each eligible Principal (NFT holder) can cast one yes/no vote.",
+        "Validation": [
+          "Cannot vote if not in eligibleVoters (unless testing).",
+          "Cannot vote twice.",
+          "Cannot vote after endTime."
+        ]
+      },
+      "Tenants": {
+        "Mechanism": "For categories Maintenance, Rent, or Tenancy, tenant approval may be required.",
+        "Scenarios": {
+          "DuringVote": "If tenant is also a voter, they can pre-approve (sets tenantApproved=true in category).",
+          "AwaitingApproval": "If proposal passes DAO but needs tenant sign-off, outcome = #AwaitingTenantApproval.",
+          "TenantVeto": "Tenant can vote false → proposal outcome = #Refused ('Rejected by tenant').",
+          "TenantApprove": "Tenant votes true → proposal outcome = #Accepted and actions executed."
+        }
+      }
+    },
+
+    "TimersAndExpiry": {
+      "Purpose": "Ensure proposals auto-close at the correct time.",
+      "Flow": [
+        "When proposal created, endTime is calculated from ImplementationCategory (Quick = 6h, Day = 24h, etc.).",
+        "A timer is set to auto-delete or execute the proposal at endTime.",
+        "If expired: votes tallied, outcome decided (#Accepted, #AwaitingTenantApproval, or #Refused).",
+        "Timers are cancelled if proposal is updated or cancelled early."
+      ]
+    },
+
+    "KeyPrinciple": {
+      "Summary": "The governance engine enforces that every property state mutation flows through proposals. DAO members vote, tenants may co-approve in special cases, and if approved, the `actions` array is executed via domain Handlers."
+    }
+  }
+}
+
+
+"Handler": {
+    "Purpose": "Defines the full lifecycle of an update — validation, async effects, application, and finalization. This allows proposals to mutate state in a consistent, auditable way.",
+    "Fields": {
+      "validateAndPrepare": "()-> [ (?Nat, Result<T, UpdateError>) ] - Prepares update, validates input, assigns optional id",
+      "asyncEffect": "[(?Nat, Result<T, UpdateError>)] -> async [ (?Nat, Result<(), UpdateError>) ] - Performs async operations (e.g. external calls, payments)",
+      "applyAsyncEffects": "(?Nat, Result<T, UpdateError>) -> [ (?Nat, Result<StableT, UpdateError>) ] - Applies async results to stable state",
+      "applyUpdate": "(?Nat, StableT) -> ?Nat - Commits update to storage (may return id)",
+      "getUpdate": "() -> Update - Returns structured Update for logging/recording",
+      "finalAsync": "[Result<?Nat, (?Nat, UpdateError)>] -> async () - Runs final async cleanup or notifications after persistence"
+    },
+    "KeyPoint": "Handlers abstract the mutation pipeline — proposals just call these methods on execution."
+  },
+
+Test handler: 
+"PreTestHandler": {
+    "Purpose": "Provides a testing interface for domain objects (Invoices, Proposals, Tenants, etc.) inside a Property. It allows seeding, validating, and simulating CRUD mutations in a consistent way.",
+    "Fields": {
+      "testing": "Bool - indicates if the system is running in test mode",
+      "toHashMap": "PropertyUnstable -> HashMap<Nat, T> - extracts the relevant sub-map from property state",
+      "showMap": "HashMap<Nat, T> -> Text - renders the map as text for debugging",
+      "toId": "PropertyUnstable -> Nat - retrieves the next id counter for this domain",
+      "toWhat": "Actions<C,U> -> What - converts domain-specific action into a generic What mutation",
+      "checkCreate": "T -> Text - returns a validation message for creation test",
+      "checkUpdate": "(T, T, U) -> Text - returns validation message for updating an entity",
+      "checkDelete": "(T, ?T, Nat, PropertyUnstable, PropertyUnstable, PreTestHandler) -> Text - validation message for deletions",
+      "handlePropertyUpdate": "(WhatWithPropertyId, Principal) -> async UpdateResult - applies an update to property via governance handler",
+      "seedCreate": "(Text, Nat, Actions<C,U> -> What) -> [What] - seeds initial test data as actions",
+      "validForTest": "(Text, T) -> ?Bool - determines whether a given entity is valid for a specific test case"
+    },
+    "KeyPoint": "PreTestHandler abstracts testing logic for any entity type, so the same governance engine can be validated across multiple property domains (invoices, proposals, tenants, etc.).",
+    "Workflow": [
+      "1. Seed test data using seedCreate",
+      "2. Convert domain mutations into generic What via toWhat",
+      "3. Run handlePropertyUpdate to simulate governance action",
+      "4. Validate correctness using checkCreate / checkUpdate / checkDelete",
+      "5. Use validForTest to ensure test coverage is complete"
+    ],
+    "Benefit": "Enables consistent, reusable testing of the governance + handler pipeline, ensuring that all property state mutations (via proposals) behave as expected."
+  }
+
+  

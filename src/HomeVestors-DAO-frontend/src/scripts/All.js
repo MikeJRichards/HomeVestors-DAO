@@ -262,3 +262,16 @@ export function getSelectedPropertyIds(dropdownId) {
   return Number.isInteger(num) ? [num] : [];
 }
 
+export function resultMessage(id, message, success){
+  let element = document.getElementById(id);
+  element.innerHTML = message;
+  if(success){
+    element.classList.add("okResult")
+    element.classList.remove("errResult")
+  }
+  else{
+    element.classList.add("errResult")
+    element.classList.remove("okResult")
+  }
+}
+

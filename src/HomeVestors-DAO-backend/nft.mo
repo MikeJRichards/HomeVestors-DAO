@@ -8,6 +8,7 @@ import Hash "mo:base/Hash";
 import Blob "mo:base/Blob";
 import Nat64 "mo:base/Nat64";
 import Time "mo:base/Time";
+import HashMap "mo:base/HashMap";
 
 module NFTCollections {
     type CreateFinancialsArg = Types.CreateFinancialsArg;
@@ -164,6 +165,30 @@ module NFTCollections {
     public func icrc7_owner_of(tokenIds: [Nat], canisterId: Principal): async [?Account]{
         let NFT : NFTActor = actor(Principal.toText(canisterId));
         await NFT.icrc7_owner_of(tokenIds);
+    };
+
+    public func getAllAccounts(canisterId: Principal): async ([(Account, Nat)], Nat){
+        let NFT: NFTActor = actor(Principal.toText(canisterId));
+        let tokenIds = Buffer.Buffer<Nat>(0);
+        let totalSupply = await NFT.icrc7_total_supply();
+        for(tokenId in Iter.range(0, totalSupply)){
+            tokenIds.add(tokenId);
+        };
+        let allAccounts = await NFT.icrc7_owner_of(Buffer.toArray(tokenIds));
+        let map = HashMap.HashMap<Account, Nat>(0, PropHelper.accountEqual, PropHelper.accountHash);
+        let addAccountToMap = func(acc: Account):(){
+            switch(map.get(acc)){
+                case(null) map.put(acc, 1);
+                case(?count) map.put(acc, count + 1);
+            };
+        };
+        for(account in allAccounts.vals()){
+            switch(account){
+                case(null){};
+                case(?account) addAccountToMap(account);
+            };
+        };
+        return (Iter.toArray(map.entries()), totalSupply);
     };
 
     public func getCollectionMetadata(nftCollection: Principal): async [(Text, Value)] {

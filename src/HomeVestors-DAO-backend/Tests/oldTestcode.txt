@@ -1,20 +1,4 @@
-import TestTypes "testTypes";
-import Types "../types";
-import Prop "createProperty";
-import Utils "utils";
-import Arg "createArgs";
-import Time "mo:base/Time";
-import Stables "stables";
-import UnstableTypes = "unstableTypes";
-import Int "mo:base/Int";
-import Float "mo:base/Float";
-import Option "mo:base/Option";
-import Caller "caller";
-import PropHelper "./../propHelper";
-import Principal "mo:base/Principal";
-
-module {
-    type TestCase = TestTypes.TestCase;
+type TestCase = TestTypes.TestCase;
     type TestType = TestTypes.TestType;
     type NoteCreateCase = TestTypes.NoteCreateCase;
     type NoteUpdateCase = TestTypes.NoteUpdateCase;
@@ -118,7 +102,7 @@ module {
         #Ok({what; results = [#ok(null)]})
     };
 
-    type TestHandler<CT, UT, DT, C, U> = TestTypes.TestHandler<CT, UT, DT, C, U>;
+    
     public func createNoteTestType(tcases: TestCase, property: PropertyUnstable, tcase: TestTypes.NoteTestCase): TestType{
         type CT = NoteCreateCase;
         type UT = NoteUpdateCase;
@@ -187,7 +171,7 @@ module {
     };
 
     type UpdateResult = Types.UpdateResult;
-    public func createInsuranceTestType(tcases: TestCase, property: PropertyUnstable, tcase: TestTypes.InsuranceTestCase): TestType{
+    public func createInsuranceTestTypeOg(tcases: TestCase, property: PropertyUnstable, tcase: TestTypes.InsuranceTestCase): TestType{
         type CT = InsuranceCreateCase;
         type UT = InsuranceUpdateCase;
         type C = InsurancePolicyCArg;
@@ -1049,6 +1033,8 @@ module {
         createTestType(tcases, handler);
     };
 
+    
+
 
 
 
@@ -1081,6 +1067,151 @@ module {
             }
         }
     };
+    public func createTestCase(tcases: TestCase, property: PropertyUnstable): TestType {
+        switch(tcases){
+            case(#Note(testCase)) return createNoteTestType(tcases, property, testCase);
+            case(#Insurance(testCase)) return createInsuranceTestTypeOg(tcases, property, testCase);
+            case(#Documents(testCase)) return createDocumentTestType(tcases, property, testCase);
+            case(#Tenant(testCase)) return createTenantTestType(tcases, property, testCase);
+            case(#Maintenance(testCase)) return createMaintenanceTestType(tcases, property, testCase);
+            case(#Inspection(testCase)) return createInspectionTestType(tcases, property, testCase);
+            case(#Valuation(testCase)) return createValuationTestType(tcases, property, testCase);
+            case(#Images(testCase)) return createImageTestType(tcases, property, testCase);
+            case (#Financials(testCase)) return createFinancialTestType(tcases, property, testCase);
+            case (#MonthlyRent(testCase)) return createMonthlyRentTestType(tcases, property, testCase);
+            case(#Description(testCase)) return createDescriptionTestType(tcases, property, testCase);
+            case (#PhysicalDetails(testCase)) return createPhysicalDescriptionTestType(tcases, property, testCase);
+            case (#AdditionalDetails(testCase)) return createAdditionalDetailsTestType(tcases, property, testCase);
+        };
+    };
+
+     type TestHandler<CT, UT, DT, C, U> = TestTypes.TestHandler<CT, UT, DT, C, U>;
+
+    public func createFinancialTestType(tcases: TestCase, property: PropertyUnstable, tcase: TestTypes.FinancialsCreateCase): TestType {
+        let arg = switch (tcase) {
+            case (#Valid) Arg.createFinancialsArg();
+            case (#ZeroCurrentValue) {{ Arg.createFinancialsArg() with currentValue = 0 }};
+        };
+
+        let expectedOutcome = func(): UpdateResult {
+            switch(tcase) {
+                case (#Valid) property.financials.currentValue := arg.currentValue;
+                case (#ZeroCurrentValue) return createInvalidDataError(null, "current value", #CannotBeZero);
+            };
+            property.updates.add(makeNull(#Financials(arg)));
+            property.financials.pricePerSqFoot := property.financials.currentValue / property.details.physical.squareFootage;
+            #Ok(Stables.toStableProperty(property));
+        };
+
+        {
+           name = tcases;
+           arg = #Financials(arg);
+            expectedOutcome =  expectedOutcome();
+        }
+    };
+
+    public func createMonthlyRentTestType(tcases: TestCase, property: PropertyUnstable, tcase: TestTypes.MonthlyRentCreateCase): TestType {
+        let arg = switch (tcase) {
+            case (#Valid) 1000;
+            case (#ZeroRent) 0;
+        };
+
+        let expectedOutcome = func(): UpdateResult {
+            switch(tcase) {
+                case (#Valid) property.financials.monthlyRent := arg;
+                case (#ZeroRent) return createInvalidDataError(null, "Monthly Rent", #CannotBeZero);
+            };
+            property.updates.add(makeNull(#MonthlyRent(arg)));
+            property.financials.yield := Float.fromInt(12 * property.financials.monthlyRent) / Float.fromInt(property.financials.currentValue);
+            #Ok(Stables.toStableProperty(property));
+        };
+
+        {
+           name = tcases;
+           arg = #MonthlyRent(arg);
+            expectedOutcome =  expectedOutcome();
+        }
+    };
+
+    public func createDescriptionTestType(tcases: TestCase, property: PropertyUnstable, tcase: TestTypes.DescriptionCase): TestType {
+        let arg = switch (tcase) {
+            case (#Valid) "updated description of property";
+            case (#Empty) "";
+        };
+
+        let expectedOutcome = func(): UpdateResult {
+            switch (tcase) {
+                case (#Valid) property.details.misc.description := arg;
+                case (_) return createInvalidDataError(null, "description", #EmptyString);
+            };
+            property.updates.add(makeNull(#Description(arg)));
+            #Ok(Stables.toStableProperty(property));
+        };
+
+        {
+           name = tcases;
+           arg = #Description(arg);
+            expectedOutcome =  expectedOutcome();
+        }
+    };
+
+    public func createPhysicalDescriptionTestType(tcases: TestCase, property: PropertyUnstable, tcase: TestTypes.PhysicalDetailsTestCase): TestType {
+        let arg = func(): Types.PhysicalDetailsUArg {
+            let arg = Arg.createPhysicalDetailsUArg();
+            switch (tcase) {
+                case (#Valid) arg;
+                case (#RenovationTooOld) return { arg with lastRenovation = ?1890 };
+                case (#TooManyBeds) return { arg with beds = ?11 };
+                case (#TooManyBaths) return { arg with baths = ?11 };
+            };
+        };
+
+        let expectedOutcome = func(): UpdateResult {
+            switch (tcase) {
+                case (#Valid) property.details.physical := Prop.validUnstablePhysicalDetails();
+                case (#RenovationTooOld) return createInvalidDataError(null, "renovation", #InaccurateData);
+                case (#TooManyBeds) return createInvalidDataError(null, "beds", #InaccurateData);
+                case (#TooManyBaths) return createInvalidDataError(null, "baths", #InaccurateData);
+            };
+            property.updates.add(makeNull(#PhysicalDetails(arg())));
+            #Ok(Stables.toStableProperty(property));
+        };
+
+        {
+           name = tcases;
+           arg = #PhysicalDetails(arg());
+            expectedOutcome =  expectedOutcome();
+        }
+    };
+
+    public func createAdditionalDetailsTestType(tcases: TestCase, property: PropertyUnstable, tcase: TestTypes.AdditionalDetailsTestCase): TestType {
+        let arg = func(): Types.AdditionalDetailsUArg {
+            let arg = Arg.createAdditionalDetailsUArg();
+            switch (tcase) {
+                case (#Valid) arg;
+                case (#LowCrimeScore) return { arg with crimeScore = ?10 };
+                case (#HighSchoolScore) return { arg with schoolScore = ?11 };
+            };
+        };
+
+        let expectedOutcome = func(): UpdateResult {
+            switch (tcase) {
+                case (#Valid) property.details.additional := Prop.validUnstableAdditionalDetails();
+                case (#LowCrimeScore) return createInvalidDataError(null, "Crime Score", #OutOfRange);
+                case (#HighSchoolScore) return createInvalidDataError(null, "School Score", #OutOfRange);
+            };
+            property.updates.add(makeNull(#AdditionalDetails(arg())));
+            #Ok(Stables.toStableProperty(property));
+        };
+
+        {
+           name = tcases;
+           arg = #AdditionalDetails(arg());
+            expectedOutcome = expectedOutcome();
+        }
+    };
+
+     type TestHandler<CT, UT, DT, C, U> = TestTypes.TestHandler<CT, UT, DT, C, U>;
 
     public func createFinancialTestType(tcases: TestCase, property: PropertyUnstable, tcase: TestTypes.FinancialsCreateCase): TestType {
         let arg = switch (tcase) {
@@ -1207,23 +1338,254 @@ module {
     };
 
 
+import Types "../types";
+import TestTypes "testTypes";
+import TProp "createProperty";
+import Buffer "mo:base/Buffer";
+import Prop "../property";
+import Debug "mo:base/Debug";
+import Stables "stables";
+import TestCases "testCases";
+
+module Test {
+    type What = Types.What;
+    type Arg = Types.Arg;
+    type Callers = TestTypes.Callers;
+    type TestCase = TestTypes.TestCase;
+    type TenantCreateCase = TestTypes.TenantCreateCase;
+    type TenantUpdateCase = TestTypes.TenantUpdateCase;
+    type MaintenanceCreateCase = TestTypes.MaintenanceCreateCase;
+    type MaintenanceUpdateCase = TestTypes.MaintenanceUpdateCase;
+    type InspectionCreateCase = TestTypes.InspectionCreateCase;
+    type InspectionUpdateCase = TestTypes.InspectionUpdateCase;
+    type ValuationCreateCase = TestTypes.ValuationCreateCase;
+    type ValuationUpdateCase = TestTypes.ValuationUpdateCase;
+    type FinancialsCreateCase = TestTypes.FinancialsCreateCase;
+    type MonthlyRentCreateCase = TestTypes.MonthlyRentCreateCase;
+    type PhysicalDetailsUpdateCase = TestTypes.PhysicalDetailsTestCase;
+    type AdditionalDetailsUpdateCase = TestTypes.AdditionalDetailsTestCase;
+    type TestOptions = TestTypes.TestOptions;
+    type TestOption = TestTypes.TestOption;
+    type TestType = TestTypes.TestType;
 
 
-    public func createTestCase(tcases: TestCase, property: PropertyUnstable): TestType {
-        switch(tcases){
-            case(#Note(testCase)) return createNoteTestType(tcases, property, testCase);
-            case(#Insurance(testCase)) return createInsuranceTestType(tcases, property, testCase);
-            case(#Documents(testCase)) return createDocumentTestType(tcases, property, testCase);
-            case(#Tenant(testCase)) return createTenantTestType(tcases, property, testCase);
-            case(#Maintenance(testCase)) return createMaintenanceTestType(tcases, property, testCase);
-            case(#Inspection(testCase)) return createInspectionTestType(tcases, property, testCase);
-            case(#Valuation(testCase)) return createValuationTestType(tcases, property, testCase);
-            case(#Images(testCase)) return createImageTestType(tcases, property, testCase);
-            case (#Financials(testCase)) return createFinancialTestType(tcases, property, testCase);
-            case (#MonthlyRent(testCase)) return createMonthlyRentTestType(tcases, property, testCase);
-            case(#Description(testCase)) return createDescriptionTestType(tcases, property, testCase);
-            case (#PhysicalDetails(testCase)) return createPhysicalDescriptionTestType(tcases, property, testCase);
-            case (#AdditionalDetails(testCase)) return createAdditionalDetailsTestType(tcases, property, testCase);
+      func createTestOptions(): TestOptions {
+        {
+            auctionCreate = [];
+            auctionUpdate = [];
+            fixedPriceCreate = [];
+            fixedPriceUpdate = [];
+            launchCreate = [];
+            launchUpdate = [];
+
+            noteCreate = [#EmptyTitle, #EmptyContent, #FutureDate,#Valid, #Valid, #AnonymousAuthor];
+            noteUpdate = [#Valid, #NonExistentId, #EmptyTitle, #NullTitle, #EmptyContent, #NullContent, #FutureDate];
+            insuranceCreate = [#Valid, #EmptyPolicyNumber, #EmptyProvider, #EndDateInPast, #PremiumZero, #NextPaymentInPast, #EmptyContactInfo];
+            insuranceUpdate = [#Valid, #NonExistentId, #EmptyProvider, #PremiumZero];
+            documentCreate = [#Valid, #EmptyTitle, #EmptyDescription, #EmptyURL];
+            documentUpdate = [#Valid, #NonExistentId, #EmptyTitle, #EmptyDescription];
+            tenantCreate = [#Valid, #EmptyLeadTenant, #ZeroMonthlyRent, #ZeroDeposit, #StartDateInPast];
+            tenantUpdate = [#Valid, #NonExistentId, #EmptyLeadTenant, #ZeroMonthlyRent, #ZeroDeposit, #StartDateInPast];
+            maintenanceCreate = [#Valid, #EmptyDescription, #DateCompletedInFuture, #DateReportedInFuture];
+            maintenanceUpdate = [#Valid, #NonExistentId, #EmptyDescription, #DateCompletedInFuture, #DateReportedInFuture];
+            inspectionCreate = [#Valid, #EmptyInspectorName, #EmptyFindings, #DateInFuture];
+            inspectionUpdate = [#Valid, #NonExistentId, #EmptyInspectorName, #EmptyFindings, #DateInFuture];
+            valuationCreate = [#Valid, #ZeroValue];
+            valuationUpdate = [#Valid, #NonExistentId, #ZeroValue];
+            financialsCreate = [#Valid, #ZeroCurrentValue];
+            monthlyRentCreate = [#Valid, #ZeroRent];
+            physicalDetailsUpdate = [#Valid, #RenovationTooOld, #TooManyBeds, #TooManyBaths];
+            additionalDetailsUpdate = [#Valid, #LowCrimeScore, #HighSchoolScore];
+            imagesCreate = [#Valid, #EmptyURL];
+            imagesUpdate = [#Valid, #EmptyURL];
+            descriptionUpdate = [#Valid, #Empty];
+            delete = [#Valid, #NonExistentId];
+        }
+    };
+
+    
+
+    public func runTests(arg: TestOption, handlePropertyUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResult): async () {
+        let testCases = createTestCases(arg);
+
+        
+        for(test in testCases.vals()){
+            Debug.print("NEW TEST STARTED");
+           // Debug.print("Notes Id"#debug_show(property.administrative.notesId));
+            let stableProperty = Stables.toStableProperty(property);
+            let testType = TestCases.createTestCase(test, property);
+            let arg: Types.Arg = {
+                what = testType.arg; 
+                caller = Caller.getCaller(test); 
+                property = stableProperty; 
+                handlePropertyUpdate; 
+                testing = true;
+            };
+            let result = await Prop.updateProperty(arg);
+     
+            if(testType.expectedOutcome == result){
+                Debug.print("✅ results match on "#debug_show(testType.name))
+            }
+            else {
+                let mismatchExplanation : Text = switch (result, testType.expectedOutcome) {
+                  case (#Ok(actual), #Ok(expected)) {
+                    Debug.print("🧪 Entered Ok/Ok comparison");
+                    formatMismatchedSectionsExpected(actual, expected, stableProperty);
+                  };
+                  case (#Ok(actual), #Err(expected)) {
+                    Debug.print("🧪 Entered Ok/Err comparison");
+                    let safeExpected = debug_show(expected);
+                    let safeActual = formatMismatchedSections(actual, Stables.toStableProperty(property));
+                    "expected: " # safeExpected # "\n Actual result: " # safeActual;
+                  };
+                  case (_) {
+                    Debug.print("🧪 Entered fallback case");
+                    "expected: " # debug_show(testType.expectedOutcome) # "\n actual result: " # debug_show(result);
+                  };
+                };
+                Debug.print(
+                  "❌ results didn't match on " # debug_show(testType.name) # "\n" #
+                  "args were: " # debug_show(testType.arg) # "\n" #
+                  mismatchExplanation
+                );
+                switch(result){
+                    case(#Ok(updatedProperty)) property := Stables.fromStableProperty(updatedProperty);
+                    case(_){};
+                };
+                //Debug.print(
+                //    "❌ results didn't match on " # debug_show(testType.name) # "\n" #
+                //    "args were: " # debug_show(testType.arg) # "\n" #
+                //    (switch (result, testType.expectedOutcome) {
+                //        case (#Ok(actual), #Ok(expected)) formatMismatchedSectionsExpected(actual, expected);
+                //        case (#Ok(actual), _) "expected:  " # debug_show(testType.expectedOutcome) # " actual result: " # formatMismatchedSections(actual, Stables.toStableProperty(property));
+                //        case (_) "expected:  " # debug_show(testType.expectedOutcome) # " actual result: " # debug_show(result);
+                //    })
+                //);
+            }
         };
     };
+
+    func formatMismatchedSectionsExpected(actual: Types.Property, expected: Types.Property, previously: Types.Property): Text {
+        var output = "";
+        if(actual.details.location != expected.details.location) output #= "🔸 MISMATCH in details location:\n  previous:" #debug_show(previously.details.location) #"\n Expected: " # debug_show(expected.details.location) # "\n  actual: " # debug_show(actual.details.location) # "\n";
+        if(actual.details.physical != expected.details.physical) output #= "🔸 MISMATCH in details physical:\n  previous:" #debug_show(previously.details.physical) # "\n Expected:" # debug_show(expected.details.physical) # "\n  actual: " # debug_show(actual.details.physical) # "\n";
+        if(actual.details.additional != expected.details.additional) output #= "🔸 MISMATCH in details additional:\n  previous:" #debug_show(previously.details.additional) # "\n  expected: " # debug_show(expected.details.additional) # "\n  actual: " # debug_show(actual.details.additional) # "\n";
+        if(actual.details.misc != expected.details.misc) output #= "🔸 MISMATCH in details misc:\n  previous:" #debug_show(previously.details.misc) # "\n  expected: " # debug_show(expected.details.misc) # "\n  actual: " # debug_show(actual.details.misc) # "\n";
+        if(actual.financials.account != expected.financials.account) output #= "🔸 MISMATCH in financials account:\n  previous:" #debug_show(previously.financials.account) # "\n  expected: " # debug_show(expected.financials.account) # "\n  actual: " # debug_show(actual.financials.account) # "\n";
+        if(actual.financials.investment != expected.financials.investment) output #= "🔸 MISMATCH in financials investment:\n  previous:" #debug_show(previously.financials.investment) # "\n  expected: " # debug_show(expected.financials.investment) # "\n  actual: " # debug_show(actual.financials.investment) # "\n";
+        if(actual.financials.pricePerSqFoot != expected.financials.pricePerSqFoot) output #= "🔸 MISMATCH in financials pricePerSqFoot:\n  previous:" #debug_show(previously.financials.pricePerSqFoot) # "\n  expected: " # debug_show(expected.financials.pricePerSqFoot) # "\n  actual: " # debug_show(actual.financials.pricePerSqFoot) # "\n";
+        if(actual.financials.valuationId != expected.financials.valuationId) output #= "🔸 MISMATCH in financials valuationId:\n  previous:" #debug_show(previously.financials.valuationId) # "\n  expected: " # debug_show(expected.financials.valuationId) # "\n  actual: " # debug_show(actual.financials.valuationId) # "\n";
+        if(actual.financials.valuations != expected.financials.valuations) output #= "🔸 MISMATCH in financials valuations:\n  previous:" #debug_show(previously.financials.valuations) # "\n  expected: " # debug_show(expected.financials.valuations) # "\n  actual: " # debug_show(actual.financials.valuations) # "\n";
+        if(actual.financials.invoiceId != expected.financials.invoiceId) output #= "🔸 MISMATCH in financials invoiceId:\n  previous:" #debug_show(previously.financials.invoiceId) # "\n  expected: " # debug_show(expected.financials.invoiceId) # "\n  actual: " # debug_show(actual.financials.invoiceId) # "\n";
+        if(actual.financials.invoices != expected.financials.invoices) output #= "🔸 MISMATCH in financials invoices:\n  previous:" #debug_show(previously.financials.invoices) # "\n  expected: " # debug_show(expected.financials.invoices) # "\n  actual: " # debug_show(actual.financials.invoices) # "\n";
+        if(actual.financials.monthlyRent != expected.financials.monthlyRent) output #= "🔸 MISMATCH in financials monthlyRent:\n  previous:" #debug_show(previously.financials.monthlyRent) # "\n  expected: " # debug_show(expected.financials.monthlyRent) # "\n  actual: " # debug_show(actual.financials.monthlyRent) # "\n";
+        if(actual.financials.yield != expected.financials.yield) output #= "🔸 MISMATCH in financials yield:\n  previous:" #debug_show(previously.financials.yield) # "\n  expected: " # debug_show(expected.financials.yield) # "\n  actual: " # debug_show(actual.financials.yield) # "\n";
+        if(actual.financials.currentValue != expected.financials.currentValue) output #= "🔸 MISMATCH in financials currentValue:\n  previous:" #debug_show(previously.financials.currentValue) # "\n  expected: " # debug_show(expected.financials.currentValue) # "\n  actual: " # debug_show(actual.financials.currentValue) # "\n";
+        if(actual.administrative.documentId != expected.administrative.documentId) output #= "🔸 MISMATCH in administrative documentId:\n  previous:" #debug_show(previously.administrative.documentId) # "\n  expected: " # debug_show(expected.administrative.documentId) # "\n  actual: " # debug_show(actual.administrative.documentId) # "\n";
+        if(actual.administrative.insuranceId != expected.administrative.insuranceId) output #= "🔸 MISMATCH in administrative insuranceId:\n  previous:" #debug_show(previously.administrative.insuranceId) # "\n  expected: " # debug_show(expected.administrative.insuranceId) # "\n  actual: " # debug_show(actual.administrative.insuranceId) # "\n";
+        if(actual.administrative.notesId != expected.administrative.notesId) output #= "🔸 MISMATCH in administrative notesId:\n  previous:" #debug_show(previously.administrative.notesId) # "\n  expected: " # debug_show(expected.administrative.notesId) # "\n  actual: " # debug_show(actual.administrative.notesId) # "\n";
+        if(actual.administrative.insurance != expected.administrative.insurance) output #= "🔸 MISMATCH in administrative insurance:\n  previous:" #debug_show(previously.administrative.insurance) # "\n  expected: " # debug_show(expected.administrative.insurance) # "\n  actual: " # debug_show(actual.administrative.insurance) # "\n";
+        if(actual.administrative.documents != expected.administrative.documents) output #= "🔸 MISMATCH in administrative documents:\n  previous:" #debug_show(previously.administrative.documents) # "\n  expected: " # debug_show(expected.administrative.documents) # "\n  actual: " # debug_show(actual.administrative.documents) # "\n";
+        if(actual.administrative.notes != expected.administrative.notes) output #= "🔸 MISMATCH in administrative notes:\n  previous:" #debug_show(previously.administrative.notes) # "\n  expected: " # debug_show(expected.administrative.notes) # "\n  actual: " # debug_show(actual.administrative.notes) # "\n";
+        if(actual.operational.tenantId != expected.operational.tenantId) output #= "🔸 MISMATCH in operational tenantId:\n  previous:" #debug_show(previously.operational.tenantId) # "\n  expected: " # debug_show(expected.operational.tenantId) # "\n  actual: " # debug_show(actual.operational.tenantId) # "\n";
+        if(actual.operational.maintenanceId != expected.operational.maintenanceId) output #= "🔸 MISMATCH in operational maintenanceId:\n  previous:" #debug_show(previously.operational.maintenanceId) # "\n  expected: " # debug_show(expected.operational.maintenanceId) # "\n  actual: " # debug_show(actual.operational.maintenanceId) # "\n";
+        if(actual.operational.inspectionsId != expected.operational.inspectionsId) output #= "🔸 MISMATCH in operational inspectionsId:\n  previous:" #debug_show(previously.operational.inspectionsId) # "\n  expected: " # debug_show(expected.operational.inspectionsId) # "\n  actual: " # debug_show(actual.operational.inspectionsId) # "\n";
+        if(actual.operational.tenants != expected.operational.tenants) output #= "🔸 MISMATCH in operational tenants:\n  previous:" #debug_show(previously.operational.tenants) # "\n  expected: " # debug_show(expected.operational.tenants) # "\n  actual: " # debug_show(actual.operational.tenants) # "\n";
+        if(actual.operational.maintenance != expected.operational.maintenance) output #= "🔸 MISMATCH in operational maintenance:\n  previous:" #debug_show(previously.operational.maintenance) # "\n  expected: " # debug_show(expected.operational.maintenance) # "\n  actual: " # debug_show(actual.operational.maintenance) # "\n";
+        if(actual.nftMarketplace.collectionId != expected.nftMarketplace.collectionId) output #= "🔸 MISMATCH in nftMarketplace collectionId:\n  previous:" #debug_show(previously.nftMarketplace.collectionId) # "\n  expected: " # debug_show(expected.nftMarketplace.collectionId) # "\n  actual: " # debug_show(actual.nftMarketplace.collectionId) # "\n";
+        if(actual.nftMarketplace.listId != expected.nftMarketplace.listId) output #= "🔸 MISMATCH in nftMarketplace listId:\n  previous:" #debug_show(previously.nftMarketplace.listId) # "\n  expected: " # debug_show(expected.nftMarketplace.listId) # "\n  actual: " # debug_show(actual.nftMarketplace.listId) # "\n";
+        if(actual.nftMarketplace.listings != expected.nftMarketplace.listings) output #= "🔸 MISMATCH in nftMarketplace listings:\n  previous:" #debug_show(previously.nftMarketplace.listings) # "\n  expected: " # debug_show(expected.nftMarketplace.listings) # "\n  actual: " # debug_show(actual.nftMarketplace.listings) # "\n";
+        if(actual.nftMarketplace.timerIds != expected.nftMarketplace.timerIds) output #= "🔸 MISMATCH in nftMarketplace timerIds:\n  previous:" #debug_show(previously.nftMarketplace.timerIds) # "\n  expected: " # debug_show(expected.nftMarketplace.timerIds) # "\n  actual: " # debug_show(actual.nftMarketplace.timerIds) # "\n";
+        if(actual.nftMarketplace.royalty != expected.nftMarketplace.royalty) output #= "🔸 MISMATCH in nftMarketplace royalty:\n  previous:" #debug_show(previously.nftMarketplace.royalty) # "\n  expected: " # debug_show(expected.nftMarketplace.royalty) # "\n  actual: " # debug_show(actual.nftMarketplace.royalty) # "\n";
+        if(actual.governance.proposalId != expected.governance.proposalId) output #= "🔸 MISMATCH in governance proposalId:\n  previous:" #debug_show(previously.governance.proposalId) # "\n  expected: " # debug_show(expected.governance.proposalId) # "\n  actual: " # debug_show(actual.governance.proposalId) # "\n";
+        if(actual.governance.proposals != expected.governance.proposals) output #= "🔸 MISMATCH in governance proposals:\n  previous:" #debug_show(previously.governance.proposals) # "\n  expected: " # debug_show(expected.governance.proposals) # "\n  actual: " # debug_show(actual.governance.proposals) # "\n";
+        if(actual.governance.assetCost != expected.governance.assetCost) output #= "🔸 MISMATCH in governance assetCost:\n  previous:" #debug_show(previously.governance.assetCost) # "\n  expected: " # debug_show(expected.governance.assetCost) # "\n  actual: " # debug_show(actual.governance.assetCost) # "\n";
+        if(actual.governance.proposalCost != expected.governance.proposalCost) output #= "🔸 MISMATCH in governance proposalCost:\n  previous:" #debug_show(previously.governance.proposalCost) # "\n  expected: " # debug_show(expected.governance.proposalCost) # "\n  actual: " # debug_show(actual.governance.proposalCost) # "\n";
+        if(actual.governance.requireNftToPropose != expected.governance.requireNftToPropose) output #= "🔸 MISMATCH in governance requireNftToPropose:\n  previous:" #debug_show(previously.governance.requireNftToPropose) # "\n  expected: " # debug_show(expected.governance.requireNftToPropose) # "\n  actual: " # debug_show(actual.governance.requireNftToPropose) # "\n";
+        if(actual.governance.minYesVotes != expected.governance.minYesVotes) output #= "🔸 MISMATCH in governance minYesVotes:\n  previous:" #debug_show(previously.governance.minYesVotes) # "\n  expected: " # debug_show(expected.governance.minYesVotes) # "\n  actual: " # debug_show(actual.governance.minYesVotes) # "\n";
+        if(actual.governance.minTurnout != expected.governance.minTurnout) output #= "🔸 MISMATCH in governance minTurnout:\n  previous:" #debug_show(previously.governance.minTurnout) # "\n  expected: " # debug_show(expected.governance.minTurnout) # "\n  actual: " # debug_show(actual.governance.minTurnout) # "\n";
+        if(actual.governance.quorumPercentage != expected.governance.quorumPercentage) output #= "🔸 MISMATCH in governance quorumPercentage:\n  previous:" #debug_show(previously.governance.quorumPercentage) # "\n  expected: " # debug_show(expected.governance.quorumPercentage) # "\n  actual: " # debug_show(actual.governance.quorumPercentage) # "\n";
+        if(actual.updates != expected.updates) output #= "🔸 MISMATCH in updates:\n  previous:" #debug_show(expected.updates) # "\n  expected: " # debug_show(previously.updates) # "\n  actual: " # debug_show(actual.updates) # "\n";
+ 
+        //if (actual.details != expected.details) output #= "🔸 MISMATCH in details:\n  expected: " # debug_show(expected.details) # "\n  actual: " # debug_show(actual.details) # "\n";
+//
+        //if (actual.administrative != expected.administrative)
+        //    output #= "🔸 MISMATCH in administrative:\n  expected: " # debug_show(expected.administrative) # "\n  actual: " # debug_show(actual.administrative) # "\n";
+//
+        //if (actual.financials != expected.financials)
+        //    output #= "🔸 MISMATCH in financials:\n  expected: " # debug_show(expected.financials) # "\n  actual: " # debug_show(actual.financials) # "\n";
+//
+        //if (actual.operational != expected.operational)
+        //    output #= "🔸 MISMATCH in operational:\n  expected: " # debug_show(expected.operational) # "\n  actual: " # debug_show(actual.operational) # "\n";
+//
+        //if (actual.nftMarketplace != expected.nftMarketplace)
+        //    output #= "🔸 MISMATCH in nftMarketplace:\n  expected: " # debug_show(expected.nftMarketplace) # "\n  actual: " # debug_show(actual.nftMarketplace) # "\n";
+        //
+        //if(output.size() == 0) return debug_show(actual);
+        output;
+    };
+
+    func formatMismatchedSections(actual: Types.Property, expected: Types.Property): Text {
+        var output = "";
+        if(actual.details.location != expected.details.location) output #= "🔸 MISMATCH in details location:\n  expected: " # debug_show(expected.details.location) # "\n  actual: " # debug_show(actual.details.location) # "\n";
+        if(actual.details.physical != expected.details.physical) output #= "🔸 MISMATCH in details physical:\n  expected: " # debug_show(expected.details.physical) # "\n  actual: " # debug_show(actual.details.physical) # "\n";
+        if(actual.details.additional != expected.details.additional) output #= "🔸 MISMATCH in details additional:\n  expected: " # debug_show(expected.details.additional) # "\n  actual: " # debug_show(actual.details.additional) # "\n";
+        if(actual.details.misc != expected.details.misc) output #= "🔸 MISMATCH in details misc:\n  expected: " # debug_show(expected.details.misc) # "\n  actual: " # debug_show(actual.details.misc) # "\n";
+        if(actual.financials.account != expected.financials.account) output #= "🔸 MISMATCH in financials account:\n  expected: " # debug_show(expected.financials.account) # "\n  actual: " # debug_show(actual.financials.account) # "\n";
+        if(actual.financials.investment != expected.financials.investment) output #= "🔸 MISMATCH in financials investment:\n  expected: " # debug_show(expected.financials.investment) # "\n  actual: " # debug_show(actual.financials.investment) # "\n";
+        if(actual.financials.pricePerSqFoot != expected.financials.pricePerSqFoot) output #= "🔸 MISMATCH in financials pricePerSqFoot:\n  expected: " # debug_show(expected.financials.pricePerSqFoot) # "\n  actual: " # debug_show(actual.financials.pricePerSqFoot) # "\n";
+        if(actual.financials.valuationId != expected.financials.valuationId) output #= "🔸 MISMATCH in financials valuationId:\n  expected: " # debug_show(expected.financials.valuationId) # "\n  actual: " # debug_show(actual.financials.valuationId) # "\n";
+        if(actual.financials.valuations != expected.financials.valuations) output #= "🔸 MISMATCH in financials valuations:\n  expected: " # debug_show(expected.financials.valuations) # "\n  actual: " # debug_show(actual.financials.valuations) # "\n";
+        if(actual.financials.invoiceId != expected.financials.invoiceId) output #= "🔸 MISMATCH in financials invoiceId:\n  expected: " # debug_show(expected.financials.invoiceId) # "\n  actual: " # debug_show(actual.financials.invoiceId) # "\n";
+        if(actual.financials.invoices != expected.financials.invoices) output #= "🔸 MISMATCH in financials invoices:\n  expected: " # debug_show(expected.financials.invoices) # "\n  actual: " # debug_show(actual.financials.invoices) # "\n";
+        if(actual.financials.monthlyRent != expected.financials.monthlyRent) output #= "🔸 MISMATCH in financials monthlyRent:\n  expected: " # debug_show(expected.financials.monthlyRent) # "\n  actual: " # debug_show(actual.financials.monthlyRent) # "\n";
+        if(actual.financials.yield != expected.financials.yield) output #= "🔸 MISMATCH in financials yield:\n  expected: " # debug_show(expected.financials.yield) # "\n  actual: " # debug_show(actual.financials.yield) # "\n";
+        if(actual.financials.currentValue != expected.financials.currentValue) output #= "🔸 MISMATCH in financials currentValue:\n  expected: " # debug_show(expected.financials.currentValue) # "\n  actual: " # debug_show(actual.financials.currentValue) # "\n";
+        if(actual.administrative.documentId != expected.administrative.documentId) output #= "🔸 MISMATCH in administrative documentId:\n  expected: " # debug_show(expected.administrative.documentId) # "\n  actual: " # debug_show(actual.administrative.documentId) # "\n";
+        if(actual.administrative.insuranceId != expected.administrative.insuranceId) output #= "🔸 MISMATCH in administrative insuranceId:\n  expected: " # debug_show(expected.administrative.insuranceId) # "\n  actual: " # debug_show(actual.administrative.insuranceId) # "\n";
+        if(actual.administrative.notesId != expected.administrative.notesId) output #= "🔸 MISMATCH in administrative notesId:\n  expected: " # debug_show(expected.administrative.notesId) # "\n  actual: " # debug_show(actual.administrative.notesId) # "\n";
+        if(actual.administrative.insurance != expected.administrative.insurance) output #= "🔸 MISMATCH in administrative insurance:\n  expected: " # debug_show(expected.administrative.insurance) # "\n  actual: " # debug_show(actual.administrative.insurance) # "\n";
+        if(actual.administrative.documents != expected.administrative.documents) output #= "🔸 MISMATCH in administrative documents:\n  expected: " # debug_show(expected.administrative.documents) # "\n  actual: " # debug_show(actual.administrative.documents) # "\n";
+        if(actual.administrative.notes != expected.administrative.notes) output #= "🔸 MISMATCH in administrative notes:\n  expected: " # debug_show(expected.administrative.notes) # "\n  actual: " # debug_show(actual.administrative.notes) # "\n";
+        if(actual.operational.tenantId != expected.operational.tenantId) output #= "🔸 MISMATCH in operational tenantId:\n  expected: " # debug_show(expected.operational.tenantId) # "\n  actual: " # debug_show(actual.operational.tenantId) # "\n";
+        if(actual.operational.maintenanceId != expected.operational.maintenanceId) output #= "🔸 MISMATCH in operational maintenanceId:\n  expected: " # debug_show(expected.operational.maintenanceId) # "\n  actual: " # debug_show(actual.operational.maintenanceId) # "\n";
+        if(actual.operational.inspectionsId != expected.operational.inspectionsId) output #= "🔸 MISMATCH in operational inspectionsId:\n  expected: " # debug_show(expected.operational.inspectionsId) # "\n  actual: " # debug_show(actual.operational.inspectionsId) # "\n";
+        if(actual.operational.tenants != expected.operational.tenants) output #= "🔸 MISMATCH in operational tenants:\n  expected: " # debug_show(expected.operational.tenants) # "\n  actual: " # debug_show(actual.operational.tenants) # "\n";
+        if(actual.operational.maintenance != expected.operational.maintenance) output #= "🔸 MISMATCH in operational maintenance:\n  expected: " # debug_show(expected.operational.maintenance) # "\n  actual: " # debug_show(actual.operational.maintenance) # "\n";
+        if(actual.nftMarketplace.collectionId != expected.nftMarketplace.collectionId) output #= "🔸 MISMATCH in nftMarketplace collectionId:\n  expected: " # debug_show(expected.nftMarketplace.collectionId) # "\n  actual: " # debug_show(actual.nftMarketplace.collectionId) # "\n";
+        if(actual.nftMarketplace.listId != expected.nftMarketplace.listId) output #= "🔸 MISMATCH in nftMarketplace listId:\n  expected: " # debug_show(expected.nftMarketplace.listId) # "\n  actual: " # debug_show(actual.nftMarketplace.listId) # "\n";
+        if(actual.nftMarketplace.listings != expected.nftMarketplace.listings) output #= "🔸 MISMATCH in nftMarketplace listings:\n  expected: " # debug_show(expected.nftMarketplace.listings) # "\n  actual: " # debug_show(actual.nftMarketplace.listings) # "\n";
+        if(actual.nftMarketplace.timerIds != expected.nftMarketplace.timerIds) output #= "🔸 MISMATCH in nftMarketplace timerIds:\n  expected: " # debug_show(expected.nftMarketplace.timerIds) # "\n  actual: " # debug_show(actual.nftMarketplace.timerIds) # "\n";
+        if(actual.nftMarketplace.royalty != expected.nftMarketplace.royalty) output #= "🔸 MISMATCH in nftMarketplace royalty:\n  expected: " # debug_show(expected.nftMarketplace.royalty) # "\n  actual: " # debug_show(actual.nftMarketplace.royalty) # "\n";
+        if(actual.governance.proposalId != expected.governance.proposalId) output #= "🔸 MISMATCH in governance proposalId:\n  expected: " # debug_show(expected.governance.proposalId) # "\n  actual: " # debug_show(actual.governance.proposalId) # "\n";
+        if(actual.governance.proposals != expected.governance.proposals) output #= "🔸 MISMATCH in governance proposals:\n  expected: " # debug_show(expected.governance.proposals) # "\n  actual: " # debug_show(actual.governance.proposals) # "\n";
+        if(actual.governance.assetCost != expected.governance.assetCost) output #= "🔸 MISMATCH in governance assetCost:\n  expected: " # debug_show(expected.governance.assetCost) # "\n  actual: " # debug_show(actual.governance.assetCost) # "\n";
+        if(actual.governance.proposalCost != expected.governance.proposalCost) output #= "🔸 MISMATCH in governance proposalCost:\n  expected: " # debug_show(expected.governance.proposalCost) # "\n  actual: " # debug_show(actual.governance.proposalCost) # "\n";
+        if(actual.governance.requireNftToPropose != expected.governance.requireNftToPropose) output #= "🔸 MISMATCH in governance requireNftToPropose:\n  expected: " # debug_show(expected.governance.requireNftToPropose) # "\n  actual: " # debug_show(actual.governance.requireNftToPropose) # "\n";
+        if(actual.governance.minYesVotes != expected.governance.minYesVotes) output #= "🔸 MISMATCH in governance minYesVotes:\n  expected: " # debug_show(expected.governance.minYesVotes) # "\n  actual: " # debug_show(actual.governance.minYesVotes) # "\n";
+        if(actual.governance.minTurnout != expected.governance.minTurnout) output #= "🔸 MISMATCH in governance minTurnout:\n  expected: " # debug_show(expected.governance.minTurnout) # "\n  actual: " # debug_show(actual.governance.minTurnout) # "\n";
+        if(actual.governance.quorumPercentage != expected.governance.quorumPercentage) output #= "🔸 MISMATCH in governance quorumPercentage:\n  expected: " # debug_show(expected.governance.quorumPercentage) # "\n  actual: " # debug_show(actual.governance.quorumPercentage) # "\n";
+        if(actual.updates != expected.updates) output #= "🔸 MISMATCH in updates:\n  expected: " # debug_show(expected.updates) # "\n  actual: " # debug_show(actual.updates) # "\n";
+ //
+ //       if (actual.details != expected.details)
+ //           output #= "🔸 MISMATCH in details:\n  actual: " # debug_show(actual.details) # "\n";
+//
+ //       if (actual.administrative != expected.administrative)
+ //           output #= "🔸 MISMATCH in administrative:\n  actual: " # debug_show(actual.administrative) # "\n";
+//
+ //       if (actual.financials != expected.financials)
+ //           output #= "🔸 MISMATCH in financials:\n  actual: " # debug_show(actual.financials) # "\n";
+//
+ //       if (actual.operational != expected.operational)
+ //           output #= "🔸 MISMATCH in operational:\n  actual: " # debug_show(actual.operational) # "\n";
+//
+ //       if (actual.nftMarketplace != expected.nftMarketplace)
+ //           output #= "🔸 MISMATCH in nftMarketplace:\n  actual: " # debug_show(actual.nftMarketplace) # "\n";
+
+        output;
+    };
+
+
+
+
 }

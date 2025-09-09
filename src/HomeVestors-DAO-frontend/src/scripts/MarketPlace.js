@@ -1,5 +1,5 @@
 import { Principal } from "@dfinity/principal";
-import {setupModal} from "./All.js";
+import {setupModal, resultMessage} from "./All.js";
 import {getCanister, getPrincipal, wireConnect, logout} from "./Main.js"
 
 wireConnect("connect_btn", "NavWallet");
@@ -388,7 +388,6 @@ export async function buyNFT(listingsIds, propertyId, price, quantity = 1){
   
   //console.log(principal);
   console.log(args);
-
   try {
     let tokens = await getCanister("token");
     let allowance = await tokens.CKUSDC.icrc2_approve(allowanceArgs);
@@ -396,11 +395,14 @@ export async function buyNFT(listingsIds, propertyId, price, quantity = 1){
       let backend = await getCanister("backend");
       const result = await backend.bulkPropertyUpdate(args);
       console.log("Purchase successful", result);
+      resultMessage("purchaseResult", "Purchase Successful", true)
     }
     else {
+      resultMessage("purchaseResult", "Error purchasing NFTs", false)
       console.log("allowance failed ", allowance)
     }
   } catch (error) {
+    resultMessage("purchaseResult", "Error purchasing NFTs", false)
     console.error("Error purchasing NFTs:", error);
   }
 

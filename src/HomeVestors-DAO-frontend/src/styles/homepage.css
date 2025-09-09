@@ -125,3 +125,23 @@
    --transpBase:#3a6999a2;
  }
 
+ /* Responsive Hero */
+@media (max-width: 768px) {
+   #hero-top {
+     flex-direction: column;
+     padding: 0 1rem;
+   }
+    #hp-hero_text, #hero_img {
+     width: 100%;
+     text-align: center;
+   }
+    #hero_img {
+     margin-top: 1rem;
+     margin-bottom: 1rem;
+   }
+    #hp-hero-btns {
+     flex-direction: column;
+     gap: 1rem;
+   }
+ }
+

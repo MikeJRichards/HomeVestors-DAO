@@ -1,6 +1,6 @@
 import { IDL } from "@dfinity/candid";
 import { idlFactory } from "./backend.idl";
-import {setupModal, setupToggle, currency, carousel, selectProperty, getSelectedPropertyIds } from "./All.js";
+import {setupModal, setupToggle, currency, carousel, selectProperty, getSelectedPropertyIds, resultMessage } from "./All.js";
 import {getCanister, getPrincipal, wireConnect, logout} from "./Main.js"
 import { Principal } from "@dfinity/principal";
 
@@ -313,8 +313,10 @@ async function createProposal(){
                try {
                   let backend = await getCanister("backend");
                   const result = await backend.updateProperty(arg);
+                  resultMessage("proposalCreationResult", "Proposal Created", true);
                   console.log("Proposal created", result);
                 } catch (error) {
+                  resultMessage("proposalCreationResult", "Error Creating Proposal", false);
                   console.error("Error proposal create:", error);
                 }
   
@@ -463,7 +465,7 @@ async function getProposals() {
                     noVotes: [],
                     startAt: [],
                     outcome: [],
-                    voted: []
+                    voted: []// principalObj ? [{ HasVoted: principalObj }] : []
                 }
             }},
             { Proposals: {
@@ -480,7 +482,7 @@ async function getProposals() {
                     noVotes: [],
                     startAt: [],
                     outcome: [],
-                    voted: []
+                    voted: []//principalObj ? [{ NotVoted: principalObj }] : []
                 }
             }}
         ];
@@ -490,25 +492,31 @@ async function getProposals() {
         console.log("getProposals:Voted Field (HasNotVoted)", readArgs[2].Proposals.conditionals.voted);
 
         const results = await backend.readProperties(readArgs, []);
-        console.log("getProposals:ReadResults", JSON.stringify(results, (key, value) => typeof value === 'bigint' ? value.toString() : value));
+console.log("GetProposals.real", results);
+console.log("getProposals:ReadResults", JSON.stringify(results, (key, value) => typeof value === 'bigint' ? value.toString() : value));
 
-        const hasVotedProposals = results[1]?.Proposals[0]?.result.Ok || [];
-        const hasNotVotedProposals = results[2]?.Proposals[0]?.result.Ok || [];
-        const propertyId = Number(results[1]?.Proposals[0]?.propertyId || 0n);
-        const allProposalsMap = new Map();
+const locations = results[0].Location.reduce((map, loc) => {
+    if (loc.value.Ok) {
+        map[Number(loc.id)] = loc.value.Ok.addressLine1;
+    }
+    return map;
+}, {});
 
-        hasVotedProposals.forEach(item => {
-            allProposalsMap.set(Number(item.id), { ...item, hasVoted: true, propertyId });
-        });
-        hasNotVotedProposals.forEach(item => {
-            if (!allProposalsMap.has(Number(item.id))) {
-                allProposalsMap.set(Number(item.id), { ...item, hasVoted: false, propertyId });
-            }
-        });
+const hasVotedProposals = results[1]?.Proposals[0]?.result.Ok || [];
+const hasNotVotedProposals = results[2]?.Proposals[0]?.result.Ok || [];
+const propertyId = Number(results[1]?.Proposals[0]?.propertyId || 0n);
+const allProposalsMap = new Map();
 
-        const proposals = Array.from(allProposalsMap.values());
+hasVotedProposals.forEach(item => {
+    allProposalsMap.set(Number(item.id), { ...item, hasVoted: true, propertyId, addressLine1: locations[propertyId] || 'Unknown' });
+});
+hasNotVotedProposals.forEach(item => {
+    if (!allProposalsMap.has(Number(item.id))) {
+        allProposalsMap.set(Number(item.id), { ...item, hasVoted: false, propertyId, addressLine1: locations[propertyId] || 'Unknown' });
+    }
+});
 
-        // If no proposals, show empty message in p tag
+const proposals = Array.from(allProposalsMap.values());// If no proposals, show empty message in p tag
         if (proposals.length === 0) {
             createPropContainer.style.display = 'none';
             propTableContainer.style.display = 'none';
@@ -814,6 +822,7 @@ function formatWhatActions(actions) {
 }
 
 function populateProposalsTable(proposals, userPrincipal) {
+    console.log("proposal data for table",proposals)
     const tbody = document.querySelector('#proposals-table tbody');
     if (!tbody) {
         console.error("Table body not found");
@@ -886,9 +895,12 @@ function populateProposalsTable(proposals, userPrincipal) {
     document.head.appendChild(style);
 
     proposals.forEach((item) => {
+        console.log("Proposal",item);
+        
         const proposal = item.value.Ok;
         const proposalId = item.id;
         const propertyId = item.propertyId;
+        const addressLine1 = item.addressLine1
         const detailsId = `details-${Number(proposalId)}`;
 
         const yesCount = proposal.votes.filter(vote => vote[1] === true).length;
@@ -943,6 +955,7 @@ function populateProposalsTable(proposals, userPrincipal) {
 
         mainTr.innerHTML = `
             <td>${createdDateStr}</td>
+            <td>${addressLine1}</td>
             <td>${proposal.title}</td>
             <td>${category}</td>
             <td>${status}</td>

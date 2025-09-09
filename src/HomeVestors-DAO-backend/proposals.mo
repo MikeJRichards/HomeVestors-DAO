@@ -1,5 +1,6 @@
 import Types "types";
 import Stables "./Tests/stables";
+import Operational "operational";
 import { setTimer; cancelTimer } = "mo:base/Timer";
 import UnstableTypes "./Tests/unstableTypes";
 import NFT "nft";
@@ -39,12 +40,48 @@ module {
                         switch(executed.outcome){
                             case(#Refused(_)) ?false;
                             case(#Accepted(_)) ?true;
+                            case(#AwaitingTenantApproval) ?false;
                         }
                     };
                     case(_) null;
                 }
             };
             case(null) null;
+        }
+    };
+
+    func executeProposal(arg: Arg, governance: UnstableTypes.GovernanceUnstable, id: Nat): async (){
+        switch(governance.proposals.get(id)){
+            case(null){};
+            case(?proposal){
+                switch(proposal.status){
+                    case(#Executed(executed)){
+                        switch(executed.outcome){
+                            case(#Accepted(_)){
+                                let results = Buffer.Buffer<UpdateResult>(proposal.actions.size());
+                                for(what in proposal.actions.vals()){
+                                    let whatWithPropertyId: Types.WhatWithPropertyId = {
+                                        propertyId = arg.property.id;
+                                        what;
+                                    };
+                                    results.add(await arg.handlePropertyUpdate(whatWithPropertyId, arg.caller));
+                                };
+                                let status : Types.ProposalStatus = #Executed {
+                                    executed with 
+                                    outcome = #Accepted(Buffer.toArray(results));
+                                };
+                                let updatedProposal :Proposal = {
+                                    proposal with 
+                                    status; 
+                                };
+                                governance.proposals.put(id, updatedProposal);
+                            };
+                            case(_){};
+                        };
+                    };
+                    case(_){};
+                }
+            }
         }
     };
 
@@ -101,6 +138,7 @@ module {
               case (#Week)     7 * DAY_NS;
               case (#BiWeek)   14 * DAY_NS;
               case (#Month)    30 * DAY_NS;
+              case(#Other(endAt)) endAt;
             };
             startTime + duration
         };  
@@ -123,8 +161,12 @@ module {
                         };
                         if(live.endTime > Time.now()){
                             switch(live.timerId){case(null){}; case(?timerId) cancelTimer(timerId)};
+                            let awaitingTenantApproval = switch(el.category){
+                                case(#Maintenance(arg) or #Tenancy(arg) or #Rent(arg)) not arg.tenantApproved;
+                                case(_) false;
+                            };
                             let executedProposal : Types.ProposalStatus = #Executed{
-                                outcome = if(live.yesVotes > live.noVotes) #Accepted([]) else #Refused("");
+                                outcome = if(live.yesVotes > live.noVotes and awaitingTenantApproval) #AwaitingTenantApproval else if(live.yesVotes > live.noVotes) #Accepted([]) else #Refused("");
                                 executedAt = Time.now();
                                 yesVotes = live.yesVotes;
                                 noVotes = live.noVotes;
@@ -139,8 +181,21 @@ module {
             fromStable = Stables.fromStableProposal;
 
             create = func(args: C, id: Nat): T {
+                let configureCategory = func(): ProposalCategory {
+                    switch(args.category){
+                        case(#Maintenance) #Maintenance({tenantApproved= false});
+                        case(#Rent) #Rent({tenantApproved= false});
+                        case(#Operations) #Operations;
+                        case(#Admin) #Admin;
+                        case(#Valuation) #Valuation;
+                        case(#Invoice(arg)) #Invoice({invoiceId = arg.invoiceId});
+                        case(#Tenancy(arg)) #Tenancy({tenantApproved= false});
+                        case(#Other(arg)) #Other(arg);
+                    };
+                };
                 let newProposal : Proposal = {
                     args with
+                    category = configureCategory();
                     id;
                     creator = arg.caller;
                     createdAt = Time.now();
@@ -254,35 +309,7 @@ module {
                 for(res in arr.vals()){
                     switch(res, action){
                         case(#ok(?id), #Create(_) or #Update(_)) ignore createTimers(arg, governance, id);
-                        case(#ok(?id), #Delete(_)) {
-                            switch(governance.proposals.get(id)){
-                                case(null){};
-                                case(?proposal){
-                                    switch(proposal.status){
-                                        case(#Executed(executed)){
-                                            let results = Buffer.Buffer<UpdateResult>(proposal.actions.size());
-                                            for(what in proposal.actions.vals()){
-                                                let whatWithPropertyId: Types.WhatWithPropertyId = {
-                                                    propertyId = arg.property.id;
-                                                    what;
-                                                };
-                                                results.add(await arg.handlePropertyUpdate(whatWithPropertyId, arg.caller));
-                                            };
-                                            let status : Types.ProposalStatus = #Executed {
-                                                executed with 
-                                                outcome = #Accepted(Buffer.toArray(results));
-                                            };
-                                            let updatedProposal :Proposal = {
-                                                proposal with 
-                                                status; 
-                                            };
-                                            governance.proposals.put(id, updatedProposal);
-                                        };
-                                        case(_){};
-                                    }
-                                }
-                            }
-                        };
+                        case(#ok(?id), #Delete(_)) await executeProposal(arg, governance, id);
                         case(_){};
                     }
 
@@ -299,6 +326,22 @@ module {
         type StableT = Proposal;
         let governance = Stables.toPartialStableGovernance(args.property.governance);
 
+        let requiresTenantApproval = func(category: Types.ProposalCategory): Bool {
+            switch(category){
+                case(#Maintenance(arg) or #Tenancy(arg) or #Rent(arg)) not arg.tenantApproved;
+                case(_) false;
+            }
+        };
+
+        let updateWithTenantApproval = func(category: Types.ProposalCategory): Types.ProposalCategory {
+            switch(category){
+                case(#Maintenance(_)) #Maintenance({tenantApproved = true;});
+                case(#Tenancy(_)) #Tenancy({tenantApproved = true;});
+                case(#Rent(_))#Rent({tenantApproved = true;});
+                case(other) other;
+            }
+        };
+
         let handler: Handler<T, StableT> = {
             validateAndPrepare = func(): [(?Nat, Result.Result<T, UpdateError>)] {
               switch(governance.proposals.get(arg.proposalId)){
@@ -306,8 +349,9 @@ module {
                   case(?proposal){
                       switch(proposal.status){
                           case(#LiveProposal(live)){
+                            //dao voting system
                             if(Time.now() > live.endTime) return [(?arg.proposalId, #err(#InvalidData{field = "End Time"; reason = #CannotBeSetInThePast}))];
-                            if(not PropHelper.isInList<Principal>(args.caller, proposal.eligibleVoters, Principal.equal)) return [(?arg.proposalId, #err(#InvalidData{field = "Eligible Voters"; reason = #InvalidInput}))];
+                            if(not PropHelper.isInList<Principal>(args.caller, proposal.eligibleVoters, Principal.equal) and not args.testing) return [(?arg.proposalId, #err(#InvalidData{field = "Eligible Voters"; reason = #InvalidInput}))];
                             if(PropHelper.isInList<(Principal, Bool)>((args.caller, true), proposal.votes, func ((a, _), (b, _)) { Principal.equal(a, b) })) return [(?arg.proposalId, #err(#InvalidData{field = "Votes"; reason = #AlreadyVoted}))];
                             let updatedProposal : Proposal = {
                                 proposal with
@@ -319,8 +363,54 @@ module {
                                     totalVotesCast = live.totalVotesCast + 1;
                                 }
                             };
+
+                            //deal with tenant vote here - changes category to true - or executed rejected by tenant here
+                            if (requiresTenantApproval(proposal.category) 
+                                and Operational.isTenant(args.caller, args.property)) {
+                                switch (arg.vote) {
+                                  case (false) {
+                                    // tenant veto
+                                    let updatedProposal = {
+                                      proposal with
+                                      status = #Executed{
+                                        outcome = #Rejected("Rejected by tenant");
+                                        executedAt = Time.now();
+                                        yesVotes = live.yesVotes;
+                                        noVotes  = live.noVotes;
+                                        totalVotesCast = proposal.votes.size();
+                                      }
+                                    };
+                                  };
+                                  case (true) {
+                                    // tenant pre-approves
+                                    let updatedProposal = {
+                                      proposal with
+                                      category = updateWithTenantApproval(proposal.category)
+                                    };
+                                  };
+                                };
+                            };
                             return [(?arg.proposalId, #ok(Stables.fromStableProposal(updatedProposal)))];
                           };
+                          case (#Executed(executed)) {
+                              switch (executed.outcome) {
+                                case (#AwaitingTenantApproval) {
+                                  if (Operational.isTenant(args.caller, args.property)) {
+                                    if (arg.vote == false) {
+                                        let updatedProposal : StableT = {proposal with status = #Executed({ executed with outcome = #Refused("Rejected by tenant")})};
+                                        [(?arg.proposalId, #ok(Stables.fromStableProposal(updatedProposal)))];
+                                    } else {
+                                      let updatedProposal = {proposal with status = #Executed{executed with outcome = #Accepted([])}};
+                                      [(?arg.proposalId, #ok(Stables.fromStableProposal(updatedProposal)))];
+                                    };
+                                  } else {
+                                    return [(?arg.proposalId, #err(#InvalidType))];
+                                  }
+                                };
+                                case (_) return [(?arg.proposalId, #err(#InvalidType))];
+                              }
+                            };
+                          //deal with executed (outcome = awaiting tenant approval)
                           case(_) return [(?arg.proposalId, #err(#InvalidType))];
                       }
                   }
@@ -345,24 +435,38 @@ module {
             getUpdate = func() = #Governance(Stables.fromPartialStableGovernance(governance));
 
 
-            finalAsync = func(_: [Result.Result<?Nat, (?Nat, UpdateError)>]): async () {};
+            finalAsync = func(arr: [Result.Result<?Nat, (?Nat, UpdateError)>]): async () {
+                if(args.testing) return;
+                for(res in arr.vals()){
+                    switch(res){
+                        case(#ok(?id)) await executeProposal(args, governance, id);
+                        case(_){};
+                    }
+
+                };
+            };
         };
 
         await PropHelper.applyHandler(args, handler);
     };    
 
     func matchProposalCategory(el: Proposal, category: ?Types.ProposalCategoryFlag): Bool {
-        switch(el.category, category){
-            case(_, null) true;
-            case(#Invoice(_), ?#Invoice) true;
-            case(#Other(_), ?#Other) true;
-            case(#Maintenance, ?#Maintenance) true;
-            case(#Operations, ?#Operations) true;
-            case(#Admin, ?#Admin) true;
-            case(#Valuation, ?#Valuation) true;
-            case(#Tenancy, ?#Tenancy) true;
-            case(_) false;
-        };
+          switch (category) {
+        case null true;
+        case (?c) {
+            switch (c, el.category) {
+                case (#Maintenance, #Maintenance(_)) true;
+                case (#Operations,  #Operations) true;
+                case (#Admin,      #Admin) true;
+                case (#Valuation,  #Valuation) true;
+                case (#Invoice(_),    #Invoice(_)) true;
+                case (#Rent,       #Rent(_)) true;
+                case (#Other(_),      #Other(_)) true;
+                case (#Tenancy,    #Tenancy(_)) true;
+                case _ false;
+            }
+        }
+    }
     };
 
     func matchStatus(el: Proposal, status: ?Types.ProposalStatusFlag): Bool {
@@ -396,7 +500,7 @@ module {
         }
     };
 
-    func matchVotedCondition(el: Proposal, voted: ?(Principal, {#HasVoted; #NotVoted})): Bool {
+    func matchVotedCondition(el: Proposal, voted: ?Types.HasVoted): Bool {
         func previouslyVoted(voter: Principal): Bool {
             for((principal, _) in el.votes.vals()){
                 if(Principal.equal(principal, voter)) return true;
@@ -406,10 +510,9 @@ module {
 
         switch(voted){
             case(null) true; 
-            case(?(voter, #HasVoted)) previouslyVoted(voter);
-            case(?(voter, #NotVoted)) not previouslyVoted(voter);
+            case(?#HasVoted(principal)) previouslyVoted(principal);
+            case(?#NotVoted(principal)) not previouslyVoted(principal);
         };
-
     };
 
     public func matchProposalConditions(el: Proposal, conditionals: Types.ProposalConditionals): Types.ReadOutcome<Proposal> {

@@ -6,7 +6,7 @@
  <meta charset="UTF-8" />
  <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
- <title>IC Home Page</title>
+ <title>HomeVestors DAO | My Proposals</title>
 
 
  <link rel="stylesheet" href="./src/styles/All.css">
@@ -18,7 +18,7 @@
 
 <body>
  <nav>
-   <a class="logo" href="">
+   <a class="logo" href="./index.html">
      <img id="logo" src="assets/FullLogo_Transparent_NoBuffer (4).png" alt="Logo">
      <h1 class="hvd-title"><span class="hvdao">H</span><span class="other">ome</span><span class="hvdao">V</span><span class="other">estors</span> <span class="hvdao">DAO</span></h1>
    </a>
@@ -105,6 +105,7 @@
        <thead>
          <tr>
            <th>date created</th>
+           <th>property</th>
            <th>Subject</th>
            <th>catagory</th>
            <th>Status</th>
@@ -115,65 +116,7 @@
          </tr>
        </thead>
        <tbody>
-         <tr class="expandable" data-details-id="details-1" aria-expanded="false">
-           <td>1/3/2023</td>
-           <td>Boiler Options </td>
-           <td>Maintenance</td>
-           <td>Live</td>
-           <td>For</td>
-           <td>120/100</td>
-           <td>85%</td>
-           <td>24 hours</td>
-         </tr>
-         <tr id="details-1" class="details-row" aria-hidden="true">
-           <td colspan="8">
-             <div class="details-content">
-               <strong>Proposal #1024 â€” Boiler replacement options</strong>
-               <ul>
-                 <li><b>Description:</b> There have been ongoing problems with the boiler. I think that we should replace the 12-year-old combi with A-rated unit. Two quotes attached.</li>
-                 <li><b>Attachments:</b> <a href="#">Quote_A.pdf</a>, <a href="#">Quote_B.pdf</a></li>
-                 <li><b>Created by:</b> alice.neuron</li>
-                 <li><b>Quorum:</b> 60% (met)</li>
-                 <li><b>Closes:</b> 2023-03-02 18:00 UTC</li>
-               </ul>
-               <div id="proposalVote-container">
-                 <button class="Votebtn btn small"><span>Vote For</span><i class="fa-solid fa-check"></i></button>
-                 <button class="Votebtn btn small"><span>Vote Against</span><i class="fa-solid fa-xmark"></i></button>
-               </div>
-             </div>
-           </td>
-         </tr>
-         <tr class="expandable" data-details-id="details-2" aria-expanded="false">
-           <td>1/3/2023</td>
-           <td>Boiler Options </td>
-           <td>Maintenance</td>
-           <td>Live</td>
-           <td><div id="for"><span>For</span><i class="fa-solid fa-check"></i></div></td>
-           <td>120/100</td>
-           <td>85%</td>
-           <td>24 hours</td>
-         </tr>
-         <tr class="expandable" data-details-id="details-3" aria-expanded="false">
-           <td>1/3/2023</td>
-           <td>Boiler Options </td>
-           <td>Maintenance</td>
-           <td>Live</td>
-           <td><div id="for"><span>For</span><i class="fa-solid fa-check"></i></div></td>
-           <td>120/100</td>
-           <td>85%</td>
-           <td>24 hours</td>
-         </tr>
-         <tr class="expandable" data-details-id="details-4" aria-expanded="false">
-           <td>1/3/2023</td>
-           <td>Boiler Options </td>
-           <td>Maintenance</td>
-           <td>Live</td>
-           <td><div><span>Against</span><i class="fa-solid fa-xmark"></i></div></td>
-           <td>120/100</td>
-           <td>85%</td>
-           <td>24 hours</td>
-         </tr>
-       </tbody>
+        </tbody>
      </table>
    </div>
 
@@ -316,9 +259,9 @@
            <button type="button" class="btn secondary" id="cancelProposalCreate">Cancel</button>
            <button class="btn primary" id="submitNewProposal">Submit proposal</button>
          </div>
-       </form>
-      
-     </div>
+        </form>
+        <p id="proposalCreationResult"></p>
+      </div>
    </div>
 
 

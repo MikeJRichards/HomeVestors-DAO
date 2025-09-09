@@ -323,7 +323,6 @@ input[type="checkbox"] {
        border-radius: 8px 0px 0px 8px;
        padding: 0px;
        margin: 0px;
-       flex: 1;
      }
      .carousel-image {
        width: 100%;
@@ -573,8 +572,7 @@ input[type="checkbox"] {
    }
   
 /* Header Buttons */ 
-.IMPhead-KYC-btn {
-    margin-right: 1rem;
+#IMPhead-Sell-btn {
    color: var(--lightText);
    padding: 0.5rem 1rem;
    font-family: 'Open Sans', sans-serif;
@@ -587,7 +585,7 @@ input[type="checkbox"] {
    cursor: pointer;
    transition: all 0.2s ease;
    }
-.IMPhead-Sell-btn:hover {
+#IMPhead-Sell-btn:hover {
    background-color: var(--HVDcolourPop);
    font-weight: 600;
    color: white;
@@ -638,7 +636,6 @@ input[type="checkbox"] {
        border-radius: 8px;
        height: fit-content;
        padding: 0.2rem;
-       max-width: 400px;
        }
       
          #nftprice {
@@ -698,31 +695,15 @@ input[type="checkbox"] {
        width:100%;
        border-radius: 8px 8px 0 0;
        }
-
-       .location {
-  display: flex;
-  gap: 1rem;                /* Small spacing between text pieces */
-  font-weight: 600;            /* Slightly bold for readability */
-  color: var(--mainText);      /* Use your existing color variable */
-  font-size: 0.95rem;          /* Slightly smaller than normal text */
-  font-family: 'Open Sans', sans-serif;
-}
-
-.street-link {
-  display: inline;             /* Make sure text flows inline */
-  text-decoration: none;       /* Remove underline from link */
-  color: inherit;              /* Inherit color from parent */
-  cursor: pointer;             /* Pointer cursor for clarity */
-  transition: color 0.2s ease, background 0.2s ease;
-}
-
-.street-link:hover {
-  color: var(--accentColor);   /* Subtle color change on hover */
-  background: rgba(0, 0, 0, 0.03); /* Slight background highlight */
-  border-radius: 4px;          /* Rounded corners for hover area */
-  padding: 2px 4px;            /* Tiny padding to make hover area bigger */
-}
-
+   .location {
+       display: flex;
+       gap: 0.5rem;
+       padding-left: 1rem;
+       line-height: 0;
+       font-size: 1;
+       font-family: 'Open Sans', sans-serif;
+       font-weight: 600;
+       }
    .container-advert-buyBtns {
        display: flex;
        justify-content: center;
@@ -847,11 +828,12 @@ input[type="checkbox"] {
    .highestbidder {
        margin: 0 1rem 1rem 1rem;
        color: var(--lightText);
+       display: none;
        }
      .win {
        color: var(--HVDcolourPop);
        margin: 0 1rem 1rem 1rem;
-       display: noe;
+       display: none;
        }
    .modal {
        position: fixed;
@@ -893,7 +875,7 @@ input[type="checkbox"] {
      .modal-btns {background-color: var(--HVDbase);
        color: white;
        font-size: 1.2rem;
-       width: 240px;
+       width: 250px;
        height: 48px;
        font-weight: 600;
        font-size: 1.1rem;
@@ -916,8 +898,137 @@ input[type="checkbox"] {
        }
   
   
-    
-    
+   /* Responsive */
+   /* headers */
+   @media screen and (max-width: 1040px) {
+       .container-right{
+           display: none;
+           }
+       }
+   @media screen and (max-width: 800px) {
+       .toggle-btn{
+           font-size: 0.8rem;
+           padding: 0.5rem;
+           width: 4rem;
+       }
+       #filters-btn{
+           font-size: 0.8rem;
+           padding-right: 0;
+           margin-right: -2rem;
+       }
+       #sort-btn {
+           font-size: 0.8rem;
+           padding-left: 0;
+       }
+       }
+   @media screen and (max-width: 520px) {
+       #newProperties-header{
+           padding: 1rem;
+       }
+       }
+   @media screen and (max-width: 470px) {
+       #newProperties-header{
+           padding: 0.6rem;
+           flex-direction: column;
+       }
+       #filters-btn{
+           margin-right: 1rem;
+       }
+       }
+   @media screen and (max-width: 600px) {   
+       #saved-label{
+           display: none;
+           }
+       }
+   @media screen and (max-width: 480px) { 
+       #imp-header {
+           padding: 0.5rem;
+       }
+   }
+   @media screen and (max-width: 411px) { 
+       .mp-header-toggle-btn {
+           font-size: 0.8rem;
+       }
+   }
+   @media screen and (max-width: 344px) { 
+       .mp-header-toggle-btn {
+           font-size: 0.7rem;
+       }
+   }
+   @media screen and (max-width: 412px) { 
+       #imp-filters-btn{
+           font-size: 0.8rem;
+           padding-right: 0;
+           margin-right: -2rem;
+       }
+       #imp-sort-btn{
+           font-size: 0.8rem;
+           padding-left: 0;
+       }
+       }
+  
+   @media screen and (max-width: 475px) {   
+       #mp-header {
+           padding: 1rem 1rem 0rem 1rem;
+           }
+       #newProperties-header {
+           padding: 1rem;
+       }
+       }
+   /* Filters Bar */
+   @media screen and (max-width: 1000px) {
+       .fb-form-container{
+           flex-direction: column;
+       }
+   }
+   @media screen and (max-width: 630px) {
+       .filters-bar {
+           padding: 1rem;
+       }
+       .filter-flex {
+           flex-direction: column;
+       }
+   }
+   /* Body */
+   @media screen and (max-width: 1050px) {
+       .main-body,
+       .imp-main-body {
+           width: 100%;
+           padding:0.5rem;
+           margin: 0;
+       }
+       .main-body-container {
+           flex-direction: column;
+       }
+       .container-right {
+           display: none;
+           width: 0%;
+       }
+       }
+   @media screen and (max-width: 350px) {
+       .nftAdvert-card {
+           max-width: calc(100% - 2rem);
+       }
+       }
+   @media screen and (max-width: 700px) {
+       .property-card {
+           max-width: calc(100% - 2rem) !important;
+           flex-direction: column !important;
+           align-items: center;
+       }
+       .image-carousel {
+           width: 100%;
+           height: 300px;
+       }
+       .propertyInfo {
+           width: 100%;
+       }
+       }
+   @media screen and (max-width: 380px) {
+       .image-carousel {
+           height: 200px;
+       }
+       } 
 
 
 
@@ -928,32 +1039,24 @@ input[type="checkbox"] {
 
 
 
+       :root{
+           --background: #f2fefb;
+           --hover:#d9fbf3;
+           --mainText: #0F1D2A;
+           --lightText: #0f1d2aba;
+           --HVDcolourPop: #00E4B0;
+           --HVDbase: #3A6A99;
+           --lightHVDpop: #A7F6D6;
+           --heroSubFont: #8C9299;
+           --lightHVDbase: #9DB5CC;
+           --hoverBase: #E2E9F0;
+           --transpBase:#3a6999a2;
+           --borderLine: #e0e0e0;
+       }
+      
 
 
-
-
-
-
-
-
-
-
-
-
-:root{
-   --background: #f2fefb;
-   --hover:#d9fbf3;
-   --mainText: #0F1D2A;
-   --lightText: #0f1d2aba;
-   --HVDcolourPop: #00E4B0;
-   --HVDbase:  #3A6A99;
-   --lightHVDpop: #A7F6D6;
-   --heroSubFont: #8C9299;
-   --lightHVDbase: #9DB5CC;
-   --hoverBase: #E2E9F0;
-   --transpBase:#3a6999a2;
-   --borderLine: #e0e0e0;
- }
+  
 
 
 

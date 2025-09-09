@@ -5,7 +5,7 @@ import NFT "nft";
 import Tokens "token";
 import UserNotifications "userNotifications";
 import PropHelper "propHelper";
-import Test "Tests/test";
+import TestRouter "Tests/testRouter";
 import TestTypes "Tests/testTypes";
 import HashMap "mo:base/HashMap";
 import Result "mo:base/Result";
@@ -303,8 +303,8 @@ public func transferNFTBulk(): async [?TransferResult] {
     }
   };
 
-  public func runTests(arg: TestOption): async (){
-    await Test.runTests(arg, handlePropertyUpdate);
+  public func runTests(arg: TestOption): async [[Text]]{
+    await TestRouter.runTestsForOption(arg, handlePropertyUpdate);
   };
      
   system func preupgrade(){

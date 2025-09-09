@@ -94,3 +94,31 @@
 
     
 
+
+   @media (max-width: 635px) {
+       #au-s5 {
+           margin-bottom: 2rem;
+       }
+       #au-ids {
+           flex-direction: column;
+           justify-content: center;
+           align-items: center;
+       }
+       .au-ids {
+           align-items: center;
+           justify-content: center;
+       }
+   }
+   @media (max-width: 575px) {
+       #au-cta-btns {
+           flex-direction: column;
+           align-items: center;
+       }
+       #hp-btn4 {
+           margin-top: -1rem;
+       }
+   }
+
+
+
+

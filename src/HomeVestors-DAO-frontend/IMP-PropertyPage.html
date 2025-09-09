@@ -6,7 +6,7 @@
  <meta charset="UTF-8" />
  <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
- <title>IC Hello Starter</title>
+ <title>HomeVestors DAO | Property Page</title>
 
 
  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -63,11 +63,11 @@
    <div id="property-image-carousel">
      <div class="carousel-container">
        <div class="main-image-container">
-         <img id="mainImage" src="./assets/houseimg.jpg" alt="Main Property Image">
+         <img id="mainImage" src="" alt="Main Property Image">
        </div>
        <div class="thumbnail-container">
-         <img class="thumbnail" id="image2" src="./assets/yNZPvgJedXyNZG7FvDMHTC-1280-80.jpg.webp" alt="Thumbnail 1">
-         <img class="thumbnail" id="image3" src="./assets/8.jpg" alt="Thumbnail 2">
+         <img class="thumbnail" id="image2" src="" alt="Thumbnail 1">
+         <img class="thumbnail" id="image3" src="" alt="Thumbnail 2">
        </div>
        <button id="clickLeft" class="pp-carousel-arrow left">&#10094;</button>
        <button id="clickRight" class="pp-carousel-arrow right">&#10095;</button>
@@ -117,12 +117,16 @@
  <div id="pp-mainpage">
    <div id="pp-fullinfo-section">
      <div id="Pp-toggle">
-       <button id="propertydetails" class="toggle-btn  active"> Property Details</button>
-       <button class="toggle-btn header-btns"> Location</button>
-       <button class="toggle-btn header-btns"> Financials</button>
-       <button class="toggle-btn header-btns"> DAO History</button>
-       <button class="toggle-btn header-btns"> Documents</button>
-     </div>
+      <div class="Pp-toggle">
+          <button id="propertydetails" class="toggle-btn  active"> Property Details</button>
+          <button class="toggle-btn header-btns"> Location</button>
+          <button class="toggle-btn header-btns"> Financials</button>
+        </div>
+        <div class="Pp-toggle">
+          <button class="toggle-btn header-btns"> DAO History</button>
+          <button class="toggle-btn header-btns"> Documents</button>
+        </div>
+      </div>
 
 
      <div id="mainpage-propertydetails-section">
@@ -350,6 +354,22 @@
 
 
         
+       </div>
+     </div>
+      <div id="Bottom" >
+       <div id="nft-info-top">
+         <div class="container-advert-buyBtns" >
+           <p class="text-p ButtonDetails top" >Number Available: 10 </p>
+           <p id="imp-nftprice">Â£220 </p>
+           <button class="advert-buyBtns">Buy Now</button>
+           <p class="text-p ButtonDetails" id="auctionDetails" >Current Auction Price </p>
+           <p id="imp-nftprice">Â£220 </p>
+           <button class="advert-buyBtns">Place Bid</button>
+           <p class="text-p highestbidder" >Highest Bidder: 1023643642... </p>
+                     <p class="text-p win" >You're the Highest Bidder! </p>
+           <p class="text-p" id="auctionTiming" >Auction closes: 12/12/25 </p>
+           <button id="sold-replacementBtn">SOLD</button>
+         </div>
        </div>
      </div>
    </div>

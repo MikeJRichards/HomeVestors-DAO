@@ -14,6 +14,11 @@
  }
 
 
+ .hidden {
+   display: none !important;
+ } 
+
+
  *{
      transition: all 0.2s ease-in-out;
     
@@ -23,6 +28,7 @@
  body, html {
    padding: 0;
    margin: 0;
+   overflow-x: hidden;
    }
   
  body{
@@ -92,7 +98,22 @@
      display: flex;
      justify-content:space-between;
      }
-    
+
+
+ /* Responsiveness */
+@media (max-width: 635px) {
+ .two-cards {
+   flex-direction: column;
+   padding: -1rem 0;
+   gap: 0;
+   width: 100%;
+ }
+ .cards-multi{
+     width: 100%;
+     }
+}
+
+
       
 /* BUTTONS */
  .btn {
@@ -188,6 +209,7 @@
      #nav_end {
          display: flex;
          gap: 1rem;
+         align-items: center;
          }
     
      a{
@@ -312,6 +334,16 @@
  display: none !important;
 }
 
+.okResult {
+  color: rgb(4, 223, 52);
+  text-align: center;
+}
+
+.errResult {
+  color: red;
+  text-align: center;
+}
+
 
 @media (max-width: 1040px) {
  .nav_menu {
@@ -325,15 +357,63 @@
 }
 
 
-@media (max-width: 400px) {
+@media (max-width: 585px) {
+ .logo {
+   gap: 0.8rem;
+ }
+ #logo {
+   height:30px;
+ }
  .hvd-title {
-   font-size: 28px;
+   font-size: 24px;
+ }
+ #hamburger {
+   margin-right: 0.5rem;
+   font-size: 1.1rem;
+ }
+ #connect_btn {
+   width: 72px;
+   height: 24px;
  }
 }
 
-.hidden {
-  display: none !important;
+
+@media (max-width: 460px) {
+ .logo {
+   gap: 0.5rem;
+ }
+ #logo {
+   height:25px;
+ }
+ .hvd-title {
+   font-size: 20px;
+ }
+ #hamburger {
+   margin-right: 0;
+ }
 }
+
+
+@media (max-width: 380px) {
+ .logo {
+   gap: 0.5rem;
+ }
+ #logo {
+   height:22.5px;
+ }
+ .hvd-title {
+   font-size: 15px;
+ }
+ #hamburger {
+   margin-right: 0;
+   font-size: 0.9rem;
+ }
+ #connect_btn {
+   width: 60px;
+   height: 20px;
+ }
+}
+
 
       
 
@@ -429,4 +509,6 @@
              margin-left: auto;
              margin-right: auto;
            }
+
+
 

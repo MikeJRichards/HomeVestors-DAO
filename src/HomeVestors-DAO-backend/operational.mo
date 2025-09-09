@@ -148,6 +148,19 @@ module Operational {
       await PropHelper.applyHandler<T, StableT>(args, handler);
     };
 
+     public func isTenant(caller : Principal, property : Property) : Bool {
+        let tenants = property.operational.tenants;
+        if (tenants.size() == 0) return false;
+    
+        // Get last element in tenants array
+        let (_, lastTenant) = tenants[tenants.size() - 1];
+    
+        switch (lastTenant.principal) {
+            case (null) false;
+            case (?p) Principal.equal(caller, p);
+        }
+    };
+    
     public func createTenantHandler(args: Arg, action: Actions<TenantCArg, TenantUArg>): async UpdateResult {
         type C = TenantCArg;
         type U = TenantUArg;
@@ -190,7 +203,10 @@ module Operational {
             if (Text.equal(t.leadTenant, "")) return #err(#InvalidData{field = "lead tenant"; reason = #EmptyString;});
             if (t.monthlyRent <= 0) return #err(#InvalidData{field = "monthly rent"; reason = #CannotBeZero;});
             if (t.deposit <= 0) return #err(#InvalidData{field = "deposit"; reason = #CannotBeZero;});
-            if (t.leaseStartDate < Time.now()) return #err(#InvalidData{field = "lease start date"; reason = #CannotBeSetInThePast;});
+            switch(action, t.leaseStartDate < Time.now()){
+                case(#Create(_), true) return #err(#InvalidData{field = "lease start date"; reason = #CannotBeSetInThePast;});
+                case(_){};
+            };
             return #ok(t);
         }
       };      

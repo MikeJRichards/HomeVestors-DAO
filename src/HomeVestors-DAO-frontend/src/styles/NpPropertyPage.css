@@ -258,6 +258,23 @@
  .info-container {
    margin-bottom: 3rem;
  }
+ #Bottom {
+   display: none;
+   justify-content: center;
+   align-items: center;
+
+
+ }
+ #nft-info-top{
+   border: #3A6A99 solid 2px;
+     background-color: white;
+     border-radius: 8px;
+     padding: 2rem;
+     height: fit-content;
+     width: 70%;
+     top: 6rem;
+     margin-bottom: 1rem;
+ }
 
 
   
@@ -580,6 +597,132 @@ margin: -3rem 2rem 3rem 2rem;
      color: var(--mainText);
      background-image: linear-gradient(45deg, var(--HVDcolourPop), var(--lightHVDpop), var(--hover));
      }
+  
+
+
+
+
+
+
+     @media (max-width: 1000px){
+       pp-mainpage{
+         flex-direction: column;
+       }
+       #pp-fullinfo-section{
+         width: 100%;
+         padding:3rem;
+         margin: 0;
+       }
+       #container-nft-info{
+         display: none;
+       }
+       #Bottom {
+         display: flex;
+       }
+       #pp-info-header{
+         padding: 0 3rem;
+       }
+     }
+     @media (max-width: 770px){
+       .main-image-container {
+         flex: 0 0 100%;
+       }
+       .thumbnail {display:none;
+       }
+     }
+     @media (max-width: 550px){
+       .pp-priceInfo{
+         font-size: 2rem;
+       }
+       #pp-save{
+         font-size: 0.9rem;
+       }
+       .location{
+         font-size: 0.9rem;
+       }
+       #infoicons-container{
+         gap: 1.6rem;
+       }
+       .infoicons{
+         font-size: 0.9rem;
+       }
+       #added{
+           font-size: 0.9rem;
+       }
+       #launched{
+         font-size: 0.9rem;
+       }
+       #pp-info-header{
+         padding: 0 2rem;
+       }
+     }
+     @media (max-width: 500px){
+       .pp-priceInfo{
+         font-size: 1.5rem;
+       }
+       #pp-save{
+         font-size: 0.6rem;
+       }
+       .location{
+         font-size: 0.6rem;
+       }
+       #infoicons-container{
+         gap: 1rem;
+       }
+       .infoicons{
+         font-size: 0.6rem;
+       }
+       #added{
+           font-size: 0.6rem;
+       }
+       #launched{
+         font-size: 0.6rem;
+       }
+       #pp-info-header{
+         padding: 0 1rem;
+       }
+     }
+     @media (max-width: 600px){
+       #physical-subcontainer{
+         grid-template-columns: 1fr 1fr 1fr;
+       }
+       .toggle-btn{
+         width:6rem;
+         font-size: 0.75rem;
+       }
+     }
+     @media (max-width: 450px){
+       #physical-subcontainer{
+         font-size: small;
+         grid-template-columns: 1fr 1fr;
+       }
+       #financials-subcontainer{
+         font-size: small;
+         grid-template-columns: 1fr 1fr;
+       }
+     }
+@media (max-width: 700px){
+         #financials-breakdown {
+           flex-direction: column;
+         }
+         .TableTitle {
+         font-size: smaller;
+         }
+         #finance_table_head {
+           font-size: 0.1rem;
+         }
+         .financials-cards{
+           padding: 1rem;
+           margin-left:-2rem;
+           margin-right:-2rem;
+         }
+       }
+
+
+
+
+
+
  
 
 
@@ -589,6 +732,7 @@ margin: -3rem 2rem 3rem 2rem;
 
 
 
+   .buyBtn {display: none;}
    #mainpage-propertydetails-section {
      display: noe;
      }

@@ -2,6 +2,7 @@ import Types "types";
 import UnstableTypes "./Tests/unstableTypes";
 import Stables "./Tests/stables";
 import Tokens "token";
+import NFT "nft";
 import Governance "proposals";
 import PropHelper "propHelper";
 import { setTimer; cancelTimer } = "mo:base/Timer";
@@ -14,6 +15,7 @@ import Buffer "mo:base/Buffer";
 import HashMap "mo:base/HashMap";
 import Array "mo:base/Array";
 import Text "mo:base/Text";
+import Option "mo:base/Option";
 
 
 module {
@@ -131,7 +133,19 @@ module {
                   case (#Outgoing(outgoing)) {
                     if(outgoing.to == financials.account) return #err(#InvalidData { field = "direction to"; reason = #InvalidRecipient});
                     if (Principal.isAnonymous(outgoing.to.owner)) return #err(#InvalidData { field = "direction.to"; reason = #Anonymous });
+                    if(args.testing == false){
+                        var exists = false;
+                        for((id, _) in args.property.governance.proposals.vals()) if(id == outgoing.proposalId) exists := true;
+                        if(exists == false) return #err(#InvalidData{field = "direction to"; reason = #NonExistentProposal})
+                    }
                   };
+                  case(#ToInvestors(arg)){
+                    if(args.testing == false){
+                        var exists = false;
+                        for((id, _) in args.property.governance.proposals.vals()) if(id == arg.proposalId) exists := true;
+                        if(exists == false) return #err(#InvalidData{field = "direction to"; reason = #NonExistentProposal})
+                    }
+                  }
                 };
 
                 switch (invoice.recurrence.period) {
@@ -155,7 +169,11 @@ module {
             }
         };      
 
-        let transactionIds = HashMap.HashMap<Nat, Nat>(0, Nat.equal, PropHelper.natToHash);
+        type AsyncType = {
+            #TransactionId: Nat;
+            #InvestorTransfers: [Types.InvestorTransfer];
+        };
+        let transactionIds = HashMap.HashMap<Nat, AsyncType>(0, Nat.equal, PropHelper.natToHash);
 
         let handler: Handler<T, StableT> = {
                 validateAndPrepare = func () = PropHelper.getValid<C, U, T, StableT>(action, crudHandler);
@@ -165,7 +183,7 @@ module {
                     let transferFrom = func (id: Nat, token: Types.AcceptedCryptos, amount: Nat, from: Types.Account): async Result.Result<(), Types.UpdateError>{
                       switch(await Tokens.transferFrom(token, amount, financials.account, from)){
                         case(#Ok(transactionId)){
-                          transactionIds.put(id, transactionId);
+                          transactionIds.put(id, #TransactionId(transactionId));
                           return #ok();
                         };
                         case(#Err(e)) return #err(#Transfer(?e));
@@ -175,13 +193,37 @@ module {
                     let transfer = func (id: Nat, token: Types.AcceptedCryptos, to: Types.Account, amount: Nat): async Result.Result<(), Types.UpdateError>{
                       switch(await Tokens.transfer(token, financials.account.subaccount, to, amount)){
                         case(#Ok(transactionId)){
-                          transactionIds.put(id, transactionId);
+                          transactionIds.put(id, #TransactionId(transactionId));
                           return #ok();
                         };
                         case(#Err(e)) return #err(#Transfer(?e));
                       }
                     };
+
+                    let transferToInvestors = func(id: Nat, token: Types.AcceptedCryptos, totalAmount: Nat): async (){
+                        let (allAccounts, totalNFTs) = await NFT.getAllAccounts(args.property.nftMarketplace.collectionId);
+                        let transferResults = Buffer.Buffer<(Account, async Tokens.TransferResult)>(0);
+                        for((account, count) in allAccounts.vals()){
+                            let amount = totalAmount * count / totalNFTs;
+                            let fromSubaccount = args.property.financials.account.subaccount;
+                            transferResults.add((account, Tokens.transfer(token, fromSubaccount, account, amount)));
+                        };
+                        let results = Buffer.Buffer<Types.InvestorTransfer>(transferResults.size());
+                        for((account, transferResult) in transferResults.vals()){
+                            let result = switch(await transferResult){
+                                case(#Ok(transactionId)) #Ok(transactionId);
+                                case(#Err(e)) #Err(e);
+                            };
+                            results.add({
+                                result;
+                                timestamp = Time.now();
+                                to = account;
+                            });
+                        };
+                        transactionIds.put(id, #InvestorTransfers(Buffer.toArray(results)));
+                    };
                     
+
                     let results = Buffer.Buffer<(?Nat, async Result.Result<(), UpdateError>)>(arr.size());
                     for((idOpt, res) in arr.vals()){
                         switch(idOpt, res){
@@ -189,7 +231,11 @@ module {
                                 switch(invoice.status, invoice.direction){
                                     case(#Approved, #Incoming(income)) results.add((?id, transferFrom(id, invoice.paymentMethod, invoice.amount, income.from)));
                                     case(#Approved, #Outgoing(outgoing)) results.add((?id, transfer(id, invoice.paymentMethod, outgoing.to, invoice.amount)));
-                                    case(_){};
+                                    case(#Approved, #ToInvestors(proposalId)){
+                                        await transferToInvestors(id, invoice.paymentMethod, invoice.amount);
+                                        results.add((?id, async #ok()));
+                                    };
+                                    case(_) results.add((?id, async #ok()));
                                 }
                             };
                             case(_, #err(e)) results.add((idOpt, async #err(e)));
@@ -249,13 +295,26 @@ module {
                         case(null, _) buff.add((null, #err(#InvalidElementId)));
                         case(?id, #ok(invoice)){
                             switch(transactionIds.get(id), invoice.status){
-                                case(?transactionId, #Approved){
+                                case(?#InvestorTransfers(transferArray), #Approved){
+                                    var success = false;
+                                    for(attemptedTransfers in transferArray.vals()){
+                                        switch(attemptedTransfers.result){
+                                            case(#Ok(_)) success := true;
+                                            case(_){};
+                                        };
+                                    };
+                                    invoice.status := if(success) #Paid else #Failed;
+                                    invoice.paymentStatus := #TransferAttempted(transferArray);
+                                    makeRecurringInvoice(invoice);
+                                    buff.add((?id, #ok(Stables.toStableInvoice(invoice))));
+                                };
+                                case(?#TransactionId(transactionId), #Approved){
                                     invoice.status := #Paid;
                                     invoice.paymentStatus := #Confirmed{transactionId; paid_at = Time.now()};
                                     makeRecurringInvoice(invoice);
                                     buff.add((?id, #ok(Stables.toStableInvoice(invoice))));
                                 };
-                                case(_){};
+                                case(_) buff.add((?id, #ok(Stables.toStableInvoice(invoice))));
                             };
                         }; 
                         case(?id, #err(#Transfer(?e))){
@@ -355,6 +414,7 @@ module {
                 let refResult = matchRef(outgoing.accountReference, outgoingCond.accountReference);
                 categoryResult and toResult and refResult;
             };
+            case(#ToInvestors(_), ?#ToInvestors) true;
             case(_) false;
         }
     };

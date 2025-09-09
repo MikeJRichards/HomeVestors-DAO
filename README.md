@@ -1,130 +1,171 @@
-# HomeVestors DAO - Milestone 1 Documentation
+# HomeVestors DAO
 
 ## Overview
 
-HomeVestors DAO is a transformative, fully decentralized, full-stack solution designed to enhance flexibility and adaptability in the UK’s increasingly challenging buy-to-let property market. Rising mortgage costs and restrictive government policies have made property investment more burdensome and risky, driving many landlords out of the market.
+HomeVestors DAO is a decentralized, full-stack property governance system built on the Internet Computer.  
+Each property is represented by a deeply structured on-chain record containing:
 
-In contrast, HomeVestors DAO empowers investors with dynamic options, providing both flexibility and direct control through governance. Each property functions as its own DAO with a dedicated account, enabling investors to control key decisions like tenant selection, maintenance, and expenses while eliminating time-consuming property management.
+- **Operational data** (tenants, maintenance, inspections)  
+- **Financial data** (valuations, invoices, rental flows)  
+- **Administrative data** (documents, insurance, notes)  
+- **Governance** (proposals, voting, execution)  
+- **Marketplace** (fixed-price listings, auctions, property launches)  
+- **User notifications** (alerts to investors)  
 
-Our model introduces liquidity through fractionalized property NFTs and our stablecoin, allowing investors to seamlessly buy, sell, leverage, or de-leverage their assets as life’s needs evolve. Whether investors seek full control over property management decisions or prefer a passive approach, HomeVestors DAO adapts to their preferences, unlocking access to property governance that aligns with modern financial and personal realities.
-
----
-
-## System Architecture
-
-### Core Concepts
-
-- **Property NFT Collections**: Each property has a dedicated ICRC-7 and ICRC-37 compliant NFT collection representing fractional ownership.
-- **DAO Governance**: Each NFT holder can vote on property-related proposals.
-- **Modular Data Layers**: Properties contain deeply structured metadata across five domains:
-  - Property details
-  - Financials
-  - Administrative
-  - Operational
-  - NFT Marketplace
+All updates flow through a uniform handler system, ensuring validation, immutability, async side-effects, and traceability.
 
 ---
 
-### System Modules
+## Architecture
 
-The platform is organized into modular, file-based components that separate logic by domain. This structure enhances readability, testability, and scalability as the system grows.
+### Handler Pipeline
 
-- **Property Module**: Coordinates property creation and routes updates to the appropriate module based on the `What` action type.
-- **Administrative Module**: Handles operations related to documents, insurance policies, and notes. Contains its own validation and mutation logic.
-- **Operational Module**: Manages tenants, inspections, and maintenance workflows.
-- **Financials Module**: Controls purchase data, rental income, yield calculations, and valuation tracking. Integrates with the valuation outcall logic.
-- **Details Module**: Encapsulates logic for physical attributes and scoring metrics such as crime, affordability, and school quality.
-- **NFT Module**: Interfaces with ICRC-7/37-compliant NFT collections for minting, ownership tracking, and metadata updates.
-- **User Notifications Module**: Sends on-chain alerts to all holders of property NFTs following any successful update.
-- **PropHelper (Utils)**: A centralized utility module that applies the final, validated `Intent` to the stable `Property` struct. It also:
-  - Updates the property's persistent updates history with a record of who made the change, when it occurred, and what was changed.
-  - Returns the modified struct back to the main actor to make the change permanent.
-
----
-
-## Key Flows
-
-### Property Creation
-
-- Triggered via `createProperty()`
-- Requires a new NFT collection canister to be deployed externally.
-- Metadata returned from the NFT canister is used to create the full `Property` struct.
-
-### NFT Metadata Synchronization
-
-- Every successful update triggers `handleNFTMetadataUpdate()`, which updates the ICRC-7 collection metadata.
-- Ensures that external viewers and marketplaces always reflect accurate property state.
-
-### Data Retrieval
-
-- `readProperty()` returns sanitized, structured data based on a `Read` selector and property ID.
-- All user-readable information can be extracted without exposing sensitive or internal logic.
-
----
-
-## Create, Update, and Delete Flow & Logic
-
-The update flow is strictly pattern-driven and modular, following a “What then How” design principle:
-
-1. The `handlePropertyUpdate()` function retrieves the target property and triggers a call to `updateProperty()` in the Property module.
-2. This function switches on the `What` type, routing the action to the relevant domain module.
-3. Inside the domain module, a second switch occurs on the action type — `create`, `update`, or `delete` — defined by the `Actions<CreateArg, (UpdateArg, Nat)>` interface.
-4. Validation uses a unified function that checks each argument and returns either:
-   - A sanitized update, or
-   - A detailed error (e.g., invalid date, empty string, or zero value).
-5. All update arguments are fully nullable, allowing minimal and flexible changes.
-6. A sanitized `Intent` is passed to the PropHelper:
-   - Mutates the relevant part of the `Property` struct immutably.
-   - Ensures consistency and traceability.
-7. After a successful state change:
-   - All current NFT holders are notified.
-   - The update is logged in the immutable history (with what, when, and who).
+Every domain uses the same update pipeline:
+validate → asyncEffect → applyAsyncEffects → applyUpdate → finalAsync
 
 This ensures:
 
-- A uniform update pattern across all domains.
-- Clear separation of concerns between validation, logic, and mutation.
-- High scalability and ease of adding new modules/actions.
+- **Consistency** across modules  
+- **Auditability** of all state changes  
+- **Extensibility** when new modules are added  
 
----
-
-## NFT Design and Implementation
-
-Although Milestone 1 only required ICRC-7, HomeVestors DAO integrates both ICRC-7 and ICRC-37 standards to support fractional ownership with advanced access control, approvals, metadata handling, and future governance utility.
-
-### Architecture and Standards
-
-- **ICRC-7 Compliance**:
-  - Minting
-  - Transfer
-  - Burn
-  - Balance queries
-  - Owner queries
-  - Metadata
-  - Pagination
-  - Token enumeration
-
-- **ICRC-37 Extensions**:
-  - `approve`, `transfer_from`, `revoke`
-  - Delegated transfers with related metadata
-
-- **Collection Metadata**:
-  - Stored in `HashMap<Text, Value>`
-  - Includes all ICRC-7 fields + property-specific metadata (valuation, rent, address)
-
----
-
-## Validation System
-
-To avoid per-method validation repetition, all validation flows through:
+**Core types:**
 
 ```motoko
-validate<T <: BaseArg>(
-  arg: Arg,
-  x: T,
-  authorized: ?Authorized,
-  spender: ?Account,
-  caller: Principal,
-  ctx: TxnContext,
-  count: Nat
-)
+public type Handler<T, StableT> = { … }
+public type CrudHandler<C, U, T, StableT> = { … }
+
+# Modules
+
+## `property.mo`
+
+- Core entry point for property lifecycle  
+- Coordinates create/update/delete across all submodules  
+- Maintains the full `Property` struct, embedding financials, operational data, governance, marketplace state, and administrative info  
+
+---
+
+## `operational.mo`
+
+- **Tenants**: lease details, deposits, rent, linked principals  
+- **Inspections**: validated against current time, prevents invalid scheduling  
+- **Maintenance**: cost, status, contractor, reported/completed dates  
+- Fully handler-driven with strict validation (e.g. `rent > 0`, no future dates)  
+
+---
+
+## `financials.mo`
+
+- Tracks property investment details, NAV, and performance  
+- Integrates with invoices for rental flows and distributions  
+- Records valuations and yield metrics  
+
+---
+
+## `invoices.mo`
+
+- **Lifecycle**: Draft → Approved → Paid/Failed  
+- Async token transfer integration  
+- Supports recurring invoices with automatic timer scheduling  
+- Handles both incoming (tenant → property) and outgoing (property → contractors/investors) flows  
+- Distributes income proportionally to NFT holders (via external NFT canister)  
+
+---
+
+## `governance/proposals.mo`
+
+- Full on-chain governance system for each property  
+- **Proposal categories**: maintenance, rent, tenancy, valuations, invoices, admin, operations, other  
+- **Voting**: timed periods (hours → weeks)  
+- **Participation**: NFT holders vote; some categories require tenant approval/veto  
+- **Execution**: approved proposals trigger property actions (e.g. invoice approval)  
+- Immutable history of votes and outcomes  
+
+---
+
+## `marketplace/`
+
+Implements the property/NFT marketplace logic:
+
+### Fixed-Price Listings
+- Create/update/delete at a set price  
+- Auto-cancel on expiry or withdrawal  
+
+### Auctions
+- Live bidding with reserve/buy-now options  
+- Refunds for previous highest bidders  
+- Auto-close at expiry  
+
+### Launches
+- Bulk property NFT launches (e.g. 1,000 tokens)  
+- Parent–child relationships between launch and sub-listings  
+- Handles staged token transfers  
+
+**Common features:**
+- Bulk NFT/token transfers in/out of canisters  
+- Royalty support  
+- Timers for expiry/cancellation  
+- Query functions for sellers, buyers, and bidders  
+
+---
+
+## `administrative.mo`
+
+- Handles property-level documents, insurance policies, and notes  
+- Ensures immutability and traceability of all records  
+
+---
+
+## `details.mo`
+
+- Stores physical property attributes  
+- Tracks scoring metrics (affordability, crime, schools, etc.)  
+
+---
+
+## `userNotifications.mo`
+
+- Sends notifications to all current NFT holders on every successful update  
+- Provides an on-chain activity feed of property events  
+
+---
+
+## `propHelper.mo`
+
+- Shared utility layer across all modules  
+- Provides validation, mutation helpers, delete handlers, and generic handler generation  
+- Applies state changes immutably and logs who/what/when for auditability  
+
+---
+
+## `types.mo`
+
+- Central type definitions for all modules  
+- Defines `Property`, `Tenant`, `Invoice`, `Proposal`, `Listing`, `Update`, and error/result types  
+
+---
+
+## `token.mo`
+
+- Token transfer utilities  
+- Interfaces with external token canisters for ICP/HGB/etc.  
+- Used by invoices and marketplace flows  
+
+---
+
+# Design Principles
+
+- **Uniformity**: All domains use the same handler architecture  
+- **Auditability**: Immutable history of every change  
+- **Extensibility**: Adding modules (e.g. taxes, insurance) follows the same pattern  
+- **DAO-Driven**: Investor governance replaces centralized property management  
+- **On-Chain Liquidity**: Built-in marketplace integrates with financial flows  
+
+---
+
+# Next Steps
+
+- Expand stablecoin (HGB) integration across financials and marketplace  
+- Refine valuation and property scoring mechanisms  
+- Deploy live properties to production  
+- Integrate with SNS for protocol-level governance  

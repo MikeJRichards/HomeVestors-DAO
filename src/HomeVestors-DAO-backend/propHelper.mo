@@ -213,7 +213,7 @@ module PropertiesHelper {
         let validatedElementsArr :  [(?Nat, Result.Result<T, UpdateError>)] = handler.validateAndPrepare();
         // 3️⃣ Run asyncEffect in batch
         let asyncResults: [(?Nat, Result.Result<(), Types.UpdateError>)] = await handler.asyncEffect(validatedElementsArr);
-        Debug.print("ASYNC RESULTS: "# debug_show(asyncResults));
+        //Debug.print("ASYNC RESULTS: "# debug_show(asyncResults));
         let combinedResults : [(?Nat, Result.Result<StableT, UpdateError>)] = zipResults(validatedElementsArr, asyncResults, handler);
         
         //for((id, res) in combinedResults.vals()){
@@ -313,6 +313,8 @@ module PropertiesHelper {
           case (#ok(el), #ok()) #ok(el);
         };
       };
+     // Debug.print("validationArray size" # debug_show(validationArray.size()));
+     // Debug.print("async Array size"# debug_show(asyncArray.size()));
       
       var validationNullCount = 0;
       var asyncNullCount = 0;
@@ -345,7 +347,7 @@ module PropertiesHelper {
           case (null) asyncNullCount += 1;
         };
       };
-
+        //Debug.print("validation null count"# debug_show(validationNullCount)# " async null count "# debug_show(asyncNullCount));
       if (validationNullCount == 0 and asyncNullCount == 0 and nonMatchingIds == 0 and validationArray.size() == asyncArray.size()) {
         return Buffer.toArray(combinedResults);
       } 
@@ -448,35 +450,40 @@ module PropertiesHelper {
     };
 
     public func matchWhat(what: [What], whatFlag: ?Types.WhatFlag): Bool {
-        for(what in what.vals()){
-            switch(what, whatFlag){
-                case(_, null) return true;
-                case(#Insurance(_), ?#Insurance) return true;
-                case(#Document(_), ?#Document) return true;
-                case(#Note(_), ?#Note) return true;
-                case(#Maintenance(_), ?#Maintenance) return true;
-                case(#Inspection(_), ?#Inspection) return true;
-                case(#Tenant(_), ?#Tenant) return true;
-                case(#Valuations(_), ?#Valuations) return true;
-                case(#Financials(_), ?#Financials) return true;
-                case(#MonthlyRent(_), ?#MonthlyRent) return true;
-                case(#PhysicalDetails(_), ?#PhysicalDetails) return true;
-                case(#AdditionalDetails(_), ?#AdditionalDetails) return true;
-                case(#NftMarketplace(#FixedPrice(_)), ?#NftMarketplace(#FixedPrice)) return true;
-                case(#NftMarketplace(#Auction(_)), ?#NftMarketplace(#Auction)) return true;
-                case(#NftMarketplace(#Launch(_)), ?#NftMarketplace(#Launch)) return true;
-                case(#NftMarketplace(#Bid(_)), ?#NftMarketplace(#Bid)) return true;
-                case(#Images(_), ?#Images) return true;
-                case(#Invoice(_), ?#Invoice) return true;
-                case(#Description(_), ?#Description) return true;
-                case(#Governance(#Vote(_)), ?#Governance(#Vote)) return true;
-                case(#Governance(#Proposal(_)), ?#Governance(#Proposal)) return true;
-                case(_){};
-            }
+    switch (whatFlag) {
+        case (null) { 
+            return true;  // Always match if flag is null, even for empty actions
         };
-        false;
+        case (?flag) {
+            for (w in what.vals()) {
+                switch (w, flag) {
+                    case (#Insurance(_), #Insurance) return true;
+                    case (#Document(_), #Document) return true;
+                    case (#Note(_), #Note) return true;
+                    case (#Maintenance(_), #Maintenance) return true;
+                    case (#Inspection(_), #Inspection) return true;
+                    case (#Tenant(_), #Tenant) return true;
+                    case (#Valuations(_), #Valuations) return true;
+                    case (#Financials(_), #Financials) return true;
+                    case (#MonthlyRent(_), #MonthlyRent) return true;
+                    case (#PhysicalDetails(_), #PhysicalDetails) return true;
+                    case (#AdditionalDetails(_), #AdditionalDetails) return true;
+                    case (#NftMarketplace(#FixedPrice(_)), #NftMarketplace(#FixedPrice)) return true;
+                    case (#NftMarketplace(#Auction(_)), #NftMarketplace(#Auction)) return true;
+                    case (#NftMarketplace(#Launch(_)), #NftMarketplace(#Launch)) return true;
+                    case (#NftMarketplace(#Bid(_)), #NftMarketplace(#Bid)) return true;
+                    case (#Images(_), #Images) return true;
+                    case (#Invoice(_), #Invoice) return true;
+                    case (#Description(_), #Description) return true;
+                    case (#Governance(#Vote(_)), #Governance(#Vote)) return true;
+                    case (#Governance(#Proposal(_)), #Governance(#Proposal)) return true;
+                    case (_) {};  // No match for this action/flag combo
+                };
+            };
+            return false;  // No matching actions found for non-null flag
+        };
     };
-
+};
 }
 
 

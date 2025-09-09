@@ -509,6 +509,7 @@ module {
         #FailedToDecodeResponseBody;
         #JSONParseError;
         #BuyerAndSellerCannotMatch;
+        #NonExistentProposal;
         #AlreadyVoted;
         #InvalidRecipient;
     };
@@ -1058,7 +1059,12 @@ public type ProposalConditionals = {
     noVotes: ?EqualityFlag;
     startAt: ?EqualityFlag;
     outcome: ?ProposalOutcomeFlag;
-    voted: ?(Principal, {#HasVoted; #NotVoted});
+    voted: ?HasVoted;
+};
+
+public type HasVoted = {
+    #HasVoted: Principal;
+    #NotVoted: Principal;
 };
 
 public type EqualityFlag = {
@@ -1071,18 +1077,20 @@ public type ProposalCategoryFlag = {
   #Operations;
   #Admin;
   #Valuation;
-  #Invoice;
+  #Invoice : {invoiceId: Nat };
   #Tenancy;
-  #Other;
+  #Rent;
+  #Other: Text;
 };
 
 public type ProposalCategory ={
-  #Maintenance;
+  #Maintenance: {tenantApproved: Bool};
   #Operations;
   #Admin;
   #Valuation;
-  #Invoice: { invoiceId: Nat };
-  #Tenancy;
+  #Invoice: {invoiceId: Nat };
+  #Tenancy: {tenantApproved: Bool};
+  #Rent: {tenantApproved: Bool};
   #Other: Text;
 };
 
@@ -1093,6 +1101,7 @@ public type ImplementationCategory ={
   #Week;
   #BiWeek;
   #Month;
+  #Other: Int;
 };
 
 
@@ -1105,7 +1114,7 @@ type LiveProposalArgs = {
     timerId: ?Nat;
 };
 
-type ExecutedProposalArgs = {
+public type ExecutedProposalArgs = {
     outcome: ProposalOutcome;              // true = passed, false = rejected
     executedAt: Int;
     yesVotes: Nat;
@@ -1115,6 +1124,7 @@ type ExecutedProposalArgs = {
 
 type ProposalOutcome = {
     #Refused: Text;
+    #AwaitingTenantApproval;
     #Accepted: [UpdateResult];
 };
 
@@ -1138,7 +1148,7 @@ public type ProposalStatusFlag = {
 public type ProposalCArg = {
   title: Text;
   description: Text;
-  category: ProposalCategory;
+  category: ProposalCategoryFlag;
   implementation: ImplementationCategory;
   startAt: Int;
   actions: [What];                      // The proposed mutations
@@ -1195,11 +1205,13 @@ public type InvoiceConditionals = {
 public type InvoiceDirection = {
   #Incoming: { category: IncomeCategory; from: Account; accountReference: Text; };
   #Outgoing: { category: ExpenseCategory; to: Account; accountReference: Text; proposalId: Nat; };
+  #ToInvestors: {proposalId: Nat};
 };
 
 public type InvoiceDirectionFlag = {
     #Incoming: { category: ?IncomeCategory; from: ?Account; accountReference: ?Text; };
     #Outgoing: { category: ?ExpenseCategory; to: ?Account; accountReference: ?Text;};
+    #ToInvestors;
 };
 
 public type ExpenseCategory = {
@@ -1235,7 +1247,14 @@ public type PaymentStatus = {
   #WaitingApproval;
   #Pending: {timerId: ?Nat};
   #Confirmed: { transactionId: Nat; paid_at: Int; };
+  #TransferAttempted: [InvestorTransfer];
   #Failed: { reason: UpdateError; attempted_at: Int };
+};
+
+public type InvestorTransfer = {
+    result: GenericTransferResult; 
+    timestamp: Int; 
+    to: Account;
 };
 
 public type PaymentStatusFlag = {

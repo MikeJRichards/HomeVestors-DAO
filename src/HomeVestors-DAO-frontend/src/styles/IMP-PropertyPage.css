@@ -189,8 +189,7 @@
        transition: ease-in-out 0.2s;
        }
      .pp-priceInfo {
-  font-size: clamp(1.5rem, 5vw, 2.5rem);
-
+       font-size: 2.5rem;
        color: var(--HVDbase);
        line-height: 0;
        margin-bottom: 1.5rem;
@@ -258,6 +257,12 @@
  justify-content: center;
  margin-bottom: 3rem;
  }
+ .Pp-toggle {
+   display: flex;
+   gap: 1rem;
+   justify-content: center;
+   margin-bottom: 3rem;
+   }
  #newProperties-header-right {
  display: flex;
  }
@@ -466,6 +471,22 @@
        margin: 1rem;
        display: none;
        }
+       #nft-info-top{
+         border: #3A6A99 solid 2px;
+           background-color: white;
+           border-radius: 8px;
+           padding: 2rem;
+           height: fit-content;
+           width: 70%;
+           top: 6rem;
+           margin-bottom: 1rem;
+       }
+       #Bottom {
+         display: none;
+         justify-content: center;
+         align-items: center;
+    
+       }
     
        /* DAO HISTORY */
 
@@ -555,14 +576,174 @@
  
       /*hidden*/
      .buyBtn {display: none;}
-   
+     #mainpage-propertydetails-section {
+       display: noe;
+       }
      #mainpage-location-section {
        display: none;
        }
      #mainpage-financials-section{display: none;}
-     #mainpage-daohistory-section{display: none;}
-     #mainpage-documents-section{display: none;}
-  
+     #mainpage-DAOhistory-section{display: none;}
+     #mainpage-Documents-section{display: none;}
+    
+     #buyNowModal{
+       display: none;
+       }
+     #placeBidModal{
+       display: none;
+       }
+
+
+
+
+    
+       @media (max-width: 1000px){
+         pp-mainpage{
+           flex-direction: column;
+         }
+         #pp-fullinfo-section{
+           width: 100%;
+           padding:3rem;
+           margin: 0;
+         }
+         #container-nft-info{
+           display: none;
+         }
+         #Bottom {
+           display: flex;
+         }
+         #pp-info-header{
+           padding: 0 3rem;
+         }
+       }
+       @media (max-width: 770px){
+         .main-image-container {
+           flex: 0 0 100%;
+         }
+         .thumbnail {display:none;
+         }
+         #Pp-toggle {
+           gap: 0.5rem;
+         }
+         .Pp-toggle {
+           gap: 0.5rem;
+         }
+       }
+       @media (max-width: 730px){
+         #Pp-toggle {
+           flex-direction: column;
+           gap: 0;
+           margin-bottom: 1rem;
+           margin-top: 1rem;
+         }
+       }
+       @media (max-width: 550px){
+         .pp-priceInfo{
+           font-size: 2rem;
+         }
+         #pp-save{
+           font-size: 0.9rem;
+         }
+         .location{
+           font-size: 0.9rem;
+         }
+         #infoicons-container{
+           gap: 1.6rem;
+         }
+         .infoicons{
+           font-size: 0.9rem;
+         }
+         #added{
+             font-size: 0.9rem;
+         }
+         #launched{
+           font-size: 0.9rem;
+         }
+         #pp-info-header{
+           padding: 0 2rem;
+         }
+         .ButtonDetails {
+           font-size: 0.9rem;
+         }
+       }
+       @media (max-width: 500px){
+         .pp-priceInfo{
+           font-size: 1.5rem;
+         }
+         #pp-save{
+           font-size: 0.6rem;
+         }
+         .location{
+           font-size: 0.6rem;
+         }
+         #infoicons-container{
+           gap: 1rem;
+         }
+         .infoicons{
+           font-size: 0.6rem;
+         }
+         #added{
+             font-size: 0.6rem;
+         }
+         #launched{
+           font-size: 0.6rem;
+         }
+         #pp-info-header{
+           padding: 0 1rem;
+         }
+         .ButtonDetails {
+           font-size: 0.6rem;
+         }
+        
+       }
+       @media (max-width: 600px){
+         #physical-subcontainer{
+           grid-template-columns: 1fr 1fr 1fr;
+         }
+         .toggle-btn{
+           width:6rem;
+           font-size: 0.75rem;
+         }
+       }
+       @media (max-width: 450px){
+         #physical-subcontainer{
+           font-size: small;
+           grid-template-columns: 1fr 1fr;
+         }
+         #financials-subcontainer{
+           font-size: small;
+           grid-template-columns: 1fr 1fr;
+         }
+       }
+       @media (max-width: 700px){
+         #financials-breakdown {
+           flex-direction: column;
+         }
+         .TableTitle {
+         font-size: smaller;
+         }
+         #finance_table_head {
+           font-size: 0.1rem;
+         }
+         .financials-cards{
+           padding: 1rem;
+           margin-left:-2rem;
+           margin-right:-2rem;
+         }
+       }
+
+
+
+
+
+
+
+
+
+
+
+
+ 
   
      :root{
        --background: #f2fefb;
@@ -579,71 +760,4 @@
        --borderLine: #e0e0e0;
        }
    
-#pp-mainpage {
-  display: flex;
-  flex-wrap: wrap; /* allow children to wrap */
-}
 
-
-@media (max-width: 768px) {
-  #pp-mainpage {
-    flex-direction: column;
-  }
-
-  #pp-fullinfo-section {
-    width: 100% !important;
-    padding: 1rem;
-  }
-
-   #container-nft-info {
-    display: none; /* already doing this */
-  }
-
-  #container-nft-info {
-    width: 100%;
-    padding: 1rem;
-  }
-
-  #image2, #image3, #container-nft-info{
-    display: none;
-  }
-
-  @media (max-width: 768px) {
-  #pp-info-header {
-    padding: 0 1rem;
-  }
-}
-
-@media (max-width: 768px) {
-  #physical-subcontainer,
-  #financials-subcontainer,
-  #additional-subcontainer {
-    grid-template-columns: 1fr 1fr; /* 2 columns on tablet */
-  }
-}
-
-@media (max-width: 480px) {
-  #physical-subcontainer,
-  #financials-subcontainer,
-  #additional-subcontainer {
-    grid-template-columns: 1fr; /* Stack on mobile */
-  }
-}
-
-@media (max-width: 480px) {
-  #pp-header-top {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-  }
-
-  #prop-value-container {
-    gap: 1rem;
-  }
-}
-
-#pp-fullinfo-section,
-#container-nft-info {
-  min-width: 0;
-}
-}

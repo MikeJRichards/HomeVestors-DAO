@@ -89,6 +89,7 @@ export const idlFactory = ({ IDL }) => {
     'ServiceCharge' : IDL.Null,
   });
   const InvoiceDirection = IDL.Variant({
+    'ToInvestors' : IDL.Record({ 'proposalId' : IDL.Nat }),
     'Outgoing' : IDL.Record({
       'to' : Account,
       'accountReference' : IDL.Text,
@@ -275,11 +276,13 @@ export const idlFactory = ({ IDL }) => {
     'Week' : IDL.Null,
     'FourDays' : IDL.Null,
     'Month' : IDL.Null,
+    'Other' : IDL.Int,
     'Quick' : IDL.Null,
   });
-  const ProposalCategory = IDL.Variant({
+  const ProposalCategoryFlag = IDL.Variant({
     'Valuation' : IDL.Null,
     'Invoice' : IDL.Record({ 'invoiceId' : IDL.Nat }),
+    'Rent' : IDL.Null,
     'Maintenance' : IDL.Null,
     'Operations' : IDL.Null,
     'Tenancy' : IDL.Null,
@@ -292,7 +295,17 @@ export const idlFactory = ({ IDL }) => {
     'implementation' : ImplementationCategory,
     'description' : IDL.Text,
     'actions' : IDL.Vec(What),
-    'category' : ProposalCategory,
+    'category' : ProposalCategoryFlag,
+  });
+  const ProposalCategory = IDL.Variant({
+    'Valuation' : IDL.Null,
+    'Invoice' : IDL.Record({ 'invoiceId' : IDL.Nat }),
+    'Rent' : IDL.Record({ 'tenantApproved' : IDL.Bool }),
+    'Maintenance' : IDL.Record({ 'tenantApproved' : IDL.Bool }),
+    'Operations' : IDL.Null,
+    'Tenancy' : IDL.Record({ 'tenantApproved' : IDL.Bool }),
+    'Admin' : IDL.Null,
+    'Other' : IDL.Text,
   });
   const ProposalUArg = IDL.Record({
     'title' : IDL.Opt(IDL.Text),
@@ -427,6 +440,7 @@ export const idlFactory = ({ IDL }) => {
     'CannotBeZero' : IDL.Null,
     'EmptyString' : IDL.Null,
     'OutOfRange' : IDL.Null,
+    'NonExistentProposal' : IDL.Null,
     'InaccurateData' : IDL.Null,
   });
   const GenericTransferError = IDL.Variant({
@@ -783,12 +797,18 @@ export const idlFactory = ({ IDL }) => {
     'PreApproved' : IDL.Principal,
     'Pending' : IDL.Null,
   });
+  const InvestorTransfer = IDL.Record({
+    'to' : Account,
+    'result' : GenericTransferResult,
+    'timestamp' : IDL.Int,
+  });
   const PaymentStatus = IDL.Variant({
     'Failed' : IDL.Record({ 'attempted_at' : IDL.Int, 'reason' : UpdateError }),
     'Confirmed' : IDL.Record({
       'paid_at' : IDL.Int,
       'transactionId' : IDL.Nat,
     }),
+    'TransferAttempted' : IDL.Vec(InvestorTransfer),
     'WaitingApproval' : IDL.Null,
     'Pending' : IDL.Record({ 'timerId' : IDL.Opt(IDL.Nat) }),
   });
@@ -857,6 +877,7 @@ export const idlFactory = ({ IDL }) => {
   const ProposalOutcome = IDL.Variant({
     'Accepted' : IDL.Vec(UpdateResult__1),
     'Refused' : IDL.Text,
+    'AwaitingTenantApproval' : IDL.Null,
   });
   const ExecutedProposalArgs = IDL.Record({
     'noVotes' : IDL.Nat,
@@ -1189,6 +1210,10 @@ export const idlFactory = ({ IDL }) => {
     'MoreThan' : IDL.Int,
     'LessThan' : IDL.Int,
   });
+  const HasVoted = IDL.Variant({
+    'HasVoted' : IDL.Principal,
+    'NotVoted' : IDL.Principal,
+  });
   const WhatFlag = IDL.Variant({
     'Tenant' : IDL.Null,
     'Inspection' : IDL.Null,
@@ -1212,13 +1237,6 @@ export const idlFactory = ({ IDL }) => {
       'FixedPrice' : IDL.Null,
     }),
   });
-  const ProposalCategoryFlag = IDL.Variant({
-    'Valuation' : IDL.Null,
-    'Invoice' : IDL.Null,
-    'RentPolicy' : IDL.Null,
-    'Maintenance' : IDL.Null,
-    'Other' : IDL.Null,
-  });
   const ProposalOutcomeFlag = IDL.Variant({
     'Accepted' : IDL.Null,
     'Refused' : IDL.Null,
@@ -1229,12 +1247,7 @@ export const idlFactory = ({ IDL }) => {
     'creator' : IDL.Opt(IDL.Principal),
     'startAt' : IDL.Opt(EqualityFlag),
     'yesVotes' : IDL.Opt(EqualityFlag),
-    'voted' : IDL.Opt(
-      IDL.Tuple(
-        IDL.Principal,
-        IDL.Variant({ 'HasVoted' : IDL.Null, 'NotVoted' : IDL.Null }),
-      )
-    ),
+    'voted' : IDL.Opt(HasVoted),
     'actions' : IDL.Opt(WhatFlag),
     'implementationCategory' : IDL.Opt(ImplementationCategory),
     'totalVoterCount' : IDL.Opt(EqualityFlag),
@@ -1247,6 +1260,7 @@ export const idlFactory = ({ IDL }) => {
     'conditionals' : ProposalConditionals,
   });
   const InvoiceDirectionFlag = IDL.Variant({
+    'ToInvestors' : IDL.Null,
     'Outgoing' : IDL.Record({
       'to' : IDL.Opt(Account),
       'accountReference' : IDL.Opt(IDL.Text),
@@ -1349,35 +1363,26 @@ export const idlFactory = ({ IDL }) => {
   const Result__1_1 = IDL.Variant({ 'ok' : Property, 'err' : Error });
   const TestOption = IDL.Variant({
     'All' : IDL.Null,
-    'TenantDelete' : IDL.Null,
-    'FinancialsCreate' : IDL.Null,
-    'DescriptionUpdate' : IDL.Null,
-    'ValuationDelete' : IDL.Null,
-    'NoteCreate' : IDL.Null,
-    'TenantCreate' : IDL.Null,
-    'NoteUpdate' : IDL.Null,
-    'TenantUpdate' : IDL.Null,
-    'ValuationCreate' : IDL.Null,
-    'ValuationUpdate' : IDL.Null,
-    'MaintenanceDelete' : IDL.Null,
-    'AdditionalDetailsUpdate' : IDL.Null,
-    'ImagesDelete' : IDL.Null,
-    'MaintenanceCreate' : IDL.Null,
-    'ImagesCreate' : IDL.Null,
-    'MaintenanceUpdate' : IDL.Null,
-    'ImagesUpdate' : IDL.Null,
-    'DocumentDelete' : IDL.Null,
-    'DocumentCreate' : IDL.Null,
-    'InspectionDelete' : IDL.Null,
-    'DocumentUpdate' : IDL.Null,
-    'InsuranceDelete' : IDL.Null,
-    'InspectionCreate' : IDL.Null,
-    'InspectionUpdate' : IDL.Null,
-    'InsuranceCreate' : IDL.Null,
-    'InsuranceUpdate' : IDL.Null,
-    'PhysicalDetailsUpdate' : IDL.Null,
-    'MonthlyRentCreate' : IDL.Null,
-    'NoteDelete' : IDL.Null,
+    'Bid' : IDL.Null,
+    'Valuation' : IDL.Null,
+    'Tenant' : IDL.Null,
+    'Inspection' : IDL.Null,
+    'Invoice' : IDL.Null,
+    'Insurance' : IDL.Null,
+    'NFTMarketplaceAuction' : IDL.Null,
+    'Images' : IDL.Null,
+    'Note' : IDL.Null,
+    'NFTMarketplaceFixedPrice' : IDL.Null,
+    'Vote' : IDL.Null,
+    'Description' : IDL.Null,
+    'Document' : IDL.Null,
+    'Maintenance' : IDL.Null,
+    'Proposal' : IDL.Null,
+    'MonthlyRent' : IDL.Null,
+    'Financials' : IDL.Null,
+    'AdditionalDetails' : IDL.Null,
+    'PhysicalDetails' : IDL.Null,
+    'NFTMarketplaceLaunch' : IDL.Null,
   });
   const TransferError = IDL.Variant({
     'GenericError' : IDL.Record({
@@ -1472,7 +1477,7 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'removeProperty' : IDL.Func([IDL.Nat], [Result__1_1], []),
-    'runTests' : IDL.Func([TestOption], [], []),
+    'runTests' : IDL.Func([TestOption], [IDL.Vec(IDL.Vec(IDL.Text))], []),
     'transferAllNFTs' : IDL.Func([], [IDL.Vec(IDL.Opt(TransferResult))], []),
     'transferNFT' : IDL.Func(
         [Account, IDL.Nat, IDL.Nat, IDL.Nat],

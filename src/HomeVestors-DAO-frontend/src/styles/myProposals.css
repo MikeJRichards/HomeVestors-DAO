@@ -13,6 +13,11 @@
    --borderLine: #e0e0e0;
  }
 
+ #loginPromptMsg{
+   text-align: center;
+   font-family: 'Open Sans', sans-serif;
+ }
+
 
 .page_content{
    padding-top: 80px;
