@@ -14,7 +14,6 @@ Each property is represented by a deeply structured on-chain record containing:
 
 All updates flow through a uniform handler system, ensuring validation, immutability, async side-effects, and traceability.
 
----
 
 ## Architecture
 
@@ -29,11 +28,13 @@ This ensures:
 - **Auditability** of all state changes  
 - **Extensibility** when new modules are added  
 
-**Core types:**
+### Core types (motoko):
 
-```motoko
-public type Handler<T, StableT> = { … }
-public type CrudHandler<C, U, T, StableT> = { … }
+- public type Property
+- public type What - Enum for each domain
+- public type Handler<T, StableT> = { … } - the central flow for all domains
+- public type Action {Create, Update, Delete} - Enum for each action type
+- public type CrudHandler<C, U, T, StableT> = { … } - the handler for crud Actions across all domains
 
 # Modules
 
