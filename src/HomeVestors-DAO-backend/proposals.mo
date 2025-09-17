@@ -14,6 +14,7 @@ import Int "mo:base/Int";
 import Buffer "mo:base/Buffer";
 import Nat "mo:base/Nat";
 import HashMap "mo:base/HashMap";
+import Option "mo:base/Option";
 
 module {
     type Proposal = Types.Proposal;
@@ -92,7 +93,7 @@ module {
                     propertyId = arg.property.id;
                     what = #Governance(#Proposal(#Delete([proposalId])))
                 };
-                ignore arg.handlePropertyUpdate(updateProposal, arg.caller);
+                ignore arg.handlePropertyUpdate(updateProposal, Principal.fromText("vq2za-kqaaa-aaaas-amlvq-cai"));
             }); 
         };
 
@@ -158,8 +159,8 @@ module {
                         if(arg.caller == PropHelper.getAdmin()){
                             switch(live.timerId){case(null){}; case(?timerId) cancelTimer(timerId)};
                             governance.proposals.put(id, {el with status = #RejectedEarly{reason = "cancelled By Admin"}});
-                        };
-                        if(live.endTime > Time.now()){
+                        }
+                        else if(live.endTime <= Time.now()){
                             switch(live.timerId){case(null){}; case(?timerId) cancelTimer(timerId)};
                             let awaitingTenantApproval = switch(el.category){
                                 case(#Maintenance(arg) or #Tenancy(arg) or #Rent(arg)) not arg.tenantApproved;
@@ -231,12 +232,21 @@ module {
             validate = func(el: ?T): Result.Result<T, UpdateError>{
                 let proposal = switch(el){case(null) return #err(#InvalidElementId); case(?p) p};
                 switch(proposal.status){
-                    case(#LiveProposal(_)){
-                        //if(proposal.startAt > Time.now()) return #err(#InvalidData{field = "start at"; reason = #CannotBeSetInTheFuture;});
+                    case(#LiveProposal(live)){
                         if(proposal.title == "") return #err(#InvalidData{field = "title"; reason = #EmptyString;});
                         if(proposal.description == "") return #err(#InvalidData{field = "description"; reason = #EmptyString;});
-                      //  if(Principal.isAnonymous(proposal.creator)) return #err(#InvalidData{field = "creator"; reason = #Anonymous;});
-                       // if(proposal.eligibleVoters.size() == 0) return #err(#InvalidData{field = "eligible voters"; reason = #CannotBeNull;});
+                        if(Principal.isAnonymous(proposal.creator)) return #err(#InvalidData{field = "creator"; reason = #Anonymous;});
+                        switch(action){
+                            case(#Create(_)) if(proposal.startAt < Time.now()) return #err(#InvalidData{field = "start at"; reason = #CannotBeSetInThePast;});
+                            case(#Update(_)){
+                                if(proposal.startAt < Time.now()) return #err(#InvalidData{field = "start at"; reason = #CannotBeSetInThePast;});
+                                if(proposal.eligibleVoters.size() == 0) return #err(#InvalidData{field = "eligible voters"; reason = #CannotBeNull;});
+                            };
+                            case(#Delete(_)){
+                                if(proposal.eligibleVoters.size() == 0) return #err(#InvalidData{field = "eligible voters"; reason = #CannotBeNull;});
+                                if(arg.caller != PropHelper.getAdmin() and live.endTime > Time.now()) return #err(#InvalidData{field = "End Time"; reason = #CannotBeSetInTheFuture;});
+                            }; 
+                        };
                         #ok(proposal);
                     };
                     case(_) return #err(#InvalidType);
@@ -450,23 +460,27 @@ module {
         await PropHelper.applyHandler(args, handler);
     };    
 
-    func matchProposalCategory(el: Proposal, category: ?Types.ProposalCategoryFlag): Bool {
-          switch (category) {
-        case null true;
-        case (?c) {
-            switch (c, el.category) {
-                case (#Maintenance, #Maintenance(_)) true;
-                case (#Operations,  #Operations) true;
-                case (#Admin,      #Admin) true;
-                case (#Valuation,  #Valuation) true;
-                case (#Invoice(_),    #Invoice(_)) true;
-                case (#Rent,       #Rent(_)) true;
-                case (#Other(_),      #Other(_)) true;
-                case (#Tenancy,    #Tenancy(_)) true;
-                case _ false;
-            }
-        }
-    }
+    func matchProposalCategory(el: Proposal, cats: ?[Types.ProposalCategoryFlag]): Bool {
+        switch (cats) {
+            case null true;
+            case (?c) {
+                var matched = false;
+                for (cat in c.vals()) {
+                    switch (cat, el.category) {
+                        case (#Maintenance, #Maintenance(_)) { matched := true };
+                        case (#Operations,  #Operations) { matched := true };
+                        case (#Admin,       #Admin) { matched := true };
+                        case (#Valuation,   #Valuation) { matched := true };
+                        case (#Invoice(_),  #Invoice(_)) { matched := true };
+                        case (#Rent,        #Rent(_)) { matched := true };
+                        case (#Other(_),    #Other(_)) { matched := true };
+                        case (#Tenancy,     #Tenancy(_)) { matched := true };
+                        case (_) {};
+                    };
+                };
+                return matched;
+            };
+        };
     };
 
     func matchStatus(el: Proposal, status: ?Types.ProposalStatusFlag): Bool {
@@ -480,16 +494,11 @@ module {
     };
 
    func matchOutcome(el: Proposal, outcome: ?Types.ProposalOutcomeFlag): Bool {
-      switch(el.status){
-        case(#Executed(executed)) {
-          switch(executed.outcome, outcome){
-            case(_, null) true;
-            case(#Refused(_), ?#Refused) true;
-            case(#Accepted(_), ?#Accepted) true;
-            case(_) false;
-          }
-        };
-        case(_) true;  // ✅ if not executed, always match
+      switch (outcome, el.status) {
+        case (null, _) true; // no filter → always match
+        case (?#Refused, #Executed({ outcome = #Refused(_) })) true;
+        case (?#Accepted, #Executed({ outcome = #Accepted(_) })) true;
+        case (_) false;
       }
     };
 

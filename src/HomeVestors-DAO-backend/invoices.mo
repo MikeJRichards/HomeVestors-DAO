@@ -431,7 +431,14 @@ module {
             case(_, null) true;
             case(#WaitingApproval, ?#WaitingApproval) true;
             case(#Pending(_), ?#Pending) true;
-            case(#Confirmed(_), ?#Confirmed) true;
+            case(#Confirmed(paid), ?#Confirmed(arg)){
+                switch(arg.paidFrom, arg.paidTo){
+                    case(null, ?to) PropHelper.matchEqualityFlag(paid.paid_at, ?#LessThan(to));
+                    case(?from, null) PropHelper.matchEqualityFlag(paid.paid_at, ?#MoreThan(from));
+                    case(?from, ?to) PropHelper.matchEqualityFlag(paid.paid_at, ?#LessThan(to)) and PropHelper.matchEqualityFlag(paid.paid_at, ?#MoreThan(from));
+                    case(null, null) true;
+                };
+            };
             case(#Failed(_), ?#Failed) true;
             case(_) false;
         }
@@ -444,13 +451,25 @@ module {
         };
     };
 
-    public func matchRecurrenceType(rec: Types.PeriodicRecurrence, cond: [Types.PeriodicRecurrence]): Bool {
-        for(recurrenceType in cond.vals()){
-            if(recurrenceType == rec) return true;
-        };
-        false;
-    };
+    public func matchRecurrenceType(rec: Types.PeriodicRecurrence, cond: [Types.PeriodicRecurrence], shouldMatch: Bool): Bool {
+        if (cond.size() == 0) {
+            // no condition means "always passes"
+            true
+        } else {
+            let inList = Array.find<Types.PeriodicRecurrence>(
+                cond,
+                func (x) { x == rec }
+            ) != null;
 
+            if (shouldMatch) {
+                // include semantics: must be in the list
+                inList
+            } else {
+                // exclude semantics: must NOT be in the list
+                not inList
+            }
+        }
+    };
 
 
 
@@ -461,8 +480,8 @@ module {
             matchInvoiceDirection(el.direction, conditional.direction) and 
             matchPaymentStatus(el.paymentStatus, conditional.paymentStatus) and 
             matchPaymentMethod(el.paymentMethod, conditional.paymentMethod) and
-            matchRecurrenceType(el.recurrence.period, conditional.recurrenceType) and
-            not matchRecurrenceType(el.recurrence.period, conditional.notRecurrenceType) and
+            matchRecurrenceType(el.recurrence.period, conditional.recurrenceType, true) and
+            matchRecurrenceType(el.recurrence.period, conditional.notRecurrenceType, false) and
             PropHelper.matchEqualityFlag(el.amount, conditional.amount) and
             PropHelper.matchEqualityFlag(el.due, conditional.due) and
             PropHelper.matchEqualityFlag(endDate, conditional.recurrenceEndAt)

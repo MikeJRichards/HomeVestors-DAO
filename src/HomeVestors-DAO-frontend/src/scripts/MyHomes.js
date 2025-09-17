@@ -1,9 +1,20 @@
 import {getCanister, getPrincipal, wireConnect} from "./Main.js";
-import {setupModal, currency, carousel} from "./All.js";
+import {setupModal, currency, fromE8s, fromE6s, carousel} from "./All.js";
 import { Principal } from "@dfinity/principal";
 import { render } from "lit-html";
 
 var data = null;
+let cachedPnLResults = [];
+document.getElementById("manageProposals").addEventListener("click", () => {
+  const propertyId = new URLSearchParams(window.location.search).get("id");
+  if (propertyId) {
+    window.location.href = `./MyProposals.html?id=${propertyId}`;
+  }
+  else window.location.href = "./MyProposals.html";
+});
+document.getElementById("balancesBtn").addEventListener("click", () => {
+  window.location.href = "./Balance.html";
+});
 wireConnect("connect_btn", "NavWallet");
 setupModal("view-tennantlog", "tenantLogModal", "closeTenantLogModal");
 setupModal("view-rentalprofit", "rentalProfitModal", "closeRentalProfitModal");
@@ -14,6 +25,9 @@ setupModal("view-nftvalue", "NFTvalueModal", "closeNFTvalueModal");
 setupModal("view-paymentlog", "PaymentLogModal", "closePaymentLogModal");
 setupModal("view-occupency", "OccupencyModal", "closeOccupencyModal");
 setupModal("view-activityModal", "ActivityModal", "closeActivityModal");
+setupModal("view-paymentlog", "PaymentLogModal", "closePaymentLogModal");
+setupModal("view-rentalprofit", "rentalProfitModal", "closeRentalProfitModal");
+
 
 async function renderData(){
     await fetchProperty();
@@ -29,6 +43,10 @@ async function renderData(){
     renderInspectionsModal();
     renderMaintenanceModal();
     renderActivityModal();
+    await renderPaymentLog(6);     // 6 months back
+    await renderMonthlyProfit(6);  // 6 months back
+    renderPaymentLogModal();
+    renderMonthlyProfitModal();
 }
 
 function nsToDate(ns) {
@@ -197,6 +215,10 @@ async function fetchProperty() {
       Maintenance:   safeGet(() => results[11].Maintenance[0].result, []),
       invoices:      safeGet(() => results[12].Invoices[0].result, [])
     };
+    
+    //get invoice data collated by months
+    cachedPnLResults = await getMonthlyPnLWithRent(6, propertyId); // cache here
+
 
     console.log("fetchProperty: Processed Data", data);
     window.data = data;
@@ -1273,13 +1295,6 @@ function renderActivityModal() {
   });
 }
 
-function nsToMonthYear(nsBigInt) {
-  if (!nsBigInt) return "";
-  const ms = Number(nsBigInt / 1000000n);
-  const date = new Date(ms);
-  return `${date.getMonth() + 1}/${date.getFullYear()}`;
-}
-
 function renderPropertyValueModal() {
   const modal = document.getElementById("PropertyValueModal");
   if (!modal) {
@@ -1569,3 +1584,319 @@ function renderMaintenanceModal() {
     tableBody.appendChild(row);
   });
 }
+
+async function renderPaymentLog(monthsBack = 6) {
+  const table = document.getElementById("PaymentLogTable");
+  if (!table) return;
+  const tableBody = table.querySelector("tbody");
+  tableBody.innerHTML = "";
+
+
+  // Only show rent field
+  cachedPnLResults.forEach(r => {
+    const date = `${String(r.month).padStart(2,"0")}/${r.year}`;
+    const rent = `£${Number(r.rent).toLocaleString()}`;
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="Month-date">${date}</td>
+      <td class="rent">${rent}</td>
+    `;
+    tableBody.appendChild(tr);
+  });
+}
+
+async function renderMonthlyProfit() {
+  const table = document.getElementById("RentProfitTable");
+  if (!table) return;
+  const tableBody = table.querySelector("tbody");
+  tableBody.innerHTML = "";
+
+
+  cachedPnLResults.forEach(r => {
+    const date = `${String(r.month).padStart(2,"0")}/${r.year}`;
+    const net = `£${Number(r.net).toLocaleString()}`;
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="Month-date">${date}</td>
+      <td class="rentStatus">${net}</td>
+    `;
+    tableBody.appendChild(tr);
+  });
+}
+
+function nsToMonthYear(nsBigInt) {
+  if (!nsBigInt) return "";
+  const ms = Number(nsBigInt / 1_000_000n);
+  const date = new Date(ms);
+  return `${String(date.getMonth() + 1).padStart(2,"0")}/${date.getFullYear()}`;
+}
+
+function startOfMonth(year, month) {
+  const date = new Date(Date.UTC(year, month - 1, 1));
+  return BigInt(date.getTime()) * 1_000_000n; // ns
+}
+
+function getCurrentYearMonth() {
+  const now = new Date();
+  return { year: now.getUTCFullYear(), month: now.getUTCMonth() + 1 };
+}
+
+function buildInvoiceArgs(direction, from, to, propertyId) {
+  return [
+    {
+      Invoices: {
+        base: { Properties: [[propertyId]] },
+        conditionals: {
+          status: [{ Paid: null }],
+          direction: [direction],
+          amount: [],
+          due: [],
+          paymentStatus: [{ Confirmed: { paidFrom: [from], paidTo: [to] } }],
+          paymentMethod: [{ CKUSDC: null }],
+          recurrenceType: [],
+          notRecurrenceType: [],
+          recurrenceEndAt: [],
+        },
+      },
+    },
+  ];
+}
+
+async function getMonthlyPnLWithRent(monthsBack = 6, propertyId) {
+  const backend = await getCanister("backend");
+  const monthlyResults = [];
+
+  const { year, month } = getCurrentYearMonth();
+
+  for (let i = 0; i < monthsBack; i++) {
+    let targetYear = year;
+    let targetMonth = month - i;
+    while (targetMonth <= 0) {
+      targetMonth += 12;
+      targetYear -= 1;
+    }
+
+    const from = startOfMonth(targetYear, targetMonth);
+    const to =
+      targetMonth === 12
+        ? startOfMonth(targetYear + 1, 1)
+        : startOfMonth(targetYear, targetMonth + 1);
+
+    // Build the three queries
+    const incomeArgs = buildInvoiceArgs(
+      { Incoming: { category: [], from: [], accountReference: [] } },
+      from,
+      to, 
+      propertyId
+    );
+    const expenseArgs = buildInvoiceArgs(
+      { Outgoing: { category: [], to: [], accountReference: [] } },
+      from,
+      to,
+      propertyId
+    );
+    const rentArgs = buildInvoiceArgs(
+      { Incoming: { category: [{ Rent: null }], from: [], accountReference: [] } },
+      from,
+      to,
+      propertyId
+    );
+
+    // Run in parallel
+    const [incomeResults, expenseResults, rentResults] = await Promise.all([
+      backend.readProperties(incomeArgs, []),
+      backend.readProperties(expenseArgs, []),
+      backend.readProperties(rentArgs, []),
+    ]);
+
+    // Sum amounts
+    let incomeTotal = 0n;
+    let expenseTotal = 0n;
+    let rentTotal = 0n;
+
+    incomeResults[0].Invoices.forEach((inv) => {
+      if (inv.result.Ok) incomeTotal += inv.result.Ok.amount;
+    });
+    expenseResults[0].Invoices.forEach((inv) => {
+      if (inv.result.Ok) expenseTotal += inv.result.Ok.amount;
+    });
+    rentResults[0].Invoices.forEach((inv) => {
+      if (inv.result.Ok) rentTotal += inv.result.Ok.amount;
+    });
+
+    monthlyResults.push({
+      year: targetYear,
+      month: targetMonth,
+      income: incomeTotal,
+      expenses: expenseTotal,
+      rent: rentTotal,
+      net: incomeTotal - expenseTotal,
+    });
+  }
+
+console.log(monthlyResults);
+  return monthlyResults;
+}
+
+
+async function getAllMaintenanceExpenses() {
+  const backend = await getCanister("backend");
+  const args =  [
+    {
+      Invoices: {
+        base: { Properties: [[0]] },
+        conditionals: {
+          status: [], // accept all statuses
+          direction: [
+            {
+              Outgoing: {
+                category: [{ Maintenance: null }],
+                to: [],
+                accountReference: [],
+              },
+            },
+          ],
+          amount: [],
+          due: [],
+          paymentStatus: [], // accept all payment statuses
+          paymentMethod: [],
+          recurrenceType: [],
+          notRecurrenceType: [],
+          recurrenceEndAt: [],
+        },
+      },
+    },
+  ];
+
+  try {
+    const results = await backend.readProperties(args, []);
+    const maintenanceInvoices = [];
+
+    results[0].Invoices.forEach((inv) => {
+      if (inv.result.Ok) {
+        maintenanceInvoices.push(inv.result.Ok);
+      }
+    });
+    console.log("maintenance", maintenanceInvoices)
+    return maintenanceInvoices;
+  } catch (e) {
+    console.error("Error fetching maintenance expenses", e);
+    return [];
+  }
+}
+
+getAllMaintenanceExpenses();
+
+function renderMonthlyProfitModal() {
+  const table = document.getElementById("MT-rentalProfit");
+  if (!table) return;
+
+  const thead = table.querySelector("thead");
+  const tbody = table.querySelector("tbody");
+  thead.innerHTML = "";
+  tbody.innerHTML = "";
+
+  if (!cachedPnLResults || cachedPnLResults.length === 0) {
+    const noData = document.createElement("p");
+    noData.className = "text-p no-data";
+    noData.textContent = "There's no data to display";
+    table.parentElement.appendChild(noData);
+    table.classList.add("hidden");
+    return;
+  } else {
+    table.classList.remove("hidden");
+  }
+
+  // Expanded headers
+  const headerRow = document.createElement("tr");
+  ["Date", "Income", "Expenses", "Rent", "Profit"].forEach(h => {
+    const th = document.createElement("th");
+    th.textContent = h;
+    headerRow.appendChild(th);
+  });
+  thead.appendChild(headerRow);
+
+  // Rows
+  cachedPnLResults.forEach(r => {
+    const date = `${String(r.month).padStart(2,"0")}/${r.year}`;
+    const income = `£${Number(r.income).toLocaleString()}`;
+    const expenses = `£${Number(r.expenses).toLocaleString()}`;
+    const rent = `£${Number(r.rent).toLocaleString()}`;
+    const net = `£${Number(r.net).toLocaleString()}`;
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${date}</td>
+      <td>${income}</td>
+      <td>${expenses}</td>
+      <td>${rent}</td>
+      <td>${net}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderPaymentLogModal() {
+  const table = document.getElementById("MT-PaymentLogTable");
+  if (!table) return;
+
+  const thead = table.querySelector("thead");
+  const tbody = table.querySelector("tbody");
+  thead.innerHTML = "";
+  tbody.innerHTML = "";
+
+  if (!cachedPnLResults || cachedPnLResults.length === 0) {
+    const noData = document.createElement("p");
+    noData.className = "text-p no-data";
+    noData.textContent = "There's no data to display";
+    table.parentElement.appendChild(noData);
+    table.classList.add("hidden");
+    return;
+  } else {
+    table.classList.remove("hidden");
+  }
+
+  // Headers
+  const headerRow = document.createElement("tr");
+  ["Date", "Rent Payment"].forEach(h => {
+    const th = document.createElement("th");
+    th.textContent = h;
+    headerRow.appendChild(th);
+  });
+  thead.appendChild(headerRow);
+
+  // Rows
+  cachedPnLResults.forEach(r => {
+    const date = `${String(r.month).padStart(2, "0")}/${r.year}`;
+    const rent = `£${Number(r.rent).toLocaleString()}`;
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="Month-date">${date}</td>
+      <td class="rent">${rent}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+async function getDAOBalances(){
+  const backend = await getCanister("backend");
+  const tokens = await getCanister("token");
+  const raw = new URLSearchParams(window.location.search).get("id");
+  const propertyId = BigInt(raw);
+  let args = [
+    {
+      Financials:[[propertyId]]
+    }
+  ];
+  let results = await backend.readProperties(args, []);
+  let account = results[0].Financials[0].value.Ok.account;
+
+  let ckusdcBalance = await tokens.CKUSDC.icrc1_balance_of(account);
+  let icpBalance = await tokens.ICP.icrc1_balance_of(account);
+  document.getElementById("ckUSDCBalance").innerText = fromE6s(ckusdcBalance);
+  document.getElementById("icpBalance").innerText = fromE8s(icpBalance);
+};
+getDAOBalances()

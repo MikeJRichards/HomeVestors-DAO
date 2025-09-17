@@ -4,12 +4,14 @@ import {setupModal, setupToggle, currency, carousel, selectProperty, getSelected
 import {getCanister, getPrincipal, wireConnect, logout} from "./Main.js"
 import { Principal } from "@dfinity/principal";
 
+let currentSortOrder = "Newest"; // default
 
 setupModal("createProposalBtn", "createProp-Modal", "closeModalProp");
-selectProperty("propertyDropdown", true);
+await selectProperty("propertyDropdown", true);
+selectProperty("propertyDropdownModal", false);
 wireConnect("connect_btn", "NavWallet");
 setupToggle("filters-btn", "filtersBar", "filters-btn");
-
+setupSearchListener();
 
 // Your existing extractWhatTypeFromDid function
 function extractWhatTypeFromDid() {
@@ -251,25 +253,25 @@ function generateForm(struct, container) {
   }
 }
 
-async function createProposal(){
-  document.addEventListener("DOMContentLoaded", async () => {
-    try {
-      const whatType = extractWhatTypeFromDid();
-      const whatStruct = getTypeStructure(whatType);
-  
-      const dynamicFormDiv = document.getElementById("dynamic-what-form");
-      const addWhatBtn = document.getElementById("add-what-btn");
-  
-      let whatInstances = [];
-  
+async function createProposal() {
+  try {
+    const whatType = extractWhatTypeFromDid();
+    const whatStruct = getTypeStructure(whatType);
+
+    const dynamicFormDiv = document.getElementById("dynamic-what-form");
+    const addWhatBtn = document.getElementById("add-what-btn");
+
+    let whatInstances = [];
+
+    if (addWhatBtn) {
       addWhatBtn.addEventListener("click", () => {
         const whatContainer = document.createElement("div");
         whatContainer.style.border = "1px solid #ccc";
         whatContainer.style.padding = "10px";
         whatContainer.style.marginBottom = "10px";
-  
+
         const whatGet = generateForm(whatStruct, whatContainer);
-  
+
         const removeBtn = document.createElement("button");
         removeBtn.type = "button";
         removeBtn.textContent = "Remove What";
@@ -279,64 +281,54 @@ async function createProposal(){
           whatInstances = whatInstances.filter((inst) => inst !== whatGet);
         });
         whatContainer.appendChild(removeBtn);
-  
+
         dynamicFormDiv.appendChild(whatContainer);
         whatInstances.push(whatGet);
       });
-  
-      // Submit button handler
-      const submitBtn = document.getElementById("submitNewProposal");
-      if (submitBtn) {
-        submitBtn.addEventListener("click", async (e) => {
-          e.preventDefault();
-          try {
-              let arg = {
-                  propertyId: Number(document.getElementById("propertyDropdownModal").value), // convert from string
-                  what: {
-                    Governance: {
-                      Proposal: {
-                        Create: [
-                          {
-                            title: document.getElementById("prop-subject").value,
-                            description: document.getElementById("prop-comments").value,
-                            category: { [document.querySelector('input[name="category"]:checked')?.value]: null },
-                            implementation: { [document.querySelector('input[name="Implementation"]:checked')?.value]: null },
-                            startAt: BigInt(Math.floor(new Date(document.getElementById("start-time").value).getTime() * 1e6)),
-                            actions: whatInstances.map((get) => get())
-                          }
-                        ]
-                      }
-                    }
-                  }
-                };
-              console.log("CreateProposal: Arg", arg);
-               try {
-                  let backend = await getCanister("backend");
-                  const result = await backend.updateProperty(arg);
-                  resultMessage("proposalCreationResult", "Proposal Created", true);
-                  console.log("Proposal created", result);
-                } catch (error) {
-                  resultMessage("proposalCreationResult", "Error Creating Proposal", false);
-                  console.error("Error proposal create:", error);
-                }
-  
-  
-            // Example: Call your Motoko backend
-            // const actor = ...; // Your actor instance
-            // whats.forEach(async (what) => {
-            //   await actor.updateProperty({ ...otherArgs, what });
-            // });
-          } catch (err) {
-            console.error("Error submitting Whats:", err);
-            alert(`Error: ${err.message}`);
-          }
-        });
-      }
-    } catch (err) {
-      console.error("Error extracting or setting up What type:", err);
-      alert(`Setup error: ${err.message}`);
     }
-  });
+
+    // ✅ Attach listener directly
+    const submitBtn = document.getElementById("submitNewProposal");
+    if (submitBtn) {
+      submitBtn.addEventListener("click", async (e) => {
+        e.preventDefault();
+
+        let arg = {
+          propertyId: Number(document.getElementById("propertyDropdownModal").value),
+          what: {
+            Governance: {
+              Proposal: {
+                Create: [
+                  {
+                    title: document.getElementById("prop-subject").value,
+                    description: document.getElementById("prop-comments").value,
+                    category: { [document.querySelector('input[name="category"]:checked')?.value]: null },
+                    implementation: { [document.querySelector('input[name="Implementation"]:checked')?.value]: null },
+                    startAt: BigInt(Math.floor(new Date(document.getElementById("start-time").value).getTime() * 1e6)),
+                    actions: whatInstances.map((get) => get())
+                  }
+                ]
+              }
+            }
+          }
+        };
+
+        console.log("CreateProposal: Arg", arg);
+
+        try {
+          let backend = await getCanister("backend");
+          const result = await backend.updateProperty(arg);
+          resultMessage("proposalCreationResult", "Proposal Created", true);
+          console.log("Proposal created", result);
+        } catch (error) {
+          resultMessage("proposalCreationResult", "Error Creating Proposal", false);
+          console.error("Error proposal create:", error);
+        }
+      });
+    }
+  } catch (err) {
+    console.error("Error setting up proposal form:", err);
+  }
 }
 createProposal();
 
@@ -400,148 +392,361 @@ async function voteOnProposal(propertyId, proposalId, vote) {
     }
 }
 
-async function getProposals() {
-    const createPropContainer = document.getElementById('createProp-container');
-    const propTableContainer = document.getElementById('prop-table-container');
-    const mainContainer = createPropContainer.parentElement;
+document.getElementById("filters-done").addEventListener("click", () => {
+  const dropdown = document.getElementById("propertyDropdown");
+  const selected = dropdown.value || "all";
 
-    // Check if user is logged in
-    let userPrincipal = null;
-    try {
-        userPrincipal = await getPrincipal();
-        console.log("getProposals:User Principal (string)", userPrincipal || "null");
-    } catch (e) {
-        console.error("getProposals:Failed to get user Principal", e);
-    }
+  const url = new URL(window.location);
+  url.searchParams.set("id", selected);
+  window.history.replaceState({}, "", url);
 
-    // If user is not logged in, show login message in p tag
-    if (!userPrincipal) {
-        createPropContainer.style.display = 'none';
-        propTableContainer.style.display = 'none';
-        // Ensure we don't overwrite nav filters; append message if not already present
-        let messageEl = mainContainer.querySelector('#loginPromptMsg');
-        if (!messageEl) {
-            messageEl = document.createElement('p');
-            messageEl.id = 'loginPromptMsg';
-            messageEl.textContent = 'Please log in to view proposals';
-            mainContainer.appendChild(messageEl);
-        }
-        return;
-    }
-
-    // User is logged in, remove login message if present
-    const loginMessageEl = mainContainer.querySelector('#loginPromptMsg');
-    if (loginMessageEl) {
-        loginMessageEl.remove();
-    }
-    createPropContainer.style.display = '';
-    propTableContainer.style.display = '';
-
-    try {
-        let backend = await getCanister("backend");
-        let principalObj = null;
-        if (userPrincipal) {
-            try {
-                principalObj = Principal.fromText(userPrincipal);
-                console.log("getProposals:Converted Principal", principalObj.toText());
-            } catch (e) {
-                console.error("getProposals:Failed to convert principal string to Principal object", e);
-            }
-        }
-
-        const readArgs = [
-            { Location: [] },
-            { Proposals: {
-                base: { Properties: [await selectProperty("propertyDropdownModal")] },
-                conditionals: {
-                    category: [],
-                    implementationCategory: [],
-                    actions: [],
-                    status: [],
-                    creator: [],
-                    eligibleCount: [],
-                    totalVoterCount: [],
-                    yesVotes: [],
-                    noVotes: [],
-                    startAt: [],
-                    outcome: [],
-                    voted: []// principalObj ? [{ HasVoted: principalObj }] : []
-                }
-            }},
-            { Proposals: {
-                base: { Properties: [await selectProperty("propertyDropdownModal")] },
-                conditionals: {
-                    category: [],
-                    implementationCategory: [],
-                    actions: [],
-                    status: [],
-                    creator: [],
-                    eligibleCount: [],
-                    totalVoterCount: [],
-                    yesVotes: [],
-                    noVotes: [],
-                    startAt: [],
-                    outcome: [],
-                    voted: []//principalObj ? [{ NotVoted: principalObj }] : []
-                }
-            }}
-        ];
-
-        console.log("getProposals:Read Args (raw)", readArgs);
-        console.log("getProposals:Voted Field (HasVoted)", readArgs[1].Proposals.conditionals.voted);
-        console.log("getProposals:Voted Field (HasNotVoted)", readArgs[2].Proposals.conditionals.voted);
-
-        const results = await backend.readProperties(readArgs, []);
-console.log("GetProposals.real", results);
-console.log("getProposals:ReadResults", JSON.stringify(results, (key, value) => typeof value === 'bigint' ? value.toString() : value));
-
-const locations = results[0].Location.reduce((map, loc) => {
-    if (loc.value.Ok) {
-        map[Number(loc.id)] = loc.value.Ok.addressLine1;
-    }
-    return map;
-}, {});
-
-const hasVotedProposals = results[1]?.Proposals[0]?.result.Ok || [];
-const hasNotVotedProposals = results[2]?.Proposals[0]?.result.Ok || [];
-const propertyId = Number(results[1]?.Proposals[0]?.propertyId || 0n);
-const allProposalsMap = new Map();
-
-hasVotedProposals.forEach(item => {
-    allProposalsMap.set(Number(item.id), { ...item, hasVoted: true, propertyId, addressLine1: locations[propertyId] || 'Unknown' });
-});
-hasNotVotedProposals.forEach(item => {
-    if (!allProposalsMap.has(Number(item.id))) {
-        allProposalsMap.set(Number(item.id), { ...item, hasVoted: false, propertyId, addressLine1: locations[propertyId] || 'Unknown' });
-    }
+  getProposals();
 });
 
-const proposals = Array.from(allProposalsMap.values());// If no proposals, show empty message in p tag
-        if (proposals.length === 0) {
-            createPropContainer.style.display = 'none';
-            propTableContainer.style.display = 'none';
-            let messageEl = mainContainer.querySelector('#emptyProposalsMsg');
-            if (!messageEl) {
-                messageEl = document.createElement('p');
-                messageEl.id = 'emptyProposalsMsg';
-                messageEl.textContent = 'Your proposals are empty, you need to hold a properties NFTs to view their proposals.';
-                mainContainer.appendChild(messageEl);
-            }
-            return;
-        }
+document.getElementById("filters-clear").addEventListener("click", () => {
+  const dropdown = document.getElementById("propertyDropdown");
 
-        // Remove empty message if present
-        const emptyMessageEl = mainContainer.querySelector('#emptyProposalsMsg');
-        if (emptyMessageEl) {
-            emptyMessageEl.remove();
-        }
+  // ✅ set back to "All Properties"
+  const allOption = Array.from(dropdown.options).find(opt =>
+    opt.textContent === "All Properties"
+  );
+  if (allOption) {
+    dropdown.value = allOption.value; // this will be the "1,2,5" string
+  }
 
-        // Proceed with populating table
-        populateProposalsTable(proposals, userPrincipal);
-    } catch (e) {
-        console.error("getProposals:Error", e);
+  // Update URL with those IDs
+  const url = new URL(window.location);
+  url.searchParams.set("id", dropdown.value);
+  window.history.replaceState({}, "", url);
+
+  getProposals();
+});
+
+function buildProposalConditionals(userPrincipal) {
+  const conditionals = {
+    category: [],
+    implementationCategory: [],
+    actions: [],
+    status: [],
+    creator: [],
+    eligibleCount: [],
+    totalVoterCount: [],
+    yesVotes: [],
+    noVotes: [],
+    startAt: [],
+    outcome: [],
+    voted: []
+  };
+
+  // --- Status (single select) ---
+  const statusVal = document.getElementById("statusFilter").value;
+  if (statusVal) {
+    conditionals.status = [{ [statusVal]: null }];
+  }
+
+  // --- Categories (multi select dropdown with checkboxes) ---
+  const checkedCats = document.querySelectorAll(".filter-category:checked");
+  const values = Array.from(checkedCats).map(cb => cb.value).filter(v => v !== "All");
+  if (values.length > 0) {
+    conditionals.category = [values.map(v => ({ [v]: v === "Invoice" ? { invoiceId: 0 } : null }))];
+  }
+
+  // --- Implementation Category (single select) ---
+  const implVal = document.getElementById("implementationFilter").value;
+  if (implVal) {
+    if (implVal === "Other") {
+      conditionals.implementationCategory = [{ Other: 0 }]; // default 0 for now
+    } else {
+      conditionals.implementationCategory = [{ [implVal]: null }];
     }
+  }
+
+  // --- My Involvement (single select) ---
+  const involvementVal = document.getElementById("involvementFilter").value;
+  if (involvementVal === "CreatedByMe") {
+    if (userPrincipal) conditionals.creator = [userPrincipal];
+  } else if (involvementVal === "HasVoted") {
+    if (userPrincipal) conditionals.voted = [{ HasVoted: userPrincipal }];
+  } else if (involvementVal === "NotVoted") {
+    if (userPrincipal) conditionals.voted = [{ NotVoted: userPrincipal }];
+  }
+
+  // --- Outcome (single select, optional) ---
+  const outcomeVal = document.getElementById("outcomeFilter")?.value || "";
+  if (outcomeVal) {
+    conditionals.outcome = [{ [outcomeVal]: null }];
+  }
+
+  return conditionals;
 }
+
+
+async function getProposals() {
+  const createPropContainer = document.getElementById('createProp-container');
+  const propTableContainer = document.getElementById('prop-table-container');
+  const mainContainer = createPropContainer.parentElement;
+
+  // Check if user is logged in
+  let userPrincipal = null;
+  try {
+    userPrincipal = await getPrincipal();
+    console.log("getProposals:User Principal (string)", userPrincipal || "null");
+  } catch (e) {
+    console.error("getProposals:Failed to get user Principal", e);
+  }
+
+  if (!userPrincipal) {
+    createPropContainer.style.display = 'none';
+    propTableContainer.style.display = 'none';
+    let messageEl = mainContainer.querySelector('#loginPromptMsg');
+    if (!messageEl) {
+      messageEl = document.createElement('p');
+      messageEl.id = 'loginPromptMsg';
+      messageEl.textContent = 'Please log in to view proposals';
+      mainContainer.appendChild(messageEl);
+    }
+    return;
+  }
+
+  // Remove login message if present
+  const loginMessageEl = mainContainer.querySelector('#loginPromptMsg');
+  if (loginMessageEl) loginMessageEl.remove();
+  createPropContainer.style.display = '';
+  propTableContainer.style.display = '';
+
+  try {
+    let backend = await getCanister("backend");
+    let principalObj = Principal.fromText(userPrincipal);
+
+    // ---- collect property ids from dropdown ----
+    const dropdown = document.getElementById("propertyDropdown");
+    let propertyIds = [];
+    if (dropdown && dropdown.value) {
+      propertyIds = dropdown.value.split(",").map(Number).filter(n => !isNaN(n));
+    }
+
+    // ---- build conditionals from the helper function ----
+    const conditionals = buildProposalConditionals(principalObj);
+    console.log("getProposals: Conditionals", conditionals);
+
+    // ---- backend call ----
+    const readArgs = [
+      { Location: [] },
+      { Proposals: { base: { Properties: [propertyIds] }, conditionals } }
+    ];
+
+    const results = await backend.readProperties(readArgs, []);
+    console.log("getProposals:ReadResults", JSON.stringify(results, (k, v) =>
+      typeof v === 'bigint' ? v.toString() : v
+    ));
+
+    // Map propertyId -> addressLine1
+    const locations = results[0].Location.reduce((map, loc) => {
+      if (loc.value?.Ok) {
+        map[Number(loc.id)] = loc.value.Ok.addressLine1;
+      }
+      return map;
+    }, {});
+
+    // Collect proposals
+    const proposals = [];
+    (results[1]?.Proposals || []).forEach(propEntry => {
+      const propId = Number(propEntry.propertyId || 0);
+      if (!propEntry.result || !("Ok" in propEntry.result)) return;
+
+      propEntry.result.Ok.forEach(item => {
+        if (!item?.value?.Ok) return;
+        const proposal = item.value.Ok;
+
+        // derive hasVoted + yourVote from votes
+        let hasVoted = false;
+        let yourVote = null;
+        const voteEntry = proposal.votes.find(([p, v]) => p.toText() === userPrincipal);
+        if (voteEntry) {
+          hasVoted = true;
+          yourVote = voteEntry[1] ? "For" : "Against";
+        }
+
+        proposals.push({
+          ...item,
+          propertyId: propId,
+          addressLine1: locations[propId] || 'Unknown',
+          hasVoted,
+          yourVote
+        });
+      });
+    });
+
+    if (proposals.length === 0) {
+      createPropContainer.style.display = 'none';
+      propTableContainer.style.display = 'none';
+      let messageEl = mainContainer.querySelector('#emptyProposalsMsg');
+      if (!messageEl) {
+        messageEl = document.createElement('p');
+        messageEl.id = 'emptyProposalsMsg';
+        messageEl.textContent =
+          'Your proposals are empty, you need to hold a property’s NFTs to view their proposals.';
+        mainContainer.appendChild(messageEl);
+      }
+      return;
+    }
+
+    const emptyMessageEl = mainContainer.querySelector('#emptyProposalsMsg');
+    if (emptyMessageEl) emptyMessageEl.remove();
+    setupSearchEnhancements(proposals);
+    const sortedProposals = sortProposals(proposals, currentSortOrder);
+    const filteredProposals = applySearchFilter(sortedProposals)
+    // ---- render ----
+    populateProposalsTable(filteredProposals, userPrincipal);
+
+  } catch (e) {
+    console.error("getProposals:Error", e);
+  }
+}
+function setupSearchEnhancements(proposals) {
+  const searchInput = document.getElementById("proposalSearch");
+  const ghostSpan = document.getElementById("ghostText");
+  const suggestionBox = document.getElementById("autocomplete-list");
+
+  if (!searchInput || !ghostSpan || !suggestionBox) {
+    console.warn("Search inputs not found in DOM.");
+    return;
+  }
+
+  // Collect searchable words
+  const words = proposals.flatMap(p => {
+    const val = p?.value?.Ok || {};
+    return [
+      ...(val.title ? val.title.split(/\s+/) : []),
+      ...(val.description ? val.description.split(/\s+/) : [])
+    ];
+  });
+  const uniqueWords = [...new Set(words.map(w => w.toLowerCase()))].filter(w => w.length > 2);
+
+  // 🔹 Handle typing
+  searchInput.addEventListener("input", () => {
+    const query = searchInput.value.toLowerCase();
+    suggestionBox.innerHTML = "";
+    ghostSpan.textContent = "";
+
+    if (!query) return;
+
+    // Autocomplete dropdown
+    const matches = uniqueWords.filter(w => w.startsWith(query)).slice(0, 8);
+    matches.forEach(match => {
+      const div = document.createElement("div");
+      div.textContent = match;
+      div.addEventListener("click", () => {
+        searchInput.value = match;
+        suggestionBox.innerHTML = "";
+        ghostSpan.textContent = "";
+        getProposals();
+      });
+      suggestionBox.appendChild(div);
+    });
+
+    // Ghost text (remaining characters only)
+    if (matches.length > 0) {
+      const suggestion = matches[0];
+      if (suggestion.startsWith(query)) {
+        ghostSpan.textContent = suggestion;
+      }
+    }
+  });
+
+  // 🔹 Accept ghost suggestion on Tab / → / Enter
+  searchInput.addEventListener("keydown", (e) => {
+    if ((e.key === "Tab" || e.key === "ArrowRight" || e.key === "Enter") && ghostSpan.textContent) {
+      e.preventDefault();
+      searchInput.value += ghostSpan.textContent; // complete the word
+      ghostSpan.textContent = "";
+      suggestionBox.innerHTML = "";
+      getProposals();
+    }
+  });
+
+  // Hide dropdown when clicking outside
+  document.addEventListener("click", (e) => {
+    if (!searchInput.contains(e.target) && !suggestionBox.contains(e.target)) {
+      suggestionBox.innerHTML = "";
+    }
+  });
+}
+
+function applySearchFilter(proposals) {
+  const searchInput = document.getElementById("proposalSearch");
+  if (!searchInput) return proposals;
+
+  const query = searchInput.value.trim().toLowerCase();
+  if (!query) return proposals;
+
+  return proposals.filter(p => {
+    const val = p?.value?.Ok || {};
+    return (
+      (val.title && val.title.toLowerCase().includes(query)) ||
+      (val.description && val.description.toLowerCase().includes(query))
+    );
+  });
+}
+// 🔹 Helper: style ghost input to sit behind real input
+function styleGhostInput(searchInput, ghostInput) {
+  ghostInput.style.position = "absolute";
+  ghostInput.style.top = searchInput.offsetTop + "px";
+  ghostInput.style.left = searchInput.offsetLeft + "px";
+  ghostInput.style.width = searchInput.offsetWidth + "px";
+  ghostInput.style.height = searchInput.offsetHeight + "px";
+
+  ghostInput.style.background = "transparent";
+  ghostInput.style.color = "rgba(0,0,0,0.3)";
+  ghostInput.style.border = "none";
+  ghostInput.style.pointerEvents = "none";
+  ghostInput.style.font = window.getComputedStyle(searchInput).font;
+  ghostInput.style.padding = window.getComputedStyle(searchInput).padding;
+}
+
+function setupSearchListener() {
+  const searchInput = document.getElementById("proposalSearch");
+  if (!searchInput) return;
+
+  searchInput.addEventListener("input", () => {
+    getProposals(); // refresh table on typing
+  });
+}
+
+function getSortKey(proposal) {
+  const status = proposal.value.Ok.status;
+
+  if ("LiveProposal" in status) {
+    return Number(status.LiveProposal.endTime);
+  }
+  if ("Executed" in status) {
+    return Number(status.Executed.executedAt);
+  }
+  if ("RejectedEarly" in status) {
+    return Number(proposal.value.Ok.createdAt);
+  }
+  return Number(proposal.value.Ok.createdAt); // fallback
+}
+
+function sortProposals(proposals, order = "Newest") {
+  return proposals.sort((a, b) => {
+    const keyA = getSortKey(a);
+    const keyB = getSortKey(b);
+    return order === "Newest" ? keyB - keyA : keyA - keyB;
+  });
+}
+
+document.querySelectorAll('.sort-option').forEach(option => {
+  option.addEventListener('click', () => {
+    currentSortOrder = option.dataset.value; // "Newest" or "Oldest"
+    getProposals();
+  });
+});
+
+
+
+
+
 
 // Helper function to format What actions using Candid types
 function formatWhatActions(actions) {
@@ -1079,3 +1284,96 @@ function populateProposalsTable(proposals, userPrincipal) {
         table.dataset.listenerAdded = 'true';
     }
 }
+
+document.querySelectorAll('.dropdown-multi').forEach(dropdown => {
+  const toggle = dropdown.querySelector('.dropdown-toggle');
+  const labelSpan = toggle.querySelector('.dropdown-label'); // ✅ span for the text
+  const arrowSpan = toggle.querySelector('.dropdown-arrow'); // ✅ span for the arrow
+  const menu = dropdown.querySelector('.dropdown-menu');
+  const checkboxes = menu.querySelectorAll('input[type="checkbox"]');
+  const allCheckbox = menu.querySelector('input[value="All"]');
+
+  // Open/close dropdown
+  toggle.addEventListener('click', () => {
+    dropdown.classList.toggle('open');
+    // Rotate arrow when open/close
+    if (dropdown.classList.contains('open')) {
+      arrowSpan.textContent = '▲';
+    } else {
+      arrowSpan.textContent = '▼';
+    }
+  });
+
+  // Handle checkbox changes
+  checkboxes.forEach(cb => {
+    cb.addEventListener('change', () => {
+      if (cb.value === "All") {
+        if (cb.checked) {
+          // ✅ All clicked → uncheck everything else
+          checkboxes.forEach(c => {
+            if (c.value !== "All") c.checked = false;
+          });
+          labelSpan.textContent = "All Categories";
+        }
+      } else {
+        if (cb.checked) {
+          // ✅ Uncheck "All" if a category is selected
+          allCheckbox.checked = false;
+        }
+        // Gather selected categories
+        const selected = [...checkboxes]
+          .filter(c => c.checked && c.value !== "All")
+          .map(c => c.value);
+
+        if (selected.length === 0) {
+          // ✅ None selected → fall back to All
+          allCheckbox.checked = true;
+          labelSpan.textContent = "All Categories";
+        } else {
+          labelSpan.textContent = `${selected.length} selected`;
+        }
+      }
+    });
+  });
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!dropdown.contains(e.target)) {
+      dropdown.classList.remove('open');
+      arrowSpan.textContent = '▼'; // reset arrow
+    }
+  });
+});
+
+const sortContainer = document.querySelector(".sort-container");
+const sortBtn = document.getElementById("sort-btn");
+const sortValue = document.getElementById("sortValue");
+const sortOptions = document.querySelectorAll(".sort-option");
+
+// toggle dropdown on button click
+sortBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  sortContainer.classList.toggle("active");
+});
+
+// handle option click
+sortOptions.forEach(option => {
+  option.addEventListener("click", () => {
+    currentSortOrder = option.dataset.value;
+    sortValue.textContent = currentSortOrder;
+
+    // close dropdown
+    sortContainer.classList.remove("active");
+
+    // refresh proposals
+    getProposals();
+  });
+});
+
+// close dropdown if click outside
+document.addEventListener("click", (e) => {
+  if (!sortContainer.contains(e.target)) {
+    sortContainer.classList.remove("active");
+  }
+});
+

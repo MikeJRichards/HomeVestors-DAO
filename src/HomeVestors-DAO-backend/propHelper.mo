@@ -210,6 +210,7 @@ module PropertiesHelper {
 
 
     public func applyHandler<T, StableT>(args: Types.Arg, handler: UnstableTypes.Handler<T, StableT>): async UpdateResult {
+        //here you have access to before / creates - but updates already changed
         let validatedElementsArr :  [(?Nat, Result.Result<T, UpdateError>)] = handler.validateAndPrepare();
         // 3️⃣ Run asyncEffect in batch
         let asyncResults: [(?Nat, Result.Result<(), Types.UpdateError>)] = await handler.asyncEffect(validatedElementsArr);
@@ -232,7 +233,7 @@ module PropertiesHelper {
         };
         //Debug.print("FINAL RESULTS"# debug_show(Buffer.toArray(finalResults)));
 
-
+        //true afters aren't real until finalAsync... but in reality here you'd have all the children too. 
         await handler.finalAsync(Buffer.toArray(finalResults));
         // 5️⃣ Return full result map for caller to know per-element success/failure
         updateProperty(handler.getUpdate(), args.property, args.what, Buffer.toArray(finalResults));

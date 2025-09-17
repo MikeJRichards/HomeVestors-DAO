@@ -1251,7 +1251,7 @@ export const idlFactory = ({ IDL }) => {
     'actions' : IDL.Opt(WhatFlag),
     'implementationCategory' : IDL.Opt(ImplementationCategory),
     'totalVoterCount' : IDL.Opt(EqualityFlag),
-    'category' : IDL.Opt(ProposalCategoryFlag),
+    'category' : IDL.Opt(IDL.Vec(ProposalCategoryFlag)),
     'eligibleCount' : IDL.Opt(EqualityFlag),
     'outcome' : IDL.Opt(ProposalOutcomeFlag),
   });
@@ -1274,7 +1274,10 @@ export const idlFactory = ({ IDL }) => {
   });
   const PaymentStatusFlag = IDL.Variant({
     'Failed' : IDL.Null,
-    'Confirmed' : IDL.Null,
+    'Confirmed' : IDL.Record({
+      'paidFrom' : IDL.Opt(IDL.Int),
+      'paidTo' : IDL.Opt(IDL.Int),
+    }),
     'WaitingApproval' : IDL.Null,
     'Pending' : IDL.Null,
   });

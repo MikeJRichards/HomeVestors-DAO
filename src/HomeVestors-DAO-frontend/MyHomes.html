@@ -67,8 +67,8 @@
 
 
      <div id="dashboardHeaderButtons" >
-       <button class="btn dashBtn">Manage Proposals</button>
-       <button class="btn dashBtn">Manage NFTs</button>
+       <button class="btn dashBtn" id="manageProposals">Manage Proposals</button>
+       <button class="btn dashBtn" id="balancesBtn">Manage NFTs</button>
      </div>
    </div>
 
@@ -103,6 +103,12 @@
          </div>
        </div>
       
+        <div id="DAOBalances" class="dashCards Summary">
+          <p class="h3 bold-text-p mhSummary">Property DAO Balances:</p>
+          <p>ICP Balance <span id="icpBalance">0</span></p>
+          <p>ckUSDC Balance <span id="ckUSDCBalance">0</span></p>
+       </div>
+
        <div id="Documents" class="dashCards Summary" >
          <p class="h3 bold-text-p mhSummary">Documents </p>
          <a class="text-p aDoc" data-role="GasCert" href="">Gas certificates</a> <br>
@@ -111,6 +117,8 @@
          <a class="text-p aDoc" data-role="Elec" href="">Electricl Safety Certificate</a><br>
          <a class="text-p aDoc" data-role="Inv" href="">Inventory</a>
        </div>
+
+   
      </div>
 
 
@@ -172,22 +180,7 @@
                </tr>
              </thead>
              <tbody>
-               <tr>
-                 <td class="Month-date">03/2025</td>
-                 <td class="rentStatus">£800</td>
-               </tr>
-               <tr>
-                 <td class="Month-date">04/2025</td>
-                 <td class="rentStatus">£800</td>
-               </tr>
-               <tr>
-                 <td class="Month-date">05/2025</td>
-                 <td class="rentStatus">£900</td>
-               </tr>
-               <tr>
-                 <td class="Month-date">06/2025</td>
-                 <td class="rentStatus">£950</td>
-               </tr>
+               
              </tbody>
            </table>
          </div>
@@ -421,7 +414,7 @@
          <div class="cardTopHead">
            <p class="h3 bold-text-p mhOther-h3">Proposals</p>
            <div class="view-container">
-             <a href="./MyProposals.html" class="view-link" target="_blank" rel="noopener noreferrer" id="proposalView">
+             <a href="./MyProposals.html" class="view-link" rel="noopener noreferrer" id="proposalView">
                View <i class="fas fa-up-right-from-square"></i>
              </a>
            </div>
@@ -830,22 +823,6 @@
          </tr>
        </thead>
        <tbody>
-         <tr>
-           <td class="Month-date">06/2025</td>
-           <td class="rent">£950</td>
-         </tr>
-         <tr>
-           <td class="Month-date">07/2025</td>
-           <td class="rent">£950</td>
-         </tr>
-         <tr>
-           <td class="Month-date">08/2025</td>
-           <td class="rent">£950</td>
-         </tr>
-         <tr>
-           <td class="Month-date">09/2025</td>
-           <td class="rent">£950</td>
-         </tr>
        </tbody>
      </table>
    </div>

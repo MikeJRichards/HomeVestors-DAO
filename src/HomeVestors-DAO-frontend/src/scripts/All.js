@@ -193,11 +193,11 @@ export async function selectProperty(dropdownId, includeAll = false) {
     dropdown.innerHTML = "";
 
     if (includeAll) {
-      const allOption = document.createElement("option");
-      allOption.value = "all";
-      allOption.textContent = "All Properties";
-      allOption.selected = true;
-      dropdown.appendChild(allOption);
+        const allOption = document.createElement("option");
+        allOption.value = ownedIds.join(",");   // 👈 store all ids directly
+        allOption.textContent = "All Properties";
+        allOption.selected = true;
+        dropdown.appendChild(allOption);
     } else {
       const placeholder = document.createElement("option");
       placeholder.value = "";
@@ -275,3 +275,51 @@ export function resultMessage(id, message, success){
   }
 }
 
+function initNotifications(notifications) {
+    const bell = document.getElementById("bell");
+    const count = document.getElementById("count");
+    const dropdown = document.getElementById("dropdown");
+
+    // Show count if there are notifications
+    if (notifications.length > 0) {
+      count.innerText = notifications.length;
+      count.classList.remove("hidden");
+    }
+
+    // Render dropdown items
+    function renderNotifications() {
+      dropdown.innerHTML = notifications.map(n => `
+        <div class="notification-item" data-id="${n.id}">
+          <div class="notification-title">${n.type}</div>
+          <div>${n.text}</div>
+          <div class="notification-meta">Property ID: ${n.propertyId}</div>
+        </div>
+      `).join("");
+    }
+
+    renderNotifications();
+
+    // Toggle dropdown
+    bell.addEventListener("click", () => {
+      dropdown.classList.toggle("hidden");
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener("click", (e) => {
+      if (!bell.contains(e.target) && !dropdown.contains(e.target)) {
+        dropdown.classList.add("hidden");
+      }
+    });
+  }
+
+  // Example dummy data
+  const dummyNotifications = [
+    { id: 1, type: "NftMarketplace", text: "New bid placed on Listing #1", propertyId: 0 },
+    { id: 2, type: "Governance", text: "New Proposal created", propertyId: 0 },
+    { id: 3, type: "Maintenance", text: "Leaky kitchen tap reported", propertyId: 0 },
+    { id: 4, type: "Tenant", text: "Tenant1 moved in", propertyId: 0 },
+    { id: 5, type: "Document", text: "EPC uploaded", propertyId: 0 }
+  ];
+
+  // Initialise with dummy data
+  initNotifications(dummyNotifications);

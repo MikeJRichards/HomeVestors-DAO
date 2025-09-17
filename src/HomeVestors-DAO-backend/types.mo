@@ -1048,7 +1048,7 @@ public type Proposal = {
 };
 
 public type ProposalConditionals = {
-    category: ?ProposalCategoryFlag;
+    category: ?[ProposalCategoryFlag];
     implementationCategory: ?ImplementationCategory;
     actions: ?WhatFlag;
     status: ?ProposalStatusFlag;
@@ -1260,7 +1260,7 @@ public type InvestorTransfer = {
 public type PaymentStatusFlag = {
   #WaitingApproval;
   #Pending;
-  #Confirmed;
+  #Confirmed: { paidFrom : ?Int;  paidTo   : ?Int;};
   #Failed;
 };
 

@@ -41,59 +41,112 @@
  <div class="page_content">
 
 
-   <div id="proposals-header">
-     <button id="filters-btn" class="header-btns" >
-       Filters
-       <i  id="filter-icon" class="fa-solid fa-chevron-down sort-icon"></i></button>
-     </button>
-      
-     <div class="sort-container">
-       <button id="sort-btn" class="sort-btn header-btns"> 
-         Sort: <span id="sortValue">Newest</span>
-         <i class="fa-solid fa-chevron-down sort-icon"></i>
-       </button>
-       <div class="sort-dropdown">
-         <div class="sort-option" data-value="Newest">Newest</div>
-         <div class="sort-option" data-value="Oldest">Oldest</div>
-       </div>
-     </div>
-   </div> 
+<div id="proposals-header">
+  <div class="header-left">
+      <label for="proposalSearch">Search:</label>
+      <div class="search-wrapper">
+        <div class="search-bg"></div> <!-- white background layer -->
+        <span id="ghostText"></span> <!-- ghost completion text -->
+        <input type="text" id="proposalSearch" placeholder="Search proposals...">
+        <div id="autocomplete-list" class="autocomplete-items"></div>
+      </div>
+  </div>
+
+  <div class="header-right">
+    <button id="filters-btn" class="header-btns">
+      Filters
+      <i id="filter-icon" class="fa-solid fa-chevron-down sort-icon"></i>
+    </button>
+
+    <div class="sort-container">
+      <button id="sort-btn" class="sort-btn header-btns"> 
+        Sort: <span id="sortValue">Newest</span>
+        <i class="fa-solid fa-chevron-down sort-icon"></i>
+      </button>
+      <div class="sort-dropdown">
+        <div class="sort-option" data-value="Newest">Newest</div>
+        <div class="sort-option" data-value="Oldest">Oldest</div>
+      </div>
+    </div>
+  </div>
+</div>
    <!-- Filters -->
    <div id="filtersBar" class="filters-bar hidden">
-     <div class="fb-form-container" >
-       <div class="fb-contentcontainer fb-left">
-         <div class="filter-flex">
-           <label for="propertyDropdown" class="property-dropdown-label">Select Property DAO</label>
-           <select id="propertyDropdown" class="property-dropdown">
-             <option value="prop1">All</option>
-             <option value="prop1">123 Rose Street, Sheffield</option>
-             <option value="prop2">45 Elm Grove, Manchester</option>
-             <option value="prop3">78 Oak Avenue, Birmingham</option>
-           </select>
-         </div>
-       </div>
-       <div class="fb-contentcontainer fb-right">
-         <div class="filter-flex">
-           <span class="filter-labels">Show:</span>
-           <label for="" class="filter" id="filter-radiobtn">
-             All <input type="checkbox">
-             Live Proposals <input type="checkbox">
-             Pending Proposals  <input type="checkbox">
-             Accepted Proposals <input type="checkbox">
-             Declined Proposals <input type="checkbox">
-           </label>
-         </div>
-       </div>
-     </div>
+  <div class="fb-form-container">
 
+    <!-- Property Filter -->
+    <div class="filter-group">
+      <label for="propertyDropdown" class="filter-label">Property:</label>
+      <select id="propertyDropdown" class="filter-select">
+        <!-- Populated dynamically -->
+      </select>
+    </div>
 
-     <div id="filters-btn-container" >
-       <button id="filters-clear" class="filtersbar-btns" >Clear all Filters</button>
-       <button id="filters-done" class="filtersbar-btns"> Done </button>
-     </div>
+    <!-- Status Filter -->
+    <div class="filter-group">
+      <label for="statusFilter" class="filter-label">Status:</label>
+      <select id="statusFilter" class="filter-select">
+        <option value="">All</option>
+        <option value="LiveProposal">Live</option>
+        <option value="Executed">Executed</option>
+        <option value="RejectedEarly">Rejected Early</option>
+      </select>
+    </div>
 
+    <!-- Category Filter -->
+    <div class="filter-group">
+      <label class="filter-label">Categories:</label>
+      <div class="dropdown-multi">
+        <button type="button" class="dropdown-toggle">
+          <span class="dropdown-label">All Categories</span>
+          <span class="dropdown-arrow">▼</span>
+        </button>
+        <div class="dropdown-menu">
+          <label><input type="checkbox" class="filter-category" value="All" checked> All</label>
+          <label><input type="checkbox" class="filter-category" value="Maintenance"> Maintenance</label>
+          <label><input type="checkbox" class="filter-category" value="Rent"> Rent</label>
+          <label><input type="checkbox" class="filter-category" value="Tenancy"> Tenancy</label>
+          <label><input type="checkbox" class="filter-category" value="Invoice"> Invoice</label>
+          <label><input type="checkbox" class="filter-category" value="Admin"> Admin</label>
+          <label><input type="checkbox" class="filter-category" value="Valuation"> Valuation</label>
+          <label><input type="checkbox" class="filter-category" value="Operations"> Operations</label>
+          <label><input type="checkbox" class="filter-category" value="Other"> Other</label>
+        </div>
+      </div>
+    </div>
 
-   </div >
+    <!-- Duration Filter -->
+    <div class="filter-group">
+      <label for="implementationFilter" class="filter-label">Duration:</label>
+      <select id="implementationFilter" class="filter-select">
+        <option value="">All</option>
+        <option value="Quick">Quick (6h)</option>
+        <option value="Day">Day (24h)</option>
+        <option value="FourDays">Four Days</option>
+        <option value="Week">Week</option>
+        <option value="BiWeek">Bi-Week</option>
+        <option value="Month">Month</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+
+    <!-- My Involvement Filter -->
+    <div class="filter-group">
+      <label for="involvementFilter" class="filter-label">My Involvement:</label>
+      <select id="involvementFilter" class="filter-select">
+        <option value="">All</option>
+        <option value="CreatedByMe">Created by Me</option>
+        <option value="HasVoted">I Voted</option>
+        <option value="NotVoted">Haven’t Voted</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="filters-btn-container">
+    <button id="filters-clear" class="filtersbar-btns">Clear all Filters</button>
+    <button id="filters-done" class="filtersbar-btns">Done</button>
+  </div>
+</div>
    <div id="createProp-container">
      <button id = "createProposalBtn" class="CreateProp-btn small">Create Proposal</button>
    </div>
@@ -257,7 +310,7 @@
     <!-- Actions -->
          <div class="form-actions">
            <button type="button" class="btn secondary" id="cancelProposalCreate">Cancel</button>
-           <button class="btn primary" id="submitNewProposal">Submit proposal</button>
+           <button type="button" class="btn primary" id="submitNewProposal">Submit proposal</button>
          </div>
         </form>
         <p id="proposalCreationResult"></p>
