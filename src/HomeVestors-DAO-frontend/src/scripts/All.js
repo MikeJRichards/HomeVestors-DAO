@@ -322,4 +322,4 @@ function initNotifications(notifications) {
   ];
 
   // Initialise with dummy data
-  initNotifications(dummyNotifications);
+  

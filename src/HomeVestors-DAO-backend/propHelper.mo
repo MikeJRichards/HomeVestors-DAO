@@ -10,7 +10,8 @@ import Result "mo:base/Result";
 import Buffer "mo:base/Buffer";
 import HashMap "mo:base/HashMap";
 import Int "mo:base/Int";
-import Debug "mo:base/Debug";
+import Iter "mo:base/Iter";
+//import Debug "mo:base/Debug";
 
 module PropertiesHelper {
    type Property = Types.Property;
@@ -24,6 +25,9 @@ module PropertiesHelper {
    type Intent<T> = Types.Intent<T>;
    type What = Types.What;
    type CrudHandler<C,U, T, StableT> = UnstableTypes.CrudHandler<C,U,T ,StableT>;
+   type BeforeVsAfter = Types.BeforeVsAfter;
+   type ToStruct = Types.ToStruct;
+   type BeforeOrAfter = UnstableTypes.BeforeOrAfter;
 
     public func accountEqual(a : Account, b : Account) : Bool {
          Principal.equal(a.owner, b.owner) and
@@ -125,10 +129,10 @@ module PropertiesHelper {
     type UpdateError = Types.UpdateError;
     type UpdateResults = Types.UpdateResults;
 
-    public func updateProperty(update: Update, property: Property, action: What, results: [Result.Result<?Nat, (?Nat, UpdateError)>]): UpdateResult {
+    public func updateProperty(update: Update, property: Property, action: What, results: [Result.Result<?Nat, (?Nat, UpdateError)>]): Result.Result<Property, [(?Nat, UpdateError)]>  {
        // Debug.print("ultimate results are "#debug_show(results));
         if(Array.find<Result.Result<?Nat, (?Nat, UpdateError)>>(results, func(res) {Result.isOk(res)}) != null){
-            var updatedProperty = switch(update){
+            var updatedProperty : Property = switch(update){
                 case(#Details(d)){{property with details = d;}};
                 case(#Financials(f)){{property with financials = f}};
                 case(#Administrative(a)){{property with administrative = a}};
@@ -136,9 +140,9 @@ module PropertiesHelper {
                 case(#NFTMarketplace(m)){{property with nftMarketplace = m}};
                 case(#Governance(g)){{property with governance = g}};
             };
-            return #Ok({updatedProperty with updates = Array.append(property.updates, [ #Ok( {what = action; results} ) ] )});
+            return #ok(updatedProperty);
         }
-        else {
+        else { 
             let buf = Buffer.Buffer<(?Nat, UpdateError)>(results.size());
             for(res in results.vals()){
                 switch(res){
@@ -147,7 +151,7 @@ module PropertiesHelper {
                 }
             };
            // Debug.print("result buff"#debug_show(Buffer.toArray(buf)));
-            #Err(Buffer.toArray(buf));
+            #err(Buffer.toArray(buf));
         };
     };
 
@@ -211,6 +215,7 @@ module PropertiesHelper {
 
     public func applyHandler<T, StableT>(args: Types.Arg, handler: UnstableTypes.Handler<T, StableT>): async UpdateResult {
         //here you have access to before / creates - but updates already changed
+        //grab what elements are before as a array [(Nat, Difference Enum)]
         let validatedElementsArr :  [(?Nat, Result.Result<T, UpdateError>)] = handler.validateAndPrepare();
         // 3️⃣ Run asyncEffect in batch
         let asyncResults: [(?Nat, Result.Result<(), Types.UpdateError>)] = await handler.asyncEffect(validatedElementsArr);
@@ -227,7 +232,7 @@ module PropertiesHelper {
         let finalResults = Buffer.Buffer<Result.Result<?Nat, (?Nat, UpdateError)>>(validatedElementsArr.size());
         for ((tempId, res) in combinedResults.vals()) {
             switch (res) {
-                case (#ok(el)) finalResults.add(#ok(handler.applyUpdate(tempId, el)));
+                case (#ok(el)) finalResults.add(#ok(handler.applyUpdate(tempId, el))); 
                 case (#err(e)) finalResults.add(#err(tempId, e));
             };
         };
@@ -236,8 +241,34 @@ module PropertiesHelper {
         //true afters aren't real until finalAsync... but in reality here you'd have all the children too. 
         await handler.finalAsync(Buffer.toArray(finalResults));
         // 5️⃣ Return full result map for caller to know per-element success/failure
-        updateProperty(handler.getUpdate(), args.property, args.what, Buffer.toArray(finalResults));
+        let updatedProperty = updateProperty(handler.getUpdate(), args.property, args.what, Buffer.toArray(finalResults));
+        //if above you've got the updated property, then declare it, then loop through final results and get temp id
+        let beforeVsAfterBuff = Buffer.Buffer<BeforeVsAfter>(finalResults.size());
+        for(res in finalResults.vals()){
+            switch(res, updatedProperty){
+                case (_, #err(e)){};
+                case(#ok(id), #ok(updatedProperty)){
+                    beforeVsAfterBuff.add({
+                        before = handler.toStruct(args.property, id, #Before);
+                        outcome = handler.toStruct(updatedProperty, id, #After);
+                    })
+                };
+                case(#err((id, err)), #ok(_)){
+                    beforeVsAfterBuff.add({
+                        before = handler.toStruct(args.property, id, #Before);
+                        outcome = #Err((id, err))
+                    })
+                };
+            };
+        };
+        let arr = Iter.toArray(beforeVsAfterBuff.vals());
+        switch(updatedProperty){
+            case(#ok(property)) return #Ok({property with updates = Array.append(property.updates, [arr])});
+            case(#err(e)) return #Err(e);
+        };
     };
+
+    
 
     public func applyUpdate<C, U, T, StableT>(action: Types.Actions<C, U>, idOpt: ?Nat, el: StableT, handler: UnstableTypes.CrudHandler<C, U, T, StableT>): ?Nat {
         switch(idOpt, action) {
@@ -370,10 +401,22 @@ module PropertiesHelper {
         Buffer.toArray(buff);
     };
 
+    public func toStruct<C, U, T, StableT>(action: Actions<C,U>, crudHandler: CrudHandler<C,U,T,StableT>, wrapStableT: ?StableT -> ToStruct, toArray: Property -> [(Nat, StableT)]): (Property, ?Nat, BeforeOrAfter) -> ToStruct {
+        func(property: Property, id: ?Nat, beforeOrAfter: BeforeOrAfter): ToStruct {
+            let array = toArray(property);
+            switch(action, id, beforeOrAfter){
+                case(#Create(_), _, #Before) wrapStableT(getElementByKey(array, crudHandler.id + 1));
+                case(_, ?id, _) wrapStableT(getElementByKey(array, id));
+                case(_, null, _) #Err(id, #NullId);
+            }
+        };
+    };
+
     type Actions<C,U> = Types.Actions<C,U>;
     type Handler<T, StableT> = UnstableTypes.Handler<T, StableT>;
-    public func generateGenericHandler<C, U, T, StableT, S>(crudHandler: CrudHandler<C,U,T,StableT>, action: Actions<C, U>, toStable: T -> StableT,getUpdate: S -> Types.Update, struct: S): Handler<T,StableT>{
+    public func generateGenericHandler<C, U, T, StableT, S>(crudHandler: CrudHandler<C,U,T,StableT>, action: Actions<C, U>, toStable: T -> StableT, getUpdate: S -> Types.Update, struct: S, wrapStableT: ?StableT -> ToStruct, toArray: Property -> [(Nat, StableT)]): Handler<T,StableT>{
       {
+        toStruct = toStruct(action, crudHandler, wrapStableT, toArray);
         validateAndPrepare = func() = getValid<C, U, T, StableT>(action, crudHandler);
 
 
@@ -403,8 +446,9 @@ module PropertiesHelper {
       { var value = initial };
     };
 
-    public func makeFlatHandler<U, T, StableT>(arg: U, current: T, mutate: (arg: U, current: T) -> T, validate: T -> Result.Result<T, UpdateError>, toStable: T -> StableT, toPropertyUpdate: StableT -> Types.Update) : UnstableTypes.Handler<T, StableT> {
+    public func makeFlatHandler<U, T, StableT>(arg: U, current: T, mutate: (arg: U, current: T) -> T, validate: T -> Result.Result<T, UpdateError>, toStable: T -> StableT, toPropertyUpdate: StableT -> Types.Update, toStruct: Property -> ToStruct) : UnstableTypes.Handler<T, StableT> {
     {
+        toStruct = func(property: Property, id:?Nat, beforeVsAfter: BeforeOrAfter): ToStruct = toStruct(property);
       validateAndPrepare = func(): [(?Nat, Result.Result<T, UpdateError>)] {
         let mutated = mutate(arg, current);
         return [(null, validate(mutated))];

@@ -7,7 +7,7 @@ import Time "mo:base/Time";
 import Result "mo:base/Result";
 import Text "mo:base/Text";
 import Option "mo:base/Option";
-import Debug "mo:base/Debug";
+//import Debug "mo:base/Debug";
 
 module Operational {
     type OperationalInfo = Types.OperationalInfo;
@@ -94,7 +94,7 @@ module Operational {
             };
         };      
   
-      let handler = PropHelper.generateGenericHandler<C, U, T, StableT, S>(crudHandler, action, Stables.toStableMaintenanceRecord, func(s: S) = #Operational(Stables.fromPartailStableOperationalInfo(s)), operational);
+      let handler = PropHelper.generateGenericHandler<C, U, T, StableT, S>(crudHandler, action, Stables.toStableMaintenanceRecord, func(s: S) = #Operational(Stables.fromPartailStableOperationalInfo(s)), operational, func(stableT: ?StableT) = #Maintenance(stableT), func(property: Property) = property.operational.maintenance);
       await PropHelper.applyHandler<T, StableT>(args, handler);
     };
 
@@ -144,7 +144,7 @@ module Operational {
         }
       };      
   
-      let handler = PropHelper.generateGenericHandler<C, U, T, StableT, S>(crudHandler, action, Stables.toStableInspectionRecord, func(s: S) = #Operational(Stables.fromPartailStableOperationalInfo(s)), operational);
+      let handler = PropHelper.generateGenericHandler<C, U, T, StableT, S>(crudHandler, action, Stables.toStableInspectionRecord, func(s: S) = #Operational(Stables.fromPartailStableOperationalInfo(s)), operational, func(stableT: ?StableT) = #Inspection(stableT), func(property: Property) = property.operational.inspections);
       await PropHelper.applyHandler<T, StableT>(args, handler);
     };
 
@@ -211,7 +211,7 @@ module Operational {
         }
       };      
   
-      let handler = PropHelper.generateGenericHandler<C, U, T, StableT, S>(crudHandler, action, Stables.toStableTenant, func(s: S) = #Operational(Stables.fromPartailStableOperationalInfo(s)), operational);
+      let handler = PropHelper.generateGenericHandler<C, U, T, StableT, S>(crudHandler, action, Stables.toStableTenant, func(s: S) = #Operational(Stables.fromPartailStableOperationalInfo(s)), operational, func(stableT: ?StableT) = #Tenant(stableT), func(property: Property) = property.operational.tenants);
       await PropHelper.applyHandler<T, StableT>(args, handler);
     };
 

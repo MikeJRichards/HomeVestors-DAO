@@ -17,7 +17,7 @@ module{
     type UpdateResult = Types.UpdateResult;
     type  PreTestHandler<C, U, T> = TestTypes. PreTestHandler<C, U, T>;
     
-    public func createTenantTestType2(property: PropertyUnstable, handlePropertyUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResult): async [Text] {
+    public func createTenantTestType2(property: PropertyUnstable, handlePropertyUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResultBeforeVsAfter): async [Text] {
         type C = Types.TenantCArg;
         type U = Types.TenantUArg;
         type T = UnstableTypes.TenantUnstable;
@@ -105,7 +105,7 @@ module{
     };
 
     // ====================== MAINTENANCE ======================
-    public func createMaintenanceTestType2(property: PropertyUnstable, handlePropertyUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResult):async [Text] {
+    public func createMaintenanceTestType2(property: PropertyUnstable, handlePropertyUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResultBeforeVsAfter):async [Text] {
         type C = Types.MaintenanceRecordCArg;
         type U = Types.MaintenanceRecordUArg;
         type T = UnstableTypes.MaintenanceRecordUnstable;
@@ -183,7 +183,7 @@ module{
     };
 
     // ====================== INSPECTIONS ======================
-    public func createInspectionTestType2(property: PropertyUnstable, handlePropertyUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResult):async [Text] {
+    public func createInspectionTestType2(property: PropertyUnstable, handlePropertyUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResultBeforeVsAfter):async [Text] {
         type C = Types.InspectionRecordCArg;
         type U = Types.InspectionRecordUArg;
         type T = UnstableTypes.InspectionRecordUnstable;

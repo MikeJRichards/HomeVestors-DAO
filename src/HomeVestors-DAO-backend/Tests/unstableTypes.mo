@@ -10,7 +10,11 @@ module {
     type UpdateError = Types.UpdateError;
     type Update = Types.Update;
 
+    public type BeforeOrAfter = {#Before; #After};
+
+
     public type Handler<T, StableT> = {
+        toStruct: (Types.Property, ?Nat, BeforeOrAfter) -> Types.ToStruct;
         validateAndPrepare: () -> [(?Nat, Result.Result<T, Types.UpdateError>)];
         asyncEffect:  [(?Nat, Result.Result<T, UpdateError>)] -> async [(?Nat, Result.Result<(), UpdateError>)];
         applyAsyncEffects: (?Nat, Result.Result<T, Types.UpdateError>) -> [(?Nat, Result.Result<StableT, Types.UpdateError>)];
@@ -46,7 +50,7 @@ module {
         var operational: OperationalInfoUnstable;
         var nftMarketplace: NFTMarketplaceUnstable;
         var governance: GovernanceUnstable;
-        var updates: Buffer.Buffer<Result>;
+        var updates: Buffer.Buffer<[Types.BeforeVsAfter]>;
     };
 
     public type PropertyDetailsUnstable = {

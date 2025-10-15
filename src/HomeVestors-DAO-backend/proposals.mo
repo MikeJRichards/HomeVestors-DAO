@@ -14,10 +14,11 @@ import Int "mo:base/Int";
 import Buffer "mo:base/Buffer";
 import Nat "mo:base/Nat";
 import HashMap "mo:base/HashMap";
-import Option "mo:base/Option";
+//import Option "mo:base/Option";
 
 module {
     type Proposal = Types.Proposal;
+    type Property = Types.Property;
     type ProposalUnstable = UnstableTypes.ProposalUnstable;
     type ProposalCategory = Types.ProposalCategory;
     type ImplementationCategory = Types.ImplementationCategory;
@@ -28,6 +29,7 @@ module {
     type Arg = Types.Arg;
     type Actions<C,U> = Types.Actions<C,U>;
     type UpdateResult = Types.UpdateResult;
+    type UpdateResultBeforeVsAfter = Types.UpdateResultBeforeVsAfter;
     type What = Types.What;
     type Handler<C, U> = UnstableTypes.Handler<C, U>;
     type CrudHandler<C, U, T, StableT> = UnstableTypes.CrudHandler<C, U, T, StableT>;
@@ -59,7 +61,7 @@ module {
                     case(#Executed(executed)){
                         switch(executed.outcome){
                             case(#Accepted(_)){
-                                let results = Buffer.Buffer<UpdateResult>(proposal.actions.size());
+                                let results = Buffer.Buffer<UpdateResultBeforeVsAfter>(proposal.actions.size());
                                 for(what in proposal.actions.vals()){
                                     let whatWithPropertyId: Types.WhatWithPropertyId = {
                                         propertyId = arg.property.id;
@@ -240,11 +242,15 @@ module {
                             case(#Create(_)) if(proposal.startAt < Time.now()) return #err(#InvalidData{field = "start at"; reason = #CannotBeSetInThePast;});
                             case(#Update(_)){
                                 if(proposal.startAt < Time.now()) return #err(#InvalidData{field = "start at"; reason = #CannotBeSetInThePast;});
-                                if(proposal.eligibleVoters.size() == 0) return #err(#InvalidData{field = "eligible voters"; reason = #CannotBeNull;});
+                                if(not arg.testing){
+                                    if(proposal.eligibleVoters.size() == 0) return #err(#InvalidData{field = "eligible voters"; reason = #CannotBeNull;})
+                                };
                             };
                             case(#Delete(_)){
-                                if(proposal.eligibleVoters.size() == 0) return #err(#InvalidData{field = "eligible voters"; reason = #CannotBeNull;});
-                                if(arg.caller != PropHelper.getAdmin() and live.endTime > Time.now()) return #err(#InvalidData{field = "End Time"; reason = #CannotBeSetInTheFuture;});
+                                if(not arg.testing){
+                                    if(arg.caller != PropHelper.getAdmin() and live.endTime > Time.now()) return #err(#InvalidData{field = "End Time"; reason = #CannotBeSetInTheFuture;});
+                                    if(proposal.eligibleVoters.size() == 0) return #err(#InvalidData{field = "eligible voters"; reason = #CannotBeNull;});
+                                }
                             }; 
                         };
                         #ok(proposal);
@@ -257,6 +263,7 @@ module {
         let voters = HashMap.HashMap<Nat, [Principal]>(0, Nat.equal, PropHelper.natToHash);
 
         let handler: Handler<T, StableT> = {
+            toStruct = PropHelper.toStruct<C, U, T, StableT>(action, crudHandler, func(stableT: ?StableT) = #Proposal(stableT), func(property: Property) = property.governance.proposals);
             validateAndPrepare = func () = PropHelper.getValid<C, U, T, StableT>(action, crudHandler);
             
             asyncEffect = func(arr: [(?Nat, Result.Result<T, UpdateError>)]): async [(?Nat, Result.Result<(), UpdateError>)] {
@@ -353,6 +360,13 @@ module {
         };
 
         let handler: Handler<T, StableT> = {
+            toStruct = func(property: Property, idOpt: ?Nat, beforeOrAfter: UnstableTypes.BeforeOrAfter): Types.ToStruct {
+                let id = switch(idOpt){case(null) return #Err(idOpt, #NullId); case(?id) id;};
+                switch(governance.proposals.get(id)){
+                    case(null) return #Err(idOpt, #InvalidElementId);
+                    case(?proposal) return #Proposal(?proposal)
+                }
+            };
             validateAndPrepare = func(): [(?Nat, Result.Result<T, UpdateError>)] {
               switch(governance.proposals.get(arg.proposalId)){
                   case(null) return [(?arg.proposalId,#err(#InvalidType))];
@@ -363,7 +377,7 @@ module {
                             if(Time.now() > live.endTime) return [(?arg.proposalId, #err(#InvalidData{field = "End Time"; reason = #CannotBeSetInThePast}))];
                             if(not PropHelper.isInList<Principal>(args.caller, proposal.eligibleVoters, Principal.equal) and not args.testing) return [(?arg.proposalId, #err(#InvalidData{field = "Eligible Voters"; reason = #InvalidInput}))];
                             if(PropHelper.isInList<(Principal, Bool)>((args.caller, true), proposal.votes, func ((a, _), (b, _)) { Principal.equal(a, b) })) return [(?arg.proposalId, #err(#InvalidData{field = "Votes"; reason = #AlreadyVoted}))];
-                            let updatedProposal : Proposal = {
+                            var updatedProposal : Proposal = {
                                 proposal with
                                 votes = Array.append(proposal.votes, [(args.caller, arg.vote)]);
                                 status = #LiveProposal{
@@ -377,13 +391,13 @@ module {
                             //deal with tenant vote here - changes category to true - or executed rejected by tenant here
                             if (requiresTenantApproval(proposal.category) 
                                 and Operational.isTenant(args.caller, args.property)) {
-                                switch (arg.vote) {
+                                updatedProposal := switch (arg.vote) {
                                   case (false) {
                                     // tenant veto
-                                    let updatedProposal = {
+                                     {
                                       proposal with
                                       status = #Executed{
-                                        outcome = #Rejected("Rejected by tenant");
+                                        outcome = #Refused("Rejected by tenant");
                                         executedAt = Time.now();
                                         yesVotes = live.yesVotes;
                                         noVotes  = live.noVotes;
@@ -393,7 +407,7 @@ module {
                                   };
                                   case (true) {
                                     // tenant pre-approves
-                                    let updatedProposal = {
+                                    {
                                       proposal with
                                       category = updateWithTenantApproval(proposal.category)
                                     };

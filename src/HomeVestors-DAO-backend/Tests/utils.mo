@@ -12,7 +12,7 @@ import Buffer "mo:base/Buffer";
 import Principal "mo:base/Principal";
 import Text "mo:base/Text";
 import Debug "mo:base/Debug";
-import Iter "mo:base/Iter";
+//import Iter "mo:base/Iter";
 import HashMap "mo:base/HashMap";
 import Array "mo:base/Array";
 import Blob "mo:base/Blob";
@@ -235,7 +235,7 @@ module{
                 };
                 switch(await Property.updateProperty(arg)){
                     case(#Ok(propAfter)) stableProp := propAfter;
-                    case(#Err(e)){};// Debug.print(labels # debug_show(e));
+                    case(#Err(_e)){};// Debug.print(labels # debug_show(e));
                 };
             };
         };

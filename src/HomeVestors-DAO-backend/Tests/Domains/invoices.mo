@@ -16,7 +16,7 @@ module{
     type  PreTestHandler<C, U, T> = TestTypes. PreTestHandler<C, U, T>;
 
     // ====================== INVOICES ======================
-    public func createInvoiceTestType2(property: PropertyUnstable, handlePropertyUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResult): async [Text] {
+    public func createInvoiceTestType2(property: PropertyUnstable, handlePropertyUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResultBeforeVsAfter): async [Text] {
         type C = Types.InvoiceCArg;
         type U = Types.InvoiceUArg;
         type T = UnstableTypes.InvoiceUnstable;
@@ -57,6 +57,21 @@ module{
             };
         };
 
+        let investorCArg : C = {
+          title = "Investor Payout";
+          description = "Distribute rent to investors";
+          amount = 50000;
+          dueDate = Time.now() + 100000000000;
+          direction = #ToInvestors({ proposalId = 0 });
+          recurrence = {
+            period = #None;
+            endDate = null;
+            previousInvoiceIds = [];
+            count = 0;
+          };
+          paymentMethod = ?#ICP;
+        };
+
 
         let cArg : C = createInvoiceCArg();
         let uArg : U = createInvoiceUArg();
@@ -64,14 +79,15 @@ module{
         let invoiceCases : [(Text, Actions<C,U>, Bool)] = [
             // CREATE
             Utils.ok("Invoice: create valid", #Create([cArg])),
-
             // UPDATE
             Utils.ok("Invoice: update valid",     #Update((uArg, [0]))),
             Utils.err("Invoice: update non-exist",#Update((uArg, [9999]))),
 
             // DELETE
             Utils.ok("Invoice: delete valid",     #Delete([0])),
-            Utils.err("Invoice: delete non-exist",#Delete([9999]))
+            Utils.err("Invoice: delete non-exist",#Delete([9999])),
+            //To Investors
+            Utils.ok("Invoice: create to investors", #Create([investorCArg]))
         ];
 
         let handler : PreTestHandler<C,U,T> = {

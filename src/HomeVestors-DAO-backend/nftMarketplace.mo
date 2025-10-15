@@ -293,6 +293,7 @@ module {
         };
 
         let handler: Handler<T, StableT> = {
+            toStruct = PropHelper.toStruct<C, U, T, StableT>(action, crudHandler, func(stableT: ?StableT) = #NftMarketplace(stableT), func(property: Property) = property.nftMarketplace.listings);
             validateAndPrepare = func () = PropHelper.getValid<C, U, T, StableT>(action, crudHandler);
             
             asyncEffect = func(arr: [(?Nat, Result.Result<T, UpdateError>)]): async [(?Nat, Result.Result<(), UpdateError>)] {
@@ -431,6 +432,7 @@ module {
 
 
         let handler: Handler<T, StableT> = {
+            toStruct = PropHelper.toStruct<C, U, T, StableT>(action, crudHandler, func(stableT: ?StableT) = #NftMarketplace(stableT), func(property: Property) = property.nftMarketplace.listings);
             validateAndPrepare = func() = PropHelper.getValid<C, U, T, StableT>(action, crudHandler);
             
             asyncEffect = func(arr: [(?Nat, Result.Result<T, UpdateError>)]): async [(?Nat, Result.Result<(), UpdateError>)] {
@@ -601,6 +603,7 @@ module {
 
 
         let handler: Handler<T, StableT> = {
+            toStruct = PropHelper.toStruct<C, U, T, StableT>(action, crudHandler, func(stableT: ?StableT) = #NftMarketplace(stableT), func(property: Property) = property.nftMarketplace.listings);
             validateAndPrepare = func() = PropHelper.getValid(action, crudHandler);
             
             asyncEffect = func(arr: [(?Nat, Result.Result<T, UpdateError>)]): async [(?Nat, Result.Result<(), UpdateError>)] {
@@ -734,6 +737,13 @@ module {
         };
 
         let handler: Handler<T, StableT> = {
+            toStruct = func(property: Property, idOpt: ?Nat, beforeOrAfter: UnstableTypes.BeforeOrAfter): Types.ToStruct {
+                let id = switch(idOpt){case(null) return #Err(idOpt, #NullId); case(?id) id;};
+                switch(marketplace.listings.get(id)){
+                    case(null) return #Err(idOpt, #InvalidElementId);
+                    case(?listing) return #NftMarketplace(?listing)
+                }
+            };
             validateAndPrepare = func(): [(?Nat, Result.Result<T, Types.UpdateError>)]{
                 let createSoldFixedPrice = func(fixed: FixedPrice): Result.Result<SoldFixedPrice, [(?Nat, Result.Result<T, Types.UpdateError>)]> {
                     switch(verifyBid(args, fixed.price, fixed.seller, arg.caller, fixed.expiresAt)){

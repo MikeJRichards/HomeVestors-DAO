@@ -7,8 +7,8 @@ import Option "mo:base/Option";
 import Principal "mo:base/Principal";
 import UnstableTypes "Tests/unstableTypes";
 import Stables "Tests/stables";
-import HashMap "mo:base/HashMap";
-import Debug "mo:base/Debug";
+//import HashMap "mo:base/HashMap";
+//import Debug "mo:base/Debug";
 
 module {
     type AdministrativeInfo = Types.AdministrativeInfo;
@@ -22,6 +22,7 @@ module {
     type NoteCArg = Types.NoteCArg;
     type NoteUArg = Types.NoteUArg;
     type NoteUnstable = UnstableTypes.NoteUnstable;
+    type Property = Types.Property;
     type PropertyUnstable = UnstableTypes.PropertyUnstable;
     type UpdateError = Types.UpdateError;
 
@@ -99,7 +100,7 @@ module {
         }
       };      
   
-      let handler = PropHelper.generateGenericHandler<C, U, T, StableT, S>(crudHandler, action, Stables.toStableInsurancePolicy, func(s: S) = #Administrative(Stables.fromPartialStableAdministrativeInfo(s)), administrative);
+      let handler = PropHelper.generateGenericHandler<C, U, T, StableT, S>(crudHandler, action, Stables.toStableInsurancePolicy, func(s: S) = #Administrative(Stables.fromPartialStableAdministrativeInfo(s)), administrative, func(stableT: ?StableT) = #Insurance(stableT), func(property: Property) = property.administrative.insurance);
       await PropHelper.applyHandler<T, StableT>(args, handler);
     };
 
@@ -146,7 +147,7 @@ module {
         }
       };      
   
-      let handler = PropHelper.generateGenericHandler<C, U, T, StableT, S>(crudHandler, action, Stables.toStableDocument, func(s: S) = #Administrative(Stables.fromPartialStableAdministrativeInfo(s)), administrative);
+      let handler = PropHelper.generateGenericHandler<C, U, T, StableT, S>(crudHandler, action, Stables.toStableDocument, func(s: S) = #Administrative(Stables.fromPartialStableAdministrativeInfo(s)), administrative, func(stableT: ?StableT) = #Document(stableT), func(property: Property) = property.administrative.documents);
       await PropHelper.applyHandler<T, StableT>(args, handler);
     };
 
@@ -193,7 +194,7 @@ module {
         }
       };      
   
-      let handler = PropHelper.generateGenericHandler<C, U, T, StableT, S>(crudHandler, action, Stables.toStableNote, func(s: S) = #Administrative(Stables.fromPartialStableAdministrativeInfo(s)), administrative);
+      let handler = PropHelper.generateGenericHandler<C, U, T, StableT, S>(crudHandler, action, Stables.toStableNote, func(s: S) = #Administrative(Stables.fromPartialStableAdministrativeInfo(s)), administrative, func(stableT: ?StableT) = #Note(stableT), func(property: Property) = property.administrative.notes);
       await PropHelper.applyHandler<T, StableT>(args, handler);
     };
 }

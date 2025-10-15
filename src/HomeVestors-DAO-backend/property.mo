@@ -352,10 +352,10 @@ module Property {
         }
     };
 
-    func updatesReadHandler(arg: {#All; #Err; #Ok}): SimpleReadHandler<[Result]>{
+    func updatesReadHandler(arg: {#All; #Err; #Ok}): SimpleReadHandler<[[Types.BeforeVsAfter]]>{
         {
-            toEl = func(p: Property) : [Result] = p.updates;
-            cond = func(arr) = resultCond<Types.OkUpdateResult,UpdateError>(arr, arg);
+            toEl = func(p: Property) : [[Types.BeforeVsAfter]] = p.updates;
+            cond = func(arr) = #Ok(arr);
         }
     };
 
@@ -465,7 +465,7 @@ module Property {
     public func read2<T>(args: ReadArg, reads: [Read2]): [ReadResult] {
         let buff = Buffer.Buffer<ReadResult>(reads.size());
         for(read in reads.vals()){
-            let result = switch(read){
+            let result : ReadResult = switch(read){
                 case(#CollectionIds(arg)) #CollectionIds(returnPropertyElement<Principal>(args, arg, simpleReadHandler(getCollection)));
                 case(#Images(arg)) #Image(applyReadArgs<Text>(args, arg, readHandler(getImages)));
                 case(#Document(arg)) #Document(applyReadArgs<Document>(args, arg, readHandler(getDocuments)));
@@ -483,7 +483,7 @@ module Property {
                 case(#Financials(arg)) #Financials(returnPropertyElement<Financials>(args, arg, simpleReadHandler(getFinancials)));
                 case(#MonthlyRent(arg)) #MonthlyRent(returnPropertyElement<Nat>(args, arg, simpleReadHandler(getRent)));
                 case(#Listings(arg)) #Listings(applyReadArgs<Listing>(args, arg.base, listingsReadHandler(arg.conditionals))); 
-                case(#UpdateResults(arg)) #UpdateResults(returnPropertyElement<[Result]>(args, arg.selected, updatesReadHandler(arg.conditional))); 
+                case(#UpdateResults(arg)) #UpdateResults(returnPropertyElement<[[Types.BeforeVsAfter]]>(args, arg.selected, updatesReadHandler(arg.conditional))); 
                 case(#Refunds(arg)) #Refunds(applyReadArgs<[Refund]>(args, arg.nested, refundsReadHandler(arg.conditionals))); 
                 case(#Proposals(arg)) #Proposals(applyReadArgs<Proposal>(args, arg.base, proposalReadHandler(arg.conditionals))); 
                 case(#Invoices(arg)) #Invoices(applyReadArgs<Invoice>(args, arg.base, invoiceReadHandler(arg.conditionals))); 

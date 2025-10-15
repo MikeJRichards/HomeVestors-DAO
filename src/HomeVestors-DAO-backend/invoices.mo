@@ -15,7 +15,7 @@ import Buffer "mo:base/Buffer";
 import HashMap "mo:base/HashMap";
 import Array "mo:base/Array";
 import Text "mo:base/Text";
-import Option "mo:base/Option";
+//import Option "mo:base/Option";
 
 
 module {
@@ -176,6 +176,8 @@ module {
         let transactionIds = HashMap.HashMap<Nat, AsyncType>(0, Nat.equal, PropHelper.natToHash);
 
         let handler: Handler<T, StableT> = {
+                toStruct = PropHelper.toStruct<C, U, T, StableT>(action, crudHandler, func(stableT: ?StableT) = #Invoice(stableT), func(property: Property) = property.financials.invoices);
+
                 validateAndPrepare = func () = PropHelper.getValid<C, U, T, StableT>(action, crudHandler);
 
                 asyncEffect = func(arr: [(?Nat, Result.Result<T, UpdateError>)]): async [(?Nat, Result.Result<(), UpdateError>)] {
@@ -231,7 +233,7 @@ module {
                                 switch(invoice.status, invoice.direction){
                                     case(#Approved, #Incoming(income)) results.add((?id, transferFrom(id, invoice.paymentMethod, invoice.amount, income.from)));
                                     case(#Approved, #Outgoing(outgoing)) results.add((?id, transfer(id, invoice.paymentMethod, outgoing.to, invoice.amount)));
-                                    case(#Approved, #ToInvestors(proposalId)){
+                                    case(#Approved, #ToInvestors(_proposalId)){
                                         await transferToInvestors(id, invoice.paymentMethod, invoice.amount);
                                         results.add((?id, async #ok()));
                                     };

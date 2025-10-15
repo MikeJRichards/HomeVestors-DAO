@@ -6,7 +6,7 @@ module {
         what: What;
         caller: Principal;
         property: Property;
-        handlePropertyUpdate: (WhatWithPropertyId, Principal) -> async UpdateResult;
+        handlePropertyUpdate: (WhatWithPropertyId, Principal) -> async UpdateResultBeforeVsAfter;
         testing: Bool;
     };
 
@@ -70,7 +70,7 @@ module {
         operational: OperationalInfo;  // Grouped operational information
         nftMarketplace: NFTMarketplace;
         governance: Governance;
-        updates : [Result];
+        updates : [[BeforeVsAfter]];
     };
 
    public type PropertyDetails = {
@@ -476,6 +476,7 @@ module {
         #Unauthorized;
         #InsufficientBid : {minimum_bid: Nat};
         #AsyncIdLost;
+        #NullId;
     };
 
     public type GenericTransferError = TransferFromError or {
@@ -639,7 +640,7 @@ module {
         #Misc: [ElementResult<Miscellaneous>]; 
         #Financials: [ElementResult<Financials>]; 
         #MonthlyRent: [ElementResult<Nat>];
-        #UpdateResults: [ElementResult<[Result]>];
+        #UpdateResults: [ElementResult<[[BeforeVsAfter]]>];
         #Listings : [PropertyResult<Listing>];
         #Refunds: [PropertyResult<[Refund]>];
         #NFTs: [ElementResult<[Nat]>];
@@ -663,6 +664,34 @@ module {
     public type WhatWithPropertyId = {
         propertyId: Nat;
         what: What;
+    };
+
+    public type Struct<T> = Result.Result<?T, (?Nat, UpdateError)>;
+
+    public type ToStruct = {
+        #Insurance: ?InsurancePolicy;
+        #Document: ?Document;
+        #Note: ?Note;
+        #Maintenance: ?MaintenanceRecord;
+        #Inspection: ?InspectionRecord;
+        #Tenant: ?Tenant;
+        #Valuations: ?ValuationRecord;
+        #Value: ?{currentValue: Nat; pricePerSqFoot: Nat};
+        #Financials: ?Financials;
+        #MonthlyRent: ?Nat;
+        #PhysicalDetails: ?PhysicalDetails;
+        #AdditionalDetails: ?AdditionalDetails;
+        #NftMarketplace: ?Listing;
+        #Images: ?Text;
+        #Description : ?Text;
+        #Proposal: ?Proposal;
+        #Invoice: ?Invoice;
+        #Err: (?Nat, UpdateError);
+    };
+
+    public type BeforeVsAfter = {
+        before: ToStruct;
+        outcome: ToStruct;
     };
 
     public type What = {
@@ -735,6 +764,11 @@ module {
     public type UpdateResult = {
         #Ok: Property; 
         #Err : [(?Nat, UpdateError)];
+    };
+
+    public type UpdateResultBeforeVsAfter = {
+        #Ok: [BeforeVsAfter];
+        #Err: [(?Nat, UpdateError)];
     };
 
     public type UpdateResultNat = {
@@ -1125,7 +1159,7 @@ public type ExecutedProposalArgs = {
 type ProposalOutcome = {
     #Refused: Text;
     #AwaitingTenantApproval;
-    #Accepted: [UpdateResult];
+    #Accepted: [UpdateResultBeforeVsAfter];
 };
 
 public type ProposalOutcomeFlag = {

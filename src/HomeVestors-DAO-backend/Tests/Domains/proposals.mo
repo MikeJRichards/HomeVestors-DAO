@@ -18,7 +18,7 @@ module{
     type FlatPreTestHandler<U,T> = TestTypes.FlatPreTestHandler<U,T>;
     type What = Types.What;
     // ====================== PROPOSALS ======================
-    public func createProposalTestType2(property: PropertyUnstable, handlePropertyUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResult) : async [Text] {
+    public func createProposalTestType2(property: PropertyUnstable, handlePropertyUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResultBeforeVsAfter) : async [Text] {
         type C = Types.ProposalCArg;
         type U = Types.ProposalUArg;
         type T = Types.Proposal;
@@ -123,6 +123,7 @@ module{
                         switch(exec.outcome){
                             case (#Accepted(_)) { if (exec.yesVotes < exec.noVotes) s #= "\n accepted but votes inconsistent" };
                             case (#Refused(_))  { if (exec.noVotes < exec.yesVotes) s #= "\n refused but votes inconsistent" };
+                            case(#AwaitingTenantApproval) s #= "\n awaiting tenants approval";
                         };
                         if(live.yesVotes != exec.yesVotes) s #= "\n live yes votes don't equal executed yes votes";
                         if(live.noVotes != exec.noVotes) s #= "\n live no votes don't equal executed no votes";
@@ -171,10 +172,7 @@ module{
         await Utils.runGenericCases<C,U,T>(property, handler, proposalCases)
     };
 
-    public func createVoteHandlersTest(
-    property: PropertyUnstable,
-    handleUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResult
-) : async [Text] {
+    public func createVoteHandlersTest(property: PropertyUnstable, handleUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResultBeforeVsAfter) : async [Text] {
     type C = Types.VoteArgs;
     type T = Types.Proposal;
 

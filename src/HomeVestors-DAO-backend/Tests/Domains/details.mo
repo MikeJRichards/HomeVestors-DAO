@@ -17,7 +17,7 @@ module{
     
 
     // ====================== IMAGES ======================
-public func createImageTestType2(property: PropertyUnstable, handlePropertyUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResult):async [Text] {
+public func createImageTestType2(property: PropertyUnstable, handlePropertyUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResultBeforeVsAfter):async [Text] {
     type C = Text;
     type U = Text;
     type T = Text; // stored directly
@@ -65,7 +65,7 @@ public func createImageTestType2(property: PropertyUnstable, handlePropertyUpdat
 
 public func createDescriptionTestType2(
     property: PropertyUnstable,
-    handlePropertyUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResult
+    handlePropertyUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResultBeforeVsAfter
 ) : async [Text] {
     type U = Text;
     type T = UnstableTypes.MiscellaneousUnstable;
@@ -90,7 +90,7 @@ public func createDescriptionTestType2(
 
 
 // PHYSICAL DETAILS
-public func createPhysicalDetailsTestType2(property: PropertyUnstable, handlePropertyUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResult) : async [Text] {
+public func createPhysicalDetailsTestType2(property: PropertyUnstable, handlePropertyUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResultBeforeVsAfter) : async [Text] {
     type U = Types.PhysicalDetailsUArg;
     type T = UnstableTypes.PhysicalDetailsUnstable;
     func createPhysicalDetailsUArg(): U {
@@ -131,7 +131,7 @@ public func createPhysicalDetailsTestType2(property: PropertyUnstable, handlePro
 // ADDITIONAL DETAILS
 public func createAdditionalDetailsTestType2(
     property: PropertyUnstable,
-    handlePropertyUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResult
+    handlePropertyUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResultBeforeVsAfter
 ) : async [Text] {
     type U = Types.AdditionalDetailsUArg;
     type T = UnstableTypes.AdditionalDetailsUnstable;

@@ -17,7 +17,7 @@ module{
     type FlatPreTestHandler<U,T> = TestTypes.FlatPreTestHandler<U,T>;
 
 
-    public func createFinancialTestType2(property: PropertyUnstable, handlePropertyUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResult): async [Text] {
+    public func createFinancialTestType2(property: PropertyUnstable, handlePropertyUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResultBeforeVsAfter): async [Text] {
         type U = Types.FinancialsArg;
         type T = UnstableTypes.FinancialsUnstable;
 
@@ -50,7 +50,7 @@ module{
 
     public func createMonthlyRentTestType2(
         property: PropertyUnstable,
-        handlePropertyUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResult
+        handlePropertyUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResultBeforeVsAfter
     ) : async [Text] {
         type U = Nat;
         type T = UnstableTypes.FinancialsUnstable;
@@ -75,7 +75,7 @@ module{
     };
 
     // ====================== VALUATIONS ======================
-    public func createValuationTestType2(property: PropertyUnstable, handlePropertyUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResult):async [Text] {
+    public func createValuationTestType2(property: PropertyUnstable, handlePropertyUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResultBeforeVsAfter):async [Text] {
         type C = Types.ValuationRecordCArg;
         type U = Types.ValuationRecordUArg;
         type T = UnstableTypes.ValuationRecordUnstable;

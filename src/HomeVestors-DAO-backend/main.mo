@@ -36,6 +36,7 @@ persistent actor {
   type TestOption = TestTypes.TestOption;
   type LaunchProperty = Types.LaunchProperty;
   type MintError = Types.MintError;
+  type UpdateResultBeforeVsAfter = Types.UpdateResultBeforeVsAfter;
 
   transient var properties : Properties = HashMap.HashMap<Nat, Property>(0, Nat.equal, PropHelper.natToHash);
   transient var userNotifications = HashMap.HashMap<Account, User>(0, NFT.accountEqual, NFT.accountHash);
@@ -64,7 +65,7 @@ persistent actor {
     Prop.removeProperty(id, properties);
   };
 
-  func handlePropertyUpdate(action: WhatWithPropertyId, caller: Principal): async UpdateResult {
+  func handlePropertyUpdate(action: WhatWithPropertyId, caller: Principal): async UpdateResultBeforeVsAfter {
     let property = switch(properties.get(action.propertyId)){case(?p) p; case(null) return #Err([(?action.propertyId, #InvalidPropertyId)])};
     switch(await Prop.updateProperty({what = action.what; caller; property; handlePropertyUpdate; testing = false})){
       case(#Ok(updatedProperty)){
@@ -72,25 +73,21 @@ persistent actor {
         let updatedNotifications = await UserNotifications.addUserNotification(action, userNotifications, updatedProperty.nftMarketplace.collectionId);
         userNotifications := HashMap.fromIter(updatedNotifications.vals(), 0, NFT.accountEqual, NFT.accountHash);
         ignore NFT.handleNFTMetadataUpdate(action.what, updatedProperty);
-        return #Ok(updatedProperty);
+        let thisUpdate = if(updatedProperty.updates.size() == 0) [] else updatedProperty.updates[updatedProperty.updates.size() - 1];
+        return #Ok(thisUpdate);
       };
       case(#Err(e)) return #Err(e);
     };
   };
 
-  public shared ({caller}) func updateProperty(action: WhatWithPropertyId): async UpdateResult {
+  public shared ({caller}) func updateProperty(action: WhatWithPropertyId): async UpdateResultBeforeVsAfter {
     await handlePropertyUpdate(action, caller);
   };
 
   type UpdateResultNat = Types.UpdateResultNat;
-  public shared ({caller}) func bulkPropertyUpdate(args: [WhatWithPropertyId]): async [UpdateResultNat]{
-    var results = Buffer.Buffer<UpdateResultNat>(args.size());
-    for(i in args.keys()){
-      switch(await handlePropertyUpdate(args[i], caller)){
-        case(#Err(e)) results.add(#Err(e));
-        case(#Ok(_)) results.add(#Ok(i));
-      };
-    };
+  public shared ({caller}) func bulkPropertyUpdate(args: [WhatWithPropertyId]): async [UpdateResultBeforeVsAfter]{
+    var results = Buffer.Buffer<UpdateResultBeforeVsAfter>(args.size());
+    for(i in args.keys()) results.add(await handlePropertyUpdate(args[i], caller));
     return Buffer.toArray(results);
   };
 
@@ -244,8 +241,8 @@ public func transferNFTBulk(): async [?TransferResult] {
     };
   };
 
-  public shared ({caller}) func updatePropertyValuations(): async [UpdateResult]{
-    let results = Buffer.Buffer<UpdateResult>(properties.size());
+  public shared ({caller}) func updatePropertyValuations(): async [UpdateResultBeforeVsAfter]{
+    let results = Buffer.Buffer<UpdateResultBeforeVsAfter>(properties.size());
     for(property in properties.vals()){
       switch(await Financial.fetchValuation(property, transform)){
         case(#ok(what)){

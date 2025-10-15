@@ -10,6 +10,7 @@ module {
     type PhysicalDetails = Types.PhysicalDetails;
     type PropertyDetails = Types.PropertyDetails;
     type UpdateResult = Types.UpdateResult;
+    type Property = Types.Property;
     type PropertyUnstable = UnstableTypes.PropertyUnstable;
     type UpdateError = Types.UpdateError;
 
@@ -38,7 +39,8 @@ module {
       mutateAdditionalDetails,
       validateAdditionalDetails,
       Stables.toStableAdditionalDetails,
-      func(el: StableT) = #Details({ args.property.details with additional =el})
+      func(el: StableT) = #Details({ args.property.details with additional =el}),
+      func(property: Property) = #AdditionalDetails(?property.details.additional)
     );
     
     await PropHelper.applyHandler(args, handler);
@@ -71,7 +73,8 @@ module {
       mutate,
       validate,
       Stables.toStablePhysicalDetails,
-      func(el: StableT) = #Details({ args.property.details with physical =el})
+      func(el: StableT) = #Details({ args.property.details with physical =el}),
+      func(property: Property) = #PhysicalDetails(?property.details.physical)
     );
 
     await PropHelper.applyHandler(args, handler);
@@ -97,7 +100,8 @@ module {
         mutate,
         validate,
         func(el:Text) = el,
-        func(el: StableT) = #Details({ args.property.details with misc ={args.property.details.misc with description = el }})
+        func(el: StableT) = #Details({ args.property.details with misc ={args.property.details.misc with description = el }}),
+        func(property: Property) = #Description(?property.details.misc.description)
       );
 
       await PropHelper.applyHandler(args, handler);
@@ -133,7 +137,7 @@ module {
         }
       };      
   
-      let handler = PropHelper.generateGenericHandler<C, U, T, StableT, S>(crudHandler, action, func(el: Text) = el, func(s: S) = #Details({args.property.details with misc = Stables.fromPartialStableMiscellaneous(s)}), misc);
+      let handler = PropHelper.generateGenericHandler<C, U, T, StableT, S>(crudHandler, action, func(el: Text) = el, func(s: S) = #Details({args.property.details with misc = Stables.fromPartialStableMiscellaneous(s)}), misc, func(stableT: ?StableT) = #Images(stableT), func(property: Property) = property.details.misc.images);
       await PropHelper.applyHandler<T, StableT>(args, handler);
     };
 

@@ -105,7 +105,7 @@ module {
       }
     };      
 
-    let handler = PropHelper.generateGenericHandler<C, U, T, StableT, S>(crudHandler, action, Stables.toStableValuationRecord, func(s: S) = #Financials(Stables.fromPartialStableFinancials(financials)), financials);
+    let handler = PropHelper.generateGenericHandler<C, U, T, StableT, S>(crudHandler, action, Stables.toStableValuationRecord, func(s: S) = #Financials(Stables.fromPartialStableFinancials(financials)), financials, func(stableT: ?StableT) = #Valuations(stableT), func(property: Property) = property.financials.valuations);
     await PropHelper.applyHandler<T, StableT>(args, handler);
   };
 
@@ -137,7 +137,8 @@ module {
           monthlyRent = el.monthlyRent; 
           yield = el.yield;
         }
-      )
+      ), 
+      func(property: Property) = #Financials(?property.financials)
     );
 
     await PropHelper.applyHandler(args, handler);
@@ -171,7 +172,11 @@ module {
           currentValue = el.currentValue; 
           pricePerSqFoot = el.pricePerSqFoot;
         }
-      )
+      ),
+      func(property: Property) = #Value(?{
+        currentValue = property.financials.currentValue; 
+        pricePerSqFoot = property.financials.pricePerSqFoot
+      })
     );
 
     await PropHelper.applyHandler(args, handler);
