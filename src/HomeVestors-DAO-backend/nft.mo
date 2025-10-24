@@ -6,6 +6,7 @@ import Buffer "mo:base/Buffer";
 import Iter "mo:base/Iter";
 import Hash "mo:base/Hash";
 import Blob "mo:base/Blob";
+import Nat "mo:base/Nat";
 import Nat64 "mo:base/Nat64";
 import Time "mo:base/Time";
 import HashMap "mo:base/HashMap";
@@ -323,7 +324,7 @@ module NFTCollections {
                 [("description", #Text(property.details.misc.description))]
             };
             case (#Valuations(_)) {
-                switch(PropHelper.getElementByKey(property.financials.valuations, property.financials.valuationId)){
+                switch(PropHelper.getElementByKey<Nat, Types.ValuationRecord>(property.financials.valuations, property.financials.valuationId, Nat.equal)){
                     case(null){return};
                     case(?v){
                         createFinancialMetadata(?v.value, null);

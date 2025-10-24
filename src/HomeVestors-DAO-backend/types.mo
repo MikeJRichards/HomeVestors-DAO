@@ -2,10 +2,10 @@ import HashMap "mo:base/HashMap";
 import Result "mo:base/Result";
 
 module {
-    public type Arg = {
+    public type Arg<P> = {
         what: What;
         caller: Principal;
-        property: Property;
+        parent: P;
         handlePropertyUpdate: (WhatWithPropertyId, Principal) -> async UpdateResultBeforeVsAfter;
         testing: Bool;
     };
@@ -70,7 +70,7 @@ module {
         operational: OperationalInfo;  // Grouped operational information
         nftMarketplace: NFTMarketplace;
         governance: Governance;
-        updates : [[BeforeVsAfter]];
+        updates : [[BeforeVsAfter<Nat>]];
     };
 
    public type PropertyDetails = {
@@ -464,6 +464,8 @@ module {
     };
 
     public type UpdateError = {
+        #AsyncFailure;
+        #ArraySizeMisMatch;
         #InvalidPropertyId;
         #InvalidElementId;
         #OverWritingData;
@@ -640,7 +642,7 @@ module {
         #Misc: [ElementResult<Miscellaneous>]; 
         #Financials: [ElementResult<Financials>]; 
         #MonthlyRent: [ElementResult<Nat>];
-        #UpdateResults: [ElementResult<[[BeforeVsAfter]]>];
+        #UpdateResults: [ElementResult<[[BeforeVsAfter<Nat>]]>];
         #Listings : [PropertyResult<Listing>];
         #Refunds: [PropertyResult<[Refund]>];
         #NFTs: [ElementResult<[Nat]>];
@@ -661,6 +663,12 @@ module {
         #Delete: [Int];
     };
 
+    public type AtomicAction<K, C, U> = {
+        #Create: C;
+        #Update: (K, U);
+        #Delete: K;
+    };
+
     public type WhatWithPropertyId = {
         propertyId: Nat;
         what: What;
@@ -668,7 +676,7 @@ module {
 
     public type Struct<T> = Result.Result<?T, (?Nat, UpdateError)>;
 
-    public type ToStruct = {
+    public type ToStruct<K> = {
         #Insurance: ?InsurancePolicy;
         #Document: ?Document;
         #Note: ?Note;
@@ -686,12 +694,16 @@ module {
         #Description : ?Text;
         #Proposal: ?Proposal;
         #Invoice: ?Invoice;
-        #Err: (?Nat, UpdateError);
+        #Err: (?K, UpdateError);
     };
 
-    public type BeforeVsAfter = {
-        before: ToStruct;
-        outcome: ToStruct;
+    public type BeforeVsAfter<K> = {
+        id: ?K;
+        caller: Principal;
+        time: Int;
+        arg: What;
+        before: ToStruct<K>;
+        outcome: ToStruct<K>;
     };
 
     public type What = {
@@ -761,13 +773,20 @@ module {
 
     public type FinancialIntentResult = IntentResult<FinancialIntentAction>;
 
+    public type UpdateResultInstance<P, K> = {
+        okCount: Nat;
+        errCount: Nat;
+        diffs: [BeforeVsAfter<K>];
+        parent: P;
+    };
+
     public type UpdateResult = {
-        #Ok: Property; 
+        #Property: UpdateResultInstance<Property, Nat>; 
         #Err : [(?Nat, UpdateError)];
     };
 
     public type UpdateResultBeforeVsAfter = {
-        #Ok: [BeforeVsAfter];
+        #Ok: [BeforeVsAfter<Nat>];
         #Err: [(?Nat, UpdateError)];
     };
 

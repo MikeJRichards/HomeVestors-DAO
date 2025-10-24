@@ -10,7 +10,7 @@ import Result "mo:base/Result";
 import Buffer "mo:base/Buffer";
 import HashMap "mo:base/HashMap";
 import Int "mo:base/Int";
-import Iter "mo:base/Iter";
+import Time "mo:base/Time";
 //import Debug "mo:base/Debug";
 
 module PropertiesHelper {
@@ -24,9 +24,9 @@ module PropertiesHelper {
    type Account = Types.Account;
    type Intent<T> = Types.Intent<T>;
    type What = Types.What;
-   type CrudHandler<C,U, T, StableT> = UnstableTypes.CrudHandler<C,U,T ,StableT>;
-   type BeforeVsAfter = Types.BeforeVsAfter;
-   type ToStruct = Types.ToStruct;
+   type CrudHandler<K, C,U, T, StableT> = UnstableTypes.CrudHandler<K, C,U,T ,StableT>;
+   type BeforeVsAfter<K> = Types.BeforeVsAfter<K>;
+   type ToStruct<K> = Types.ToStruct<K>;
    type BeforeOrAfter = UnstableTypes.BeforeOrAfter;
 
     public func accountEqual(a : Account, b : Account) : Bool {
@@ -88,9 +88,9 @@ module PropertiesHelper {
       }
     };
 
-    public func getElementByKey<T>(arr: [(Nat, T)], key: Nat) : ?T {
+    public func getElementByKey<K, T>(arr: [(K, T)], key: K, equal: (K, K) -> Bool) : ?T {
         for ((k, v) in arr.vals()) {
-            if (k == key) {
+            if (equal(k,key)) {
                 return ?v;
             }
         };
@@ -129,30 +129,21 @@ module PropertiesHelper {
     type UpdateError = Types.UpdateError;
     type UpdateResults = Types.UpdateResults;
 
-    public func updateProperty(update: Update, property: Property, action: What, results: [Result.Result<?Nat, (?Nat, UpdateError)>]): Result.Result<Property, [(?Nat, UpdateError)]>  {
-       // Debug.print("ultimate results are "#debug_show(results));
-        if(Array.find<Result.Result<?Nat, (?Nat, UpdateError)>>(results, func(res) {Result.isOk(res)}) != null){
-            var updatedProperty : Property = switch(update){
-                case(#Details(d)){{property with details = d;}};
-                case(#Financials(f)){{property with financials = f}};
-                case(#Administrative(a)){{property with administrative = a}};
-                case(#Operational(o)){{property with operational = o}};
-                case(#NFTMarketplace(m)){{property with nftMarketplace = m}};
-                case(#Governance(g)){{property with governance = g}};
+    public func updatePropertyEventLog(property: Property, res: [Types.BeforeVsAfter<Nat>]): Types.UpdateResult {
+        var okCount = 0;
+        var errCount = 0;
+        for(el in res.vals()){
+            switch(el.outcome){
+                case(#Err(_)) errCount += 1;
+                case(_) okCount +=1;
             };
-            return #ok(updatedProperty);
-        }
-        else { 
-            let buf = Buffer.Buffer<(?Nat, UpdateError)>(results.size());
-            for(res in results.vals()){
-                switch(res){
-                    case(#err(e)) buf.add(e);
-                    case(_){};
-                }
-            };
-           // Debug.print("result buff"#debug_show(Buffer.toArray(buf)));
-            #err(Buffer.toArray(buf));
         };
+        return #Property{
+            okCount;
+            errCount;
+            diffs = res;
+            parent = {property with updates = Array.append(property.updates, [res])}
+        }
     };
 
     public func noAsyncEffect<T>(): (T -> async Result.Result<(), Types.UpdateError>) {
@@ -211,72 +202,163 @@ module PropertiesHelper {
         }
     };
 
+    func groupArgsByConflict<P, K, A, T, StableT>(args: [A],handler: Handler<P, K, A, T, StableT>) : [[A]] {
+        // Start with an empty list of groups
+        var groups : [Buffer.Buffer<A>] = [];
 
+        for (arg in args.vals()) {
+          var placed = false;
 
-    public func applyHandler<T, StableT>(args: Types.Arg, handler: UnstableTypes.Handler<T, StableT>): async UpdateResult {
+          // Try to fit this arg into an existing group
+          label search for (i in groups.keys()) {
+            var conflicts = false;
+
+            // Check against every arg already in the group
+            for (placedArg in groups[i].vals()) {
+              if (handler.isConflict(placedArg, arg)) {
+                conflicts := true;
+                break search;  // stop early if conflict found
+              };
+            };
+
+            if (not conflicts) {
+              groups[i].add(arg);
+              placed := true;
+            };
+          };
+
+          // No group without conflicts found → create a new group
+          if (not placed) {
+            let newGroup = Buffer.Buffer<A>(1);
+            newGroup.add(arg);
+            groups := Array.append(groups, [newGroup]);
+          };
+        };
+
+        let arrayGroups = Buffer.Buffer<[A]>(groups.size());
+        for (group in groups.vals()) {
+            arrayGroups.add(Buffer.toArray(group));
+        };
+
+        Buffer.toArray(arrayGroups);
+    };
+
+  
+
+    public func makeAutomicAction<C,U>(actions: Actions<C,U>, size: Nat): [Types.AtomicAction<Nat, C,U>] {
+        func normalizeId(i: Int) : Nat {
+            if (i >= 0) Int.abs(i)
+            else {
+                let adjusted = size + i;
+                if (adjusted >= 0) Int.abs(adjusted) else 0;
+            };
+        };
+
+        let buf = Buffer.Buffer<Types.AtomicAction<Nat, C,U>>(0);
+        switch(actions){
+            case(#Create(creates)){
+                for(create in creates.vals()){
+                    buf.add(#Create(create));
+                }
+            };
+            case(#Update(update, ints)){
+                for(int in ints.vals()){
+                    buf.add(#Update(normalizeId(int), update));
+                }
+            };
+            case(#Delete(ints)){
+                for(int in ints.vals()){
+                    buf.add(#Delete(normalizeId(int)));
+                }
+            };
+        };
+        Buffer.toArray(buf);
+    };
+
+    func isOk<A, K>(arr: [(A, [Result.Result<?K, (?K, UpdateError)>])]): Bool {
+        for((_, res) in arr.vals()){
+            for(result in res.vals()){
+                switch(result){
+                    case(#ok(_)) return true;
+                    case(#err(_)){};
+                }
+            }
+        };
+        false;
+    };
+
+    public func applyHandler<P, K, A, T, StableT>(applyArgs: Types.Arg<P>, arg: [A], handler: UnstableTypes.Handler<P, K, A, T, StableT>): async UpdateResult {
         //here you have access to before / creates - but updates already changed
         //grab what elements are before as a array [(Nat, Difference Enum)]
-        let validatedElementsArr :  [(?Nat, Result.Result<T, UpdateError>)] = handler.validateAndPrepare();
-        // 3️⃣ Run asyncEffect in batch
-        let asyncResults: [(?Nat, Result.Result<(), Types.UpdateError>)] = await handler.asyncEffect(validatedElementsArr);
-        //Debug.print("ASYNC RESULTS: "# debug_show(asyncResults));
-        let combinedResults : [(?Nat, Result.Result<StableT, UpdateError>)] = zipResults(validatedElementsArr, asyncResults, handler);
-        
-        //for((id, res) in combinedResults.vals()){
-        //    switch(res){
-        //        case(#ok(el)) Debug.print("COMBINED RESULT OK");
-        //        case(#err(e)) Debug.print("COMBINED RESULT ERR"# debug_show(e));
-        //    }
-        //};
-
-        let finalResults = Buffer.Buffer<Result.Result<?Nat, (?Nat, UpdateError)>>(validatedElementsArr.size());
-        for ((tempId, res) in combinedResults.vals()) {
-            switch (res) {
-                case (#ok(el)) finalResults.add(#ok(handler.applyUpdate(tempId, el))); 
-                case (#err(e)) finalResults.add(#err(tempId, e));
+        let argsArray : [[A]] = groupArgsByConflict(arg, handler);
+        let beforeVsAfterBuff = Buffer.Buffer<BeforeVsAfter<K>>(arg.size());
+        var parent : P = applyArgs.parent;
+        for(args in argsArray.vals()){
+            let validatedElements = Buffer.Buffer<(?K, A, Result.Result<T, UpdateError>)>(args.size());
+            for(arg in args.vals()) validatedElements.add(handler.validateAndPrepare(parent, arg));
+            let validatedElementsArr: [(?K, A, Result.Result<T, UpdateError>)] = Buffer.toArray(validatedElements);
+            let asyncResults: [Result.Result<(), Types.UpdateError>] = try{
+                await handler.asyncEffect(validatedElementsArr);
+            } 
+            catch(_){
+                let buff = Buffer.Buffer<Result.Result<(), Types.UpdateError>>(validatedElementsArr.size());
+                buff.add(#err(#AsyncFailure));
+                Buffer.toArray(buff);
             };
-        };
-        //Debug.print("FINAL RESULTS"# debug_show(Buffer.toArray(finalResults)));
-
-        //true afters aren't real until finalAsync... but in reality here you'd have all the children too. 
-        await handler.finalAsync(Buffer.toArray(finalResults));
-        // 5️⃣ Return full result map for caller to know per-element success/failure
-        let updatedProperty = updateProperty(handler.getUpdate(), args.property, args.what, Buffer.toArray(finalResults));
-        //if above you've got the updated property, then declare it, then loop through final results and get temp id
-        let beforeVsAfterBuff = Buffer.Buffer<BeforeVsAfter>(finalResults.size());
-        for(res in finalResults.vals()){
-            switch(res, updatedProperty){
-                case (_, #err(e)){};
-                case(#ok(id), #ok(updatedProperty)){
-                    beforeVsAfterBuff.add({
-                        before = handler.toStruct(args.property, id, #Before);
-                        outcome = handler.toStruct(updatedProperty, id, #After);
-                    })
+            let combinedResults : [(A, [(?K, Result.Result<StableT, UpdateError>)])] = zipResults(validatedElementsArr, asyncResults, handler);
+            let finalResults = Buffer.Buffer<(A, [Result.Result<?K, (?K, UpdateError)>])>(combinedResults.size());
+            for((arg, arr) in combinedResults.vals()){
+                let argResults = Buffer.Buffer<Result.Result<?K, (?K, UpdateError)>>(arr.size());
+                for ((tempId, res) in arr.vals()) {
+                    switch (res) {
+                        case (#ok(el)) argResults.add(#ok(handler.applyUpdate(tempId, arg, el))); 
+                        case (#err(e)) argResults.add(#err(tempId, e));
+                    };
                 };
-                case(#err((id, err)), #ok(_)){
-                    beforeVsAfterBuff.add({
-                        before = handler.toStruct(args.property, id, #Before);
-                        outcome = #Err((id, err))
-                    })
-                };
+                finalResults.add((arg, Buffer.toArray(argResults)));
             };
+            let finalResultsArr = Buffer.toArray(finalResults);
+            await handler.finalAsync(finalResultsArr);
+            let parentAfter = if (isOk(finalResultsArr)) handler.applyParentUpdate(parent) else parent;
+            for((arg, res) in finalResultsArr.vals()){
+                for(result in res.vals()){
+                    switch(result){
+                        case(#ok(id)){
+                            beforeVsAfterBuff.add({
+                                arg = handler.toArgDomain(arg);
+                                id = id; 
+                                before = handler.toStruct(parent, id, #Before);
+                                outcome = handler.toStruct(parentAfter, id, #After);
+                                time = Time.now();
+                                caller = applyArgs.caller;
+                            })
+                        };
+                        case(#err(id, e)){
+                            beforeVsAfterBuff.add({
+                                arg = handler.toArgDomain(arg);
+                                id = id; 
+                                before = handler.toStruct(parent, id, #Before);
+                                outcome = #Err(id, e);
+                                time = Time.now();
+                                caller = applyArgs.caller;
+                            })
+                        }
+                    }
+                }
+            };
+            parent := parentAfter;  
         };
-        let arr = Iter.toArray(beforeVsAfterBuff.vals());
-        switch(updatedProperty){
-            case(#ok(property)) return #Ok({property with updates = Array.append(property.updates, [arr])});
-            case(#err(e)) return #Err(e);
-        };
+        handler.updateParentEventLog(parent, Buffer.toArray(beforeVsAfterBuff));
     };
 
     
 
-    public func applyUpdate<C, U, T, StableT>(action: Types.Actions<C, U>, idOpt: ?Nat, el: StableT, handler: UnstableTypes.CrudHandler<C, U, T, StableT>): ?Nat {
+    public func applyUpdate<K, C, U, T, StableT>(action: Types.AtomicAction<K, C, U>, idOpt: ?K, el: StableT, handler: UnstableTypes.CrudHandler<K, C, U, T, StableT>): ?K {
         switch(idOpt, action) {
             case (_, #Create(_)) {
-                handler.id += 1;
-                handler.map.put(handler.assignId(handler.id, el));
-                handler.setId(handler.id);
-                return ?handler.id;
+                handler.incrementId();
+                handler.map.put(handler.assignId(handler.getId(), el));
+                return ?handler.getId();
             };
             case (?id, #Update(_)) handler.map.put(id, el);
             case (?id, #Delete(_)) handler.delete(id, el);
@@ -285,59 +367,24 @@ module PropertiesHelper {
         idOpt;
     };
 
-    public func getValid<C, U, T, StableT>(action: Types.Actions<C, U>, handler: CrudHandler<C, U, T, StableT>): [(?Nat, Result.Result<T, Types.UpdateError>)] {
-        let generateValidateElements = func (ids: [Int], transform: T -> T) {
-        for (i in ids.vals()) {
-            let actualId : ?Nat = 
-                if (i >= 0) {
-                    ?Int.abs(i) // safe cast from positive Int to Nat
-                } else {
-                    let adjusted = handler.map.size() + i;
-                    if (adjusted >= 0) ?Int.abs(adjusted) else null;
-                };
-    
-            switch (actualId) {
-                case (?idNat) {
-                    let maybeEl = handler.map.get(idNat);
-                    let maybeT = switch (maybeEl) {
-                        case (null) null;
-                        case (?el) ?transform(handler.fromStable(el));
-                    };
-                    validatedElements.add((?idNat, handler.validate(maybeT)));
-                };
-                case (null) {
-                    // Invalid id
-                    validatedElements.add((null, #err(#InvalidElementId)));
-                };
+    public func getValid<K, C, U, T, StableT>(action: Types.AtomicAction<K, C, U>, handler: CrudHandler<K, C, U, T, StableT>): (?K, Types.AtomicAction<K, C, U>, Result.Result<T, Types.UpdateError>) {
+        let generateValidateElements = func (id: K, transform: T -> T): (?K, Types.AtomicAction<K, C, U>, Result.Result<T, Types.UpdateError>) {
+            let maybeT = switch (handler.map.get(id)) {
+                case (null) null;
+                case (?el) ?transform(handler.fromStable(el));
             };
+            (?id, action, handler.validate(maybeT));
         };
-    };
-
         
-        let validatedElements = Buffer.Buffer<(?Nat, Result.Result<T, Types.UpdateError>)>(0);
         switch(action) {
-            case (#Create(args)){
-                var id = handler.id;
-                for(arg in args.vals()){
-                    validatedElements.add((?id, handler.validate(?handler.create(arg, id))));
-                    id += 1;
-                };
-               // Debug.print("IDS: "#debug_show(id));
-            }; 
-            case (#Update(arg, ids)){
-                generateValidateElements(ids,  func(el: T) = handler.mutate(arg, el));
-                //Debug.print("IDS: "#debug_show(ids));
-            }; 
-            case (#Delete(ids)){
-                generateValidateElements(ids, func(maybeT) = maybeT);
-                //Debug.print("IDS: "#debug_show(ids));
-            }; 
+            case (#Create(arg)) (?handler.createTempId(), action, handler.validate(?handler.create(arg, handler.createTempId())));
+            case (#Update(id, arg)) generateValidateElements(id,  func(el: T) = handler.mutate(arg, el));
+            case (#Delete(id)) generateValidateElements(id, func(maybeT) = maybeT);
         };
-        return Buffer.toArray(validatedElements);
     };
 
 
-    public func zipResults<T, StableT>(validationArray : [(?Nat, Result.Result<T, Types.UpdateError>)], asyncArray: [(?Nat, Result.Result<(), UpdateError>)], handler:UnstableTypes.Handler<T, StableT>) : [(?Nat, Result.Result<StableT, UpdateError>)] {
+    public func zipResults<P, K, A, T, StableT>(validationArray : [(?K, A, Result.Result<T, Types.UpdateError>)], asyncArray: [Result.Result<(), UpdateError>], handler:UnstableTypes.Handler<P, K, A, T, StableT>) : [(A, [(?K, Result.Result<StableT, UpdateError>)])] {
       let combinedRes = func(val: Result.Result<T, Types.UpdateError>, asyn: Result.Result<(), UpdateError>): Result.Result<T, Types.UpdateError>{
         switch (val, asyn) {
           case (#err(e), _) #err(e);
@@ -345,84 +392,79 @@ module PropertiesHelper {
           case (#ok(el), #ok()) #ok(el);
         };
       };
-     // Debug.print("validationArray size" # debug_show(validationArray.size()));
-     // Debug.print("async Array size"# debug_show(asyncArray.size()));
-      
-      var validationNullCount = 0;
-      var asyncNullCount = 0;
-      var nonMatchingIds = 0;
-
-      let validationHashMap = HashMap.HashMap<Nat, Result.Result<T, Types.UpdateError>>(validationArray.size(), Nat.equal, natToHash);
-    
-      for ((idOpt, res) in validationArray.vals()) {
-        switch (idOpt) {
-          case (?id) validationHashMap.put(id, res);
-          case (null) validationNullCount += 1;
-        };
+      if (validationArray.size() != asyncArray.size()) return Array.map(validationArray, func((idOpt, arg, _)) = (arg, [(idOpt, #err(#ArraySizeMisMatch))]));
+      let results = Buffer.Buffer<(A, [(?K,Result.Result<StableT, UpdateError>)])>(validationArray.size());
+      for(i in validationArray.keys()){
+            let (idOpt, arg, vres) = validationArray[i];
+            let (ares) = asyncArray[i];
+            results.add((arg, handler.applyAsyncEffects(idOpt, combinedRes(vres, ares))));
       };
-
-      let combinedResults = Buffer.Buffer<(?Nat, Result.Result<StableT, UpdateError>)>(validationArray.size());
-    
-      for ((idOpt, res) in asyncArray.vals()) {
-        switch (idOpt) {
-          case (?id) {
-            switch (validationHashMap.get(id)) {
-              case (?valRes){
-                let arr = handler.applyAsyncEffects(idOpt, combinedRes(valRes, res));
-                for((id, res) in arr.vals()){
-                    combinedResults.add(id, res);
-                };
-              }; 
-              case (null) nonMatchingIds += 1;
-            };
-          };
-          case (null) asyncNullCount += 1;
-        };
-      };
-        //Debug.print("validation null count"# debug_show(validationNullCount)# " async null count "# debug_show(asyncNullCount));
-      if (validationNullCount == 0 and asyncNullCount == 0 and nonMatchingIds == 0 and validationArray.size() == asyncArray.size()) {
-        return Buffer.toArray(combinedResults);
-      } 
-      else if (validationNullCount == 1 and asyncNullCount == 1 and validationArray.size() == 1 and asyncArray.size() == 1) {
-        return handler.applyAsyncEffects(null, combinedRes(validationArray[0].1, asyncArray[0].1));
-      };
-
-      return [(null, #err(#OverWritingData))];
+      /// Returns: [ per-arg group [ per-child result (key, arg, finalResult) ] ]
+      return Buffer.toArray(results);
     };
 
-    public func runNoAsync<T>(arr: [(?Nat, Result.Result<T, Types.UpdateError>)]): [(?Nat, Result.Result<(), UpdateError>)] {
-        let buff = Buffer.Buffer<(?Nat, Result.Result<(), UpdateError>)>(arr.size());
-        for((id, res) in arr.vals()){
+    public func runNoAsync<K, A, T>(arr: [(?K, A, Result.Result<T, Types.UpdateError>)]): [(Result.Result<(), UpdateError>)] {
+        let buff = Buffer.Buffer<Result.Result<(), UpdateError>>(arr.size());
+        for((id, arg, res) in arr.vals()){
             switch(res){
-                case(#err(e)) buff.add(id, #err(e));
-                case(#ok(el)) buff.add((id, #ok()));
+                case(#err(e)) buff.add(#err(e));
+                case(#ok(el)) buff.add((#ok()));
             };
         };
         Buffer.toArray(buff);
     };
 
-    public func toStruct<C, U, T, StableT>(action: Actions<C,U>, crudHandler: CrudHandler<C,U,T,StableT>, wrapStableT: ?StableT -> ToStruct, toArray: Property -> [(Nat, StableT)]): (Property, ?Nat, BeforeOrAfter) -> ToStruct {
-        func(property: Property, id: ?Nat, beforeOrAfter: BeforeOrAfter): ToStruct {
-            let array = toArray(property);
-            switch(action, id, beforeOrAfter){
-                case(#Create(_), _, #Before) wrapStableT(getElementByKey(array, crudHandler.id + 1));
-                case(_, ?id, _) wrapStableT(getElementByKey(array, id));
-                case(_, null, _) #Err(id, #NullId);
+    public func toStruct<P, K, C, U, T, StableT>(wrapStableT: ?StableT -> ToStruct<K>, toArray: P -> [(K, StableT)], equal: (K, K) -> Bool): (P, ?K, BeforeOrAfter) -> ToStruct<K> {
+        func(parent: P, id: ?K, beforeOrAfter: BeforeOrAfter): ToStruct<K> {
+            let array = toArray(parent);
+            switch(id, beforeOrAfter){
+                case(?id, #Before) wrapStableT(getElementByKey(array, id, equal));
+                case(?id, _) wrapStableT(getElementByKey(array, id, equal));
+                case(null, _) #Err(id, #NullId);
+            }
+        };
+    };
+
+    public func atomicActionToWhat<C,U>(toWhat: Types.Actions<C,U> -> What): Types.AtomicAction<Nat, C, U> -> What{
+        func(arg: Types.AtomicAction<Nat, C, U>){
+            switch(arg){
+                case(#Create(arg)) toWhat(#Create([arg]));
+                case(#Update(id: Int, arg)) toWhat(#Update(arg, [id]));
+                case(#Delete(id: Int)) toWhat(#Delete([id]));
+            }
+        }
+    };
+
+    public func isConflictOnNatId<C,U>(): (Types.AtomicAction<Nat, C,U>, Types.AtomicAction<Nat, C,U>) -> Bool {
+        func(arg1: Types.AtomicAction<Nat, C,U>, arg2: Types.AtomicAction<Nat, C,U>): Bool {
+            switch(arg1, arg2){
+                case(#Update(id1, _) or #Delete(id1), #Update(id2, _) or #Delete(id2)) id1 == id2;
+                case(_) false;
             }
         };
     };
 
     type Actions<C,U> = Types.Actions<C,U>;
-    type Handler<T, StableT> = UnstableTypes.Handler<T, StableT>;
-    public func generateGenericHandler<C, U, T, StableT, S>(crudHandler: CrudHandler<C,U,T,StableT>, action: Actions<C, U>, toStable: T -> StableT, getUpdate: S -> Types.Update, struct: S, wrapStableT: ?StableT -> ToStruct, toArray: Property -> [(Nat, StableT)]): Handler<T,StableT>{
+    type Handler<P, K, A, T, StableT> = UnstableTypes.Handler<P, K, A, T, StableT>;
+    public func generateGenericHandler<P, K, C, U, T, StableT, S>(
+        crudHandler: CrudHandler<K, C,U,T,StableT>, 
+        toStable: T -> StableT, 
+        wrapStableT: ?StableT -> ToStruct<K>, 
+        toArray: P -> [(K, StableT)], 
+        equal: (K, K) -> Bool, 
+        isConflict: (Types.AtomicAction<K, C,U>, Types.AtomicAction<K, C,U>) -> Bool,
+        applyParentUpdate: P -> P, 
+        updateParentEventLog: (P, [Types.BeforeVsAfter<K>]) -> Types.UpdateResult, 
+        toArgDomain: Types.AtomicAction<K, C, U> -> What
+        ): Handler<P, K, Types.AtomicAction<K, C,U>, T,StableT>{
       {
-        toStruct = toStruct(action, crudHandler, wrapStableT, toArray);
-        validateAndPrepare = func() = getValid<C, U, T, StableT>(action, crudHandler);
+        isConflict;
+        validateAndPrepare = func(parent: P, arg: Types.AtomicAction<K, C, U>) = getValid<K, C, U, T, StableT>(arg, crudHandler);
 
 
-        asyncEffect = func(arr: [(?Nat, Result.Result<T, UpdateError>)]): async [(?Nat, Result.Result<(), UpdateError>)] { runNoAsync<T>(arr) };
+        asyncEffect = func(arr: [(?K, Types.AtomicAction<K, C, U>, Result.Result<T, UpdateError>)]): async [Result.Result<(), UpdateError>] { runNoAsync<K, Types.AtomicAction<K, C,U>, T>(arr) };
         
-        applyAsyncEffects = func(el: (?Nat, Result.Result<T, Types.UpdateError>)): [(?Nat, Result.Result<StableT, Types.UpdateError>)]{
+        applyAsyncEffects = func(el: (?K, Result.Result<T, Types.UpdateError>)): [(?K, Result.Result<StableT, Types.UpdateError>)]{
           switch(el){
             case(null, _) [(null, #err(#InvalidElementId))];
             case(?id, #ok(el)) [(?id, #ok(toStable(el)))];
@@ -430,11 +472,14 @@ module PropertiesHelper {
           }
         }; 
 
-        applyUpdate = func(id: ?Nat, el: StableT): ?Nat =applyUpdate(action, id, el, crudHandler);
+        applyUpdate = func(id: ?K, arg: Types.AtomicAction<K, C, U>, el: StableT): ?K =applyUpdate(arg, id, el, crudHandler);
 
-        getUpdate = func() = getUpdate(struct); 
         //#Administrative(Stables.fromPartialStableAdministrativeInfo(administrative));
-        finalAsync = func(_: [Result.Result<?Nat, (?Nat, UpdateError)>]):async () {};
+        finalAsync = func(_: [(Types.AtomicAction<K, C, U>, [Result.Result<?K, (?K, UpdateError)>])]):async () {};
+        toStruct = toStruct(wrapStableT, toArray, equal);
+        applyParentUpdate;
+        updateParentEventLog;
+        toArgDomain; 
       };
     };
 
@@ -446,35 +491,50 @@ module PropertiesHelper {
       { var value = initial };
     };
 
-    public func makeFlatHandler<U, T, StableT>(arg: U, current: T, mutate: (arg: U, current: T) -> T, validate: T -> Result.Result<T, UpdateError>, toStable: T -> StableT, toPropertyUpdate: StableT -> Types.Update, toStruct: Property -> ToStruct) : UnstableTypes.Handler<T, StableT> {
+    public func noConflicts<A>() : (A, A) -> Bool {
+      func (_, _) = false;
+    };
+
+    
+
+    public func makeFlatHandler<P, K, A, T, StableT>(
+        mutate: (arg: A, current: P) -> T, 
+        validate: T -> Result.Result<T, UpdateError>, 
+        toStable: T -> StableT, 
+        toStruct: P -> ToStruct<K>,
+        isConflict: ?((A, A) -> Bool),
+        applyParentUpdate: P -> P,
+        updateParentEventLog: (P, [Types.BeforeVsAfter<K>]) -> Types.UpdateResult,
+        toArgDomain: A -> What
+        ) : UnstableTypes.Handler<P, K, A, T, StableT> {
     {
-        toStruct = func(property: Property, id:?Nat, beforeVsAfter: BeforeOrAfter): ToStruct = toStruct(property);
-      validateAndPrepare = func(): [(?Nat, Result.Result<T, UpdateError>)] {
-        let mutated = mutate(arg, current);
-        return [(null, validate(mutated))];
-      };
-
-      asyncEffect = func(arr: [(?Nat, Result.Result<T, UpdateError>)]): async [(?Nat, Result.Result<(), UpdateError>)] {
-        runNoAsync<T>(arr);
-      };
-
-      applyAsyncEffects = func(res: (?Nat, Result.Result<T, Types.UpdateError>)): [(?Nat, Result.Result<StableT, Types.UpdateError>)] {
-        switch (res) {
-          case (null, #ok(el)) [(null, #ok(toStable(el)))];
-          case (_, #err(e)) [(null, #err(e))];
-          case (?id, #ok(_)) [(?id, #err(#InvalidElementId))];
+        isConflict = switch(isConflict){case(null) noConflicts(); case(?f)f};
+        toStruct = func(parent: P, id:?K, beforeVsAfter: BeforeOrAfter): ToStruct<K> = toStruct(parent);
+        validateAndPrepare = func(parent: P, arg: A): (?K,A, Result.Result<T, UpdateError>) {
+          let mutated = mutate(arg, parent);
+          return (null, arg, validate(mutated));
         };
-      };
-
-      applyUpdate = func(id: ?Nat, el: StableT): ?Nat {
-        id;
-      };
-
-      getUpdate = func(): Types.Update {
-        toPropertyUpdate(toStable(current));
-      };
-
-      finalAsync = func(_: [Result.Result<?Nat, (?Nat, UpdateError)>]): async () {};
+    
+        asyncEffect = func(arr: [(?K, A, Result.Result<T, UpdateError>)]): async [Result.Result<(), UpdateError>] {
+          runNoAsync<K, A, T>(arr);
+        };
+    
+        applyAsyncEffects = func(res: (?K, Result.Result<T, Types.UpdateError>)): [(?K, Result.Result<StableT, Types.UpdateError>)] {
+          switch (res) {
+            case (null, #ok(el)) [(null, #ok(toStable(el)))];
+            case (_, #err(e)) [(null, #err(e))];
+            case (?id, #ok(_)) [(?id, #err(#InvalidElementId))];
+          };
+        };
+    
+        applyUpdate = func(id: ?K, arg: A, el: StableT): ?K {
+          id;
+        };
+        applyParentUpdate;
+        updateParentEventLog;
+        toArgDomain;
+    
+        finalAsync = func(_: [(A, [Result.Result<?K, (?K, UpdateError)>])]): async () {};
     }
   };
 

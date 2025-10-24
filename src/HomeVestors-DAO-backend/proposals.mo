@@ -26,13 +26,13 @@ module {
     type ProposalCArg = Types.ProposalCArg;
     type ProposalUArg = Types.ProposalUArg;
     type Governance = Types.Governance;
-    type Arg = Types.Arg;
+    type Arg = Types.Arg<Property>;
     type Actions<C,U> = Types.Actions<C,U>;
     type UpdateResult = Types.UpdateResult;
     type UpdateResultBeforeVsAfter = Types.UpdateResultBeforeVsAfter;
     type What = Types.What;
-    type Handler<C, U> = UnstableTypes.Handler<C, U>;
-    type CrudHandler<C, U, T, StableT> = UnstableTypes.CrudHandler<C, U, T, StableT>;
+    type Handler<P, K, A, T, StableT> = UnstableTypes.Handler<P, K, A, T, StableT>;
+    type CrudHandler<K, C, U, T, StableT> = UnstableTypes.CrudHandler<K, C, U, T, StableT>;
     type UpdateError = Types.UpdateError;
 
     public func isAccepted(property: UnstableTypes.PropertyUnstable, id: Nat): ?Bool {
@@ -64,7 +64,7 @@ module {
                                 let results = Buffer.Buffer<UpdateResultBeforeVsAfter>(proposal.actions.size());
                                 for(what in proposal.actions.vals()){
                                     let whatWithPropertyId: Types.WhatWithPropertyId = {
-                                        propertyId = arg.property.id;
+                                        propertyId = arg.parent.id;
                                         what;
                                     };
                                     results.add(await arg.handlePropertyUpdate(whatWithPropertyId, arg.caller));
@@ -92,7 +92,7 @@ module {
         let addTimer = func<system>(delay: Nat): ?Nat{
             ?setTimer<system>(#nanoseconds delay, func () : async () {
                 let updateProposal: Types.WhatWithPropertyId = {
-                    propertyId = arg.property.id;
+                    propertyId = arg.parent.id;
                     what = #Governance(#Proposal(#Delete([proposalId])))
                 };
                 ignore arg.handlePropertyUpdate(updateProposal, Principal.fromText("vq2za-kqaaa-aaaas-amlvq-cai"));
@@ -124,11 +124,19 @@ module {
 
 
     public func createProposalHandlers(arg: Arg, action: Actions<ProposalCArg, ProposalUArg>):async UpdateResult {
+        type P = Property;
+        type K = Nat;
         type C = ProposalCArg;
         type U = ProposalUArg;
+        type A = Types.AtomicAction<K, C, U>;
         type T = ProposalUnstable;
         type StableT = Proposal;
-        let governance = Stables.toPartialStableGovernance(arg.property.governance);
+        type S = UnstableTypes.GovernanceUnstable;
+
+        let governance : S = Stables.toPartialStableGovernance(arg.parent.governance);
+        let map = governance.proposals;
+        
+        var tempId = governance.proposalId + 1;
         
         let calculateEndTime = func(startTime: Int, category: ImplementationCategory) : Int {
             let HOUR_NS : Int = 3_600_000_000_000;
@@ -146,11 +154,15 @@ module {
             startTime + duration
         };  
 
-        let crudHandler : CrudHandler<C, U, T, StableT> = {
-            map = governance.proposals;
-            var id = governance.proposalId;
-            setId = func(id: Nat) = governance.proposalId := id;
-            
+        let crudHandler : CrudHandler<K, C, U, T, StableT> = {
+            map;
+            getId = func() = governance.proposalId;
+            createTempId = func(){
+              tempId += 1;
+              tempId;
+            };
+            incrementId = func(){governance.proposalId += 1;};
+        
             assignId = func(id: Nat, el: StableT): (Nat, StableT){
                 (id, {el with id = id});
             };
@@ -262,19 +274,19 @@ module {
 
         let voters = HashMap.HashMap<Nat, [Principal]>(0, Nat.equal, PropHelper.natToHash);
 
-        let handler: Handler<T, StableT> = {
-            toStruct = PropHelper.toStruct<C, U, T, StableT>(action, crudHandler, func(stableT: ?StableT) = #Proposal(stableT), func(property: Property) = property.governance.proposals);
-            validateAndPrepare = func () = PropHelper.getValid<C, U, T, StableT>(action, crudHandler);
+        let handler: Handler<P, K, A, T, StableT> = {
+            isConflict =  PropHelper.isConflictOnNatId();
+            validateAndPrepare = func(parent: P, arg: Types.AtomicAction<K, C, U>) = PropHelper.getValid<K, C, U, T, StableT>(arg, crudHandler);
             
-            asyncEffect = func(arr: [(?Nat, Result.Result<T, UpdateError>)]): async [(?Nat, Result.Result<(), UpdateError>)] {
-                if(arg.testing) return PropHelper.runNoAsync<T>(arr);
+            asyncEffect = func(arr: [(?K, A, Result.Result<T, UpdateError>)]): async [Result.Result<(), UpdateError>] {
+                if(arg.testing) return PropHelper.runNoAsync<K, A, T>(arr);
                 switch(action){
                     case(#Create(_)){
                                     let tokenIds = Buffer.Buffer<Nat>(1000);
                                     for(i in Iter.range(0, 1000)){
                                         tokenIds.add(i);
                                     };
-                                    let accounts = await NFT.icrc7_owner_of(Buffer.toArray(tokenIds), arg.property.nftMarketplace.collectionId);
+                                    let accounts = await NFT.icrc7_owner_of(Buffer.toArray(tokenIds), arg.parent.nftMarketplace.collectionId);
                                     let map = HashMap.HashMap<Principal, Nat>(0, Principal.equal, Principal.hash);
                                     for(accountOpt in accounts.vals()){
                                         let account = PropHelper.get(accountOpt, {owner = PropHelper.getAdmin(); subaccount = null});
@@ -283,25 +295,25 @@ module {
                                             case(?count) map.put(account.owner, count + 1);
                                         };
                                     };
-                        let results = Buffer.Buffer<(?Nat, Result.Result<(), UpdateError>)>(arr.size());
-                        for((id, res) in arr.vals()){
+                        let results = Buffer.Buffer<(Result.Result<(), UpdateError>)>(arr.size());
+                        for((id, arg, res) in arr.vals()){
                             switch(id, res){
                                 case(?id, #ok(_)){
                                     voters.put(id, Iter.toArray(map.keys()));
-                                    results.add((?id, #ok()));
+                                    results.add(#ok());
                                 };
-                                case(_, #err(e)) results.add((id, #err(e)));
-                                case(null, _) results.add((id, #err(#InvalidElementId)));
+                                case(_, #err(e)) results.add(#err(e));
+                                case(null, _) results.add(#err(#InvalidElementId));
                             }
                         };
                         return Buffer.toArray(results);
                     };
-                    case(_) PropHelper.runNoAsync<T>(arr);
+                    case(_) PropHelper.runNoAsync<K, A, T>(arr);
                 }
             };
 
-            applyAsyncEffects = func(idOpt: ?Nat, res: Result.Result<T, Types.UpdateError>): [(?Nat, Result.Result<StableT, UpdateError>)]{
-                switch(idOpt, res){
+            applyAsyncEffects = func(el: (?K, Result.Result<T, Types.UpdateError>)): [(?K, Result.Result<StableT, UpdateError>)]{
+                switch(el){
                     case(null, _) return [(null, #err(#InvalidElementId))];
                     case(?id, #ok(el)){
                         switch(voters.get(id)){
@@ -311,38 +323,44 @@ module {
                             };
                             case(null){};
                         };
-                        return [(idOpt, #ok(Stables.toStableProposal(el)))];
+                        return [(?id, #ok(Stables.toStableProposal(el)))];
                     }; 
-                    case(?id, #err(e)) return [(idOpt, #err(e))];
+                    case(?id, #err(e)) return [(?id, #err(e))];
                 };
             };
 
-            applyUpdate = func(id: ?Nat, el: StableT) = PropHelper.applyUpdate<C, U, T, StableT>(action, id, el, crudHandler);
-
-            getUpdate = func() = #Governance(Stables.fromPartialStableGovernance(governance));
-
-            finalAsync = func(arr: [Result.Result<?Nat, (?Nat, UpdateError)>]): async (){
+            applyUpdate = func(id: ?K, arg:A, el: StableT) = PropHelper.applyUpdate<K, C, U, T, StableT>(arg, id, el, crudHandler);
+            finalAsync = func(arr: [(A, [Result.Result<?K, (?K, UpdateError)>])]): async (){
                 if(arg.testing) return;
-                for(res in arr.vals()){
-                    switch(res, action){
-                        case(#ok(?id), #Create(_) or #Update(_)) ignore createTimers(arg, governance, id);
-                        case(#ok(?id), #Delete(_)) await executeProposal(arg, governance, id);
-                        case(_){};
+                for((args, res) in arr.vals()){
+                    for(result in res.vals()){
+                        switch(result, args){
+                            case(#ok(?id), #Create(_) or #Update(_)) ignore createTimers(arg, governance, id);
+                            case(#ok(?id), #Delete(_)) await executeProposal(arg, governance, id);
+                            case(_){};
+                        }
                     }
 
                 };
             };
+            toStruct = PropHelper.toStruct<P, K, C, U, T, StableT>(func(stableT: ?StableT) = #Proposal(stableT), func(property: Property) = property.governance.proposals, Nat.equal);
+            applyParentUpdate = func(property: P): P {{property with governance = Stables.fromPartialStableGovernance(governance)}};
+            updateParentEventLog = PropHelper.updatePropertyEventLog;
+            toArgDomain = PropHelper.atomicActionToWhat(func(a: Types.Actions<C,U>): Types.What = #Governance(#Proposal(a)));
         };
-
-        await PropHelper.applyHandler<T, StableT>(arg, handler);
+        await PropHelper.applyHandler<P, K, A, T, StableT>(arg, PropHelper.makeAutomicAction(action, map.size()), handler);
     };
 
     public func voteHandler(args: Arg, arg: Types.VoteArgs): async UpdateResult {
-        type U = Types.VoteArgs;
-        type T = UnstableTypes.ProposalUnstable;
+        type P = Property;
+        type K = Nat;
+        type A = Types.VoteArgs;
+        type T = ProposalUnstable;
         type StableT = Proposal;
-        let governance = Stables.toPartialStableGovernance(args.property.governance);
-
+        type S = UnstableTypes.GovernanceUnstable;
+        let governance = Stables.toPartialStableGovernance(args.parent.governance);
+        let map = governance.proposals;
+        let tempId = governance.proposalId + 1;
         let requiresTenantApproval = func(category: Types.ProposalCategory): Bool {
             switch(category){
                 case(#Maintenance(arg) or #Tenancy(arg) or #Rent(arg)) not arg.tenantApproved;
@@ -359,24 +377,18 @@ module {
             }
         };
 
-        let handler: Handler<T, StableT> = {
-            toStruct = func(property: Property, idOpt: ?Nat, beforeOrAfter: UnstableTypes.BeforeOrAfter): Types.ToStruct {
-                let id = switch(idOpt){case(null) return #Err(idOpt, #NullId); case(?id) id;};
-                switch(governance.proposals.get(id)){
-                    case(null) return #Err(idOpt, #InvalidElementId);
-                    case(?proposal) return #Proposal(?proposal)
-                }
-            };
-            validateAndPrepare = func(): [(?Nat, Result.Result<T, UpdateError>)] {
+        let handler: Handler<P, K, A, T, StableT> = {
+            isConflict =  func(arg1: A, arg2: A):Bool{false};
+            validateAndPrepare = func(property: P, arg: A): (?K, A, Result.Result<T, Types.UpdateError>) {
               switch(governance.proposals.get(arg.proposalId)){
-                  case(null) return [(?arg.proposalId,#err(#InvalidType))];
+                  case(null) return (?arg.proposalId, arg, #err(#InvalidElementId));
                   case(?proposal){
                       switch(proposal.status){
                           case(#LiveProposal(live)){
                             //dao voting system
-                            if(Time.now() > live.endTime) return [(?arg.proposalId, #err(#InvalidData{field = "End Time"; reason = #CannotBeSetInThePast}))];
-                            if(not PropHelper.isInList<Principal>(args.caller, proposal.eligibleVoters, Principal.equal) and not args.testing) return [(?arg.proposalId, #err(#InvalidData{field = "Eligible Voters"; reason = #InvalidInput}))];
-                            if(PropHelper.isInList<(Principal, Bool)>((args.caller, true), proposal.votes, func ((a, _), (b, _)) { Principal.equal(a, b) })) return [(?arg.proposalId, #err(#InvalidData{field = "Votes"; reason = #AlreadyVoted}))];
+                            if(Time.now() > live.endTime) return (?arg.proposalId, arg, #err(#InvalidData{field = "End Time"; reason = #CannotBeSetInThePast}));
+                            if(not PropHelper.isInList<Principal>(args.caller, proposal.eligibleVoters, Principal.equal) and not args.testing) return (?arg.proposalId, arg, #err(#InvalidData{field = "Eligible Voters"; reason = #InvalidInput}));
+                            if(PropHelper.isInList<(Principal, Bool)>((args.caller, true), proposal.votes, func ((a, _), (b, _)) { Principal.equal(a, b) })) return (?arg.proposalId, arg, #err(#InvalidData{field = "Votes"; reason = #AlreadyVoted}));
                             var updatedProposal : Proposal = {
                                 proposal with
                                 votes = Array.append(proposal.votes, [(args.caller, arg.vote)]);
@@ -390,7 +402,7 @@ module {
 
                             //deal with tenant vote here - changes category to true - or executed rejected by tenant here
                             if (requiresTenantApproval(proposal.category) 
-                                and Operational.isTenant(args.caller, args.property)) {
+                                and Operational.isTenant(args.caller, args.parent)) {
                                 updatedProposal := switch (arg.vote) {
                                   case (false) {
                                     // tenant veto
@@ -414,36 +426,36 @@ module {
                                   };
                                 };
                             };
-                            return [(?arg.proposalId, #ok(Stables.fromStableProposal(updatedProposal)))];
+                            return (?arg.proposalId, arg, #ok(Stables.fromStableProposal(updatedProposal)));
                           };
                           case (#Executed(executed)) {
                               switch (executed.outcome) {
                                 case (#AwaitingTenantApproval) {
-                                  if (Operational.isTenant(args.caller, args.property)) {
+                                  if (Operational.isTenant(args.caller, args.parent)) {
                                     if (arg.vote == false) {
                                         let updatedProposal : StableT = {proposal with status = #Executed({ executed with outcome = #Refused("Rejected by tenant")})};
-                                        [(?arg.proposalId, #ok(Stables.fromStableProposal(updatedProposal)))];
+                                        (?arg.proposalId, arg, #ok(Stables.fromStableProposal(updatedProposal)));
                                     } else {
                                       let updatedProposal = {proposal with status = #Executed{executed with outcome = #Accepted([])}};
-                                      [(?arg.proposalId, #ok(Stables.fromStableProposal(updatedProposal)))];
+                                      (?arg.proposalId, arg, #ok(Stables.fromStableProposal(updatedProposal)));
                                     };
                                   } else {
-                                    return [(?arg.proposalId, #err(#InvalidType))];
+                                    return (?arg.proposalId, arg, #err(#InvalidType));
                                   }
                                 };
-                                case (_) return [(?arg.proposalId, #err(#InvalidType))];
+                                case (_) return (?arg.proposalId, arg, #err(#InvalidType));
                               }
                             };
                           //deal with executed (outcome = awaiting tenant approval)
-                          case(_) return [(?arg.proposalId, #err(#InvalidType))];
+                          case(_) return (?arg.proposalId, arg, #err(#InvalidType));
                       }
                   }
               };
             };
 
-            asyncEffect = func(arr: [(?Nat, Result.Result<T, UpdateError>)]): async [(?Nat, Result.Result<(), UpdateError>)] { PropHelper.runNoAsync<T>(arr);};
+            asyncEffect = func(arr: [(?K, A, Result.Result<T, UpdateError>)]): async [Result.Result<(), UpdateError>] { PropHelper.runNoAsync<K, A, T>(arr);};
 
-            applyAsyncEffects = func(res: (?Nat, Result.Result<T, Types.UpdateError>)): [(?Nat, Result.Result<StableT, Types.UpdateError>)] {
+            applyAsyncEffects = func(res: (?K, Result.Result<T, Types.UpdateError>)): [(?K, Result.Result<StableT, Types.UpdateError>)] {
               switch (res) {
                 case (?id, #ok(el)) [(?id, #ok(Stables.toStableProposal(el)))];
                 case (_, #err(e)) [(null, #err(e))];
@@ -451,27 +463,34 @@ module {
               };
             };
 
-            applyUpdate = func(id: ?Nat, el: StableT): ?Nat {
+            applyUpdate = func(id: ?Nat, arg: A, el: StableT): ?K {
                 switch(id){case(?id) governance.proposals.put(id, el); case(_){};};
                 return id;
             };
 
-            getUpdate = func() = #Governance(Stables.fromPartialStableGovernance(governance));
-
-
-            finalAsync = func(arr: [Result.Result<?Nat, (?Nat, UpdateError)>]): async () {
+            finalAsync = func(arr: [(A, [Result.Result<?K, (?K, UpdateError)>])]): async () {
                 if(args.testing) return;
-                for(res in arr.vals()){
-                    switch(res){
-                        case(#ok(?id)) await executeProposal(args, governance, id);
-                        case(_){};
-                    }
+                for((arg,res) in arr.vals()){
+                    for(result in res.vals()){
+                        switch(result){
+                            case(#ok(?id)) await executeProposal(args, governance, id);
+                            case(_){};
+                        };
+                    };
 
                 };
             };
+            applyParentUpdate = func(p: P): P {{p with governance = Stables.fromPartialStableGovernance(governance)}};
+            toStruct = func(property: Property, idOpt: ?Nat, beforeOrAfter: UnstableTypes.BeforeOrAfter): Types.ToStruct<K> {
+                switch(idOpt){
+                    case(?id) #Proposal(PropHelper.getElementByKey(property.governance.proposals, id, Nat.equal));
+                    case(null) #Err(idOpt, #NullId);
+                }
+            };
+            updateParentEventLog = PropHelper.updatePropertyEventLog;
+            toArgDomain = func(a: A): Types.What = #Governance(#Vote(a));
         };
-
-        await PropHelper.applyHandler(args, handler);
+        await PropHelper.applyHandler<P, K, A, T, StableT>(args, [arg], handler);
     };    
 
     func matchProposalCategory(el: Proposal, cats: ?[Types.ProposalCategoryFlag]): Bool {

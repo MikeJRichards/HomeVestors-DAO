@@ -44,19 +44,19 @@ module {
     type UpdateError = Types.UpdateError;
     type MarketplaceOptions = Types.MarketplaceOptions;
     type NftMarketplacePartialUnstable = UnstableTypes.NftMarketplacePartialUnstable;
-    type Arg = Types.Arg;
+    type Arg = Types.Arg<Property>;
     type ListingUnstable = UnstableTypes.ListingUnstable;
     type Actions<C, U> = Types.Actions<C, U>;
     type What = Types.What;
     type TransferFromArg = Types.TransferFromArg;
-    type CrudHandler<C, U, T, StableT> = UnstableTypes.CrudHandler<C, U, T, StableT>;
-    type Handler<T, StableT> = UnstableTypes.Handler<T, StableT>;
+    type CrudHandler<K, C, U, T, StableT> = UnstableTypes.CrudHandler<K, C, U, T, StableT>;
+    type Handler<P, K, A, T, StableT> = UnstableTypes.Handler<P, K, A, T, StableT>;
 
     public func createTimers<system>(arg: Arg, m: NftMarketplacePartialUnstable, arr: [Result.Result<?Nat, (?Nat, UpdateError)>], create: Bool): async (){
         let addTimer = func<system>(id: Nat, delay: Nat, what: What):(){
             let timerId = setTimer<system>(#nanoseconds delay, func () : async () {
                 let whatWithPropertyId: Types.WhatWithPropertyId = {
-                   propertyId = arg.property.id;
+                   propertyId = arg.parent.id;
                    what; 
                 };
                 ignore arg.handlePropertyUpdate(whatWithPropertyId, arg.caller);
@@ -93,18 +93,18 @@ module {
         };
     };
 
-    public func bulkTransferToLaunch(canisterId: Principal, arr: [(?Nat, Result.Result<ListingUnstable, UpdateError>)], stageTokens: (Nat, [(Nat, Result.Result<(), UpdateError>)]) -> ()): async [(?Nat, Result.Result<(), UpdateError>)]{
-        let results = Buffer.Buffer<(?Nat, Result.Result<(), UpdateError>)>(0);
-        for((idOpt, res) in arr.vals()){
+    public func bulkTransferToLaunch<A>(canisterId: Principal, arr: [(?Nat, A, Result.Result<ListingUnstable, UpdateError>)], stageTokens: (Nat, [(Nat, Result.Result<(), UpdateError>)]) -> ()): async [Result.Result<(), UpdateError>]{
+        let results = Buffer.Buffer<Result.Result<(), UpdateError>>(0);
+        for((idOpt, arg, res) in arr.vals()){
             switch(idOpt, res){
-                case(null, _) results.add((null, #err(#InvalidElementId)));
-                case(?_, #err(e)) results.add((idOpt, #err(e)));
+                case(null, _) results.add(#err(#InvalidElementId));
+                case(?_, #err(e)) results.add(#err(e));
                 case(?id, #ok(el)){
                     switch(el){
                         case(#LaunchedProperty(launch)){
                             let args = Buffer.Buffer<Types.TransferArg>(0);
                             let tokenIds = await NFT.tokensOf(canisterId, {owner = Principal.fromText("vq2za-kqaaa-aaaas-amlvq-cai"); subaccount = null}, null, ?launch.maxListed);
-                            if(tokenIds.size() == 0) results.add(idOpt, #err(#GenericError))
+                            if(tokenIds.size() == 0) results.add(#err(#GenericError))
                             else{
                                 for(tokenId in tokenIds.vals()){
                                     args.add(NFT.createTransferArg(tokenId, null, {owner= Principal.fromText("vq2za-kqaaa-aaaas-amlvq-cai"); subaccount = null}));
@@ -126,7 +126,7 @@ module {
                                         };
                                         tokenTransferResults.add((tokenIds[i], result));
                                     };
-                                    results.add(idOpt, #ok());
+                                    results.add(#ok());
                                     stageTokens(id, Buffer.toArray(tokenTransferResults));
                                 }
                                 else {
@@ -135,7 +135,7 @@ module {
                                         case(?#Err(e)) #err(#Transfer(?e));
                                         case(?#Ok(_)) #ok();
                                     };
-                                    results.add(idOpt, result);
+                                    results.add(result);
                                 };
                             };
                         };
@@ -147,83 +147,93 @@ module {
         Buffer.toArray(results);
     };
 
-    public func bulkTransferFromSeller(canisterId: Principal, arr: [(?Nat, Result.Result<ListingUnstable, UpdateError>)]): async [(?Nat, Result.Result<(), UpdateError>)]{
+    public func bulkTransferFromSeller<A>(canisterId: Principal, arr: [(?Nat, A, Result.Result<ListingUnstable, UpdateError>)]): async [Result.Result<(), UpdateError>] {
         let args = Buffer.Buffer<TransferFromArg>(0);
-        let results = Buffer.Buffer<(?Nat, Result.Result<(), UpdateError>)>(0);
-        let ids = Buffer.Buffer<Nat>(0);
-        for((id, res) in arr.vals()){
-            switch(id, res){
-                case(null, _) results.add((null, #err(#InvalidElementId)));
-                case(?id, #err(e)) results.add((null, #err(e)));
-                case(?id, #ok(el)){
-                    ids.add(id);
-                    switch(el){
-                        case(#LiveFixedPrice(fixedPrice)) args.add(NFT.createTransferFromArg(fixedPrice.seller, {owner = Principal.fromText("vq2za-kqaaa-aaaas-amlvq-cai"); subaccount = null}, fixedPrice.tokenId));
-                        case(#LiveAuction(auction)) args.add(NFT.createTransferFromArg(auction.seller, {owner = Principal.fromText("vq2za-kqaaa-aaaas-amlvq-cai"); subaccount = null}, auction.tokenId));
-                        case(_){};
-                    }
-                }
-            }
+        let results = Buffer.Buffer<Result.Result<(), UpdateError>>(0);
+        let acc = { 
+            owner = Principal.fromText("vq2za-kqaaa-aaaas-amlvq-cai"); 
+            subaccount = null 
+        };
+        for ((_, arg, res) in arr.vals()) {
+            switch res {
+                case (#err(e)) results.add(#err(e));
+                case (#ok(el)) {
+                    switch (el) {
+                        case (#LiveFixedPrice(fixedPrice)) args.add(NFT.createTransferFromArg(fixedPrice.seller, acc, fixedPrice.tokenId));
+                        case (#LiveAuction(auction)) args.add(NFT.createTransferFromArg(auction.seller, acc, auction.tokenId));
+                        case (_) {};
+                    };
+                };
+            };
         };
 
         let transferResults = await NFT.transferFromBulk(canisterId, Buffer.toArray(args));
-        assert(ids.size() == transferResults.size()); // Sanity check
-        for(i in transferResults.keys()){
-            let result : Result.Result<(), UpdateError> = switch(transferResults.get(i)){
-                case(null) #err(#Transfer(null));
-                case(?#Err(e)) #err(#Transfer(?e));
-                case(?#Ok(_)) #ok();
+
+        for (r in transferResults.vals()) {
+            let result: Result.Result<(), UpdateError> = switch (r) {
+                case (null) #err(#Transfer(null));
+                case (?#Err(e)) #err(#Transfer(?e));
+                case (?#Ok(_)) #ok();
             };
-            results.add((?ids.get(i), result));
+            results.add(result);
         };
+
         Buffer.toArray(results);
     };
 
-    public func bulkTransferToSeller(canisterId: Principal, arr: [(?Nat, Result.Result<ListingUnstable, UpdateError>)]): async [(?Nat, Result.Result<(), UpdateError>)]{
+    public func bulkTransferToSeller<A>(canisterId: Principal, arr: [(?Nat, A, Result.Result<ListingUnstable, UpdateError>)]): async [Result.Result<(), UpdateError>] {
         let args = Buffer.Buffer<Types.TransferArg>(0);
-        let results = Buffer.Buffer<(?Nat, Result.Result<(), UpdateError>)>(0);
-        let ids = Buffer.Buffer<Nat>(0);
-        for((id, res) in arr.vals()){
-            switch(id, res){
-                case(null, _) results.add((null, #err(#InvalidElementId)));
-                case(?id, #err(e)) results.add((null, #err(e)));
-                case(?id, #ok(el)){
-                    ids.add(id);
-                    switch(el){
-                        case(#LiveFixedPrice(fixedPrice)) args.add(NFT.createTransferArg(fixedPrice.tokenId, null, fixedPrice.seller));
-                        case(#LiveAuction(auction)) args.add(NFT.createTransferArg(auction.tokenId, null, auction.seller));
-                        case(_){};
+        let results = Buffer.Buffer<Result.Result<(), UpdateError>>(0);
+
+        for ((_, _, res) in arr.vals()) {
+            switch res {
+                case (#err(e)) results.add(#err(e));
+                case (#ok(el)) {
+                    switch (el) {
+                        case (#LiveFixedPrice(fixedPrice)) args.add(NFT.createTransferArg(fixedPrice.tokenId, null, fixedPrice.seller));
+                        case (#LiveAuction(auction)) args.add(NFT.createTransferArg(auction.tokenId, null, auction.seller));
+                        case (_) {};
                     };
-                }
-            }
+                };
+            };
         };
 
         let transferResults = await NFT.transferBulk(canisterId, Buffer.toArray(args));
-        assert(ids.size() == transferResults.size()); // Sanity check
-        for(i in transferResults.keys()){
-            let result : Result.Result<(), UpdateError> = switch(transferResults[i]){
-                case(null) #err(#Transfer(null));
-                case(?#Err(e)) #err(#Transfer(?e));
-                case(?#Ok(_)) #ok();
+
+        for (r in transferResults.vals()) {
+            let result: Result.Result<(), UpdateError> = switch (r) {
+                case (null) #err(#Transfer(null));
+                case (?#Err(e)) #err(#Transfer(?e));
+                case (?#Ok(_)) #ok();
             };
-            results.add((?ids.get(i), result));
+            results.add(result);
         };
+
         Buffer.toArray(results);
     };
 
 
+
     public func createFixedPriceHandlers(arg: Arg, action: Actions<FixedPriceCArg, FixedPriceUArg>):async UpdateResult {
+        type P = Property;
+        type K = Nat;
         type C = FixedPriceCArg;
         type U = FixedPriceUArg;
+        type A = Types.AtomicAction<K, C, U>;
         type T = ListingUnstable;
         type StableT = Listing;
-        let marketplace = Stables.toPartialStableNftMarketplace(arg.property.nftMarketplace);
-        
-        let crudHandler : CrudHandler<C, U, T, StableT> = {
+        type S = UnstableTypes.NftMarketplacePartialUnstable;
+        let marketplace = Stables.toPartialStableNftMarketplace(arg.parent.nftMarketplace);
+        let map = marketplace.listings;
+        var tempId = marketplace.listId + 1;
+        let crudHandler : CrudHandler<K, C, U, T, StableT> = {
             map = marketplace.listings;
-            var id = marketplace.listId;
-            setId = func(id: Nat) = marketplace.listId := id;
-            
+            getId = func() = marketplace.listId;
+            createTempId = func(){
+              tempId += 1;
+              tempId;
+            };
+            incrementId = func(){marketplace.listId += 1;};
             assignId = func(id: Nat, el: StableT): (Nat, StableT){
                 switch(el){
                     case(#LiveFixedPrice(element)) return (id, #LiveFixedPrice({element with id = id}));
@@ -292,12 +302,11 @@ module {
             };
         };
 
-        let handler: Handler<T, StableT> = {
-            toStruct = PropHelper.toStruct<C, U, T, StableT>(action, crudHandler, func(stableT: ?StableT) = #NftMarketplace(stableT), func(property: Property) = property.nftMarketplace.listings);
-            validateAndPrepare = func () = PropHelper.getValid<C, U, T, StableT>(action, crudHandler);
-            
-            asyncEffect = func(arr: [(?Nat, Result.Result<T, UpdateError>)]): async [(?Nat, Result.Result<(), UpdateError>)] {
-                if(arg.testing) return PropHelper.runNoAsync<T>(arr);
+        let handler: Handler<P, K, A, T, StableT> = {
+            isConflict =  PropHelper.isConflictOnNatId();
+            validateAndPrepare = func(parent: P, arg: Types.AtomicAction<K, C, U>) = PropHelper.getValid<K, C, U, T, StableT>(arg, crudHandler);
+            asyncEffect = func(arr: [(?K, A, Result.Result<T, UpdateError>)]): async [Result.Result<(), UpdateError>] {
+                if(arg.testing) return PropHelper.runNoAsync<K, A, T>(arr);
                 switch(action){
                     case(#Create(_)) await bulkTransferFromSeller(marketplace.collectionId, arr);
                     case(#Update(_)) PropHelper.runNoAsync(arr);//Call no async effect here
@@ -305,7 +314,7 @@ module {
                 };
             };
 
-            applyAsyncEffects = func(idOpt: ?Nat, res: Result.Result<T, Types.UpdateError>): [(?Nat, Result.Result<StableT, UpdateError>)]{
+            applyAsyncEffects = func(idOpt: ?K, res: Result.Result<T, Types.UpdateError>): [(?K, Result.Result<StableT, UpdateError>)]{
                 switch(idOpt, res){
                     case(null, _) return [(null, #err(#InvalidElementId))];
                     case(?id, #ok(el)) return [(idOpt, #ok(Stables.toStableListing(el)))];
@@ -313,34 +322,45 @@ module {
                 };
             };
 
-            applyUpdate = func(id: ?Nat, el: StableT) = PropHelper.applyUpdate<C, U, T, StableT>(action, id, el, crudHandler);
+            applyUpdate = func(id: ?K, arg:A, el: StableT) = PropHelper.applyUpdate<K, C, U, T, StableT>(arg, id, el, crudHandler);
 
-            getUpdate = func() = #NFTMarketplace(Stables.fromPartialStableNftMarketplace(marketplace));
-
-            finalAsync = func(arr: [Result.Result<?Nat, (?Nat, UpdateError)>]): async (){
+            finalAsync = func(arr: [(A, [Result.Result<?Nat, (?Nat, UpdateError)>])]): async (){
                 if(arg.testing) return;
-                switch(action){
-                    case(#Create(_) or #Update(_)) ignore createTimers(arg, marketplace, arr, true);
-                    case(#Delete(_)) ignore createTimers(arg, marketplace, arr, false);
+                for((args, res) in arr.vals()){
+                    switch(args){
+                        case(#Create(_) or #Update(_)) ignore createTimers(arg, marketplace, res, true);
+                        case(#Delete(_)) ignore createTimers(arg, marketplace, res, false);
+                    }
                 }
             };
+            toStruct = PropHelper.toStruct<P, K, C, U, T, StableT>(func(stableT: ?StableT) = #NftMarketplace(stableT), func(property: Property) = property.nftMarketplace.listings, Nat.equal);
+            applyParentUpdate = func(property: P): P {{property with nftMarketplace = Stables.fromPartialStableNftMarketplace(marketplace)}};
+            updateParentEventLog = PropHelper.updatePropertyEventLog;
+            toArgDomain = PropHelper.atomicActionToWhat(func(a: Types.Actions<C,U>): Types.What = #NftMarketplace(#FixedPrice(a)));
         };
-
-        await PropHelper.applyHandler<T, StableT>(arg, handler);
+        await PropHelper.applyHandler<P, K, A, T, StableT>(arg, PropHelper.makeAutomicAction(action, map.size()), handler);
     };
 
     public func createAuctionHandlers(arg: Arg, action: Actions<AuctionCArg, AuctionUArg>): async UpdateResult {
+        type P = Property;
+        type K = Nat;
         type C = AuctionCArg;
         type U = AuctionUArg;
+        type A = Types.AtomicAction<K, C, U>;
         type T = ListingUnstable;
         type StableT = Listing;
-        let marketplace = Stables.toPartialStableNftMarketplace(arg.property.nftMarketplace);
-        
-        let crudHandler : CrudHandler<C, U, T, StableT> = {
-            map = marketplace.listings;
-            var id = marketplace.listId;
-            setId = func(id: Nat) = marketplace.listId := id;
-            
+        type S = UnstableTypes.NftMarketplacePartialUnstable;
+        let marketplace = Stables.toPartialStableNftMarketplace(arg.parent.nftMarketplace);
+        let map =  marketplace.listings;
+        var tempId = marketplace.listId + 1;
+        let crudHandler : CrudHandler<K, C, U, T, StableT> = {
+            map;
+            getId = func() = marketplace.listId;
+            createTempId = func(){
+              tempId += 1;
+              tempId;
+            };
+            incrementId = func(){marketplace.listId += 1;};
             assignId = func(id: Nat, el: StableT): (Nat, StableT){
                 switch(el){
                     case(#LiveAuction(element)){
@@ -431,12 +451,13 @@ module {
         let mockTimerIds = HashMap.HashMap<Nat, Nat>(0, Nat.equal, PropHelper.natToHash);
 
 
-        let handler: Handler<T, StableT> = {
-            toStruct = PropHelper.toStruct<C, U, T, StableT>(action, crudHandler, func(stableT: ?StableT) = #NftMarketplace(stableT), func(property: Property) = property.nftMarketplace.listings);
-            validateAndPrepare = func() = PropHelper.getValid<C, U, T, StableT>(action, crudHandler);
+        let handler: Handler<P, K, A, T, StableT> = {
+            isConflict =  PropHelper.isConflictOnNatId();
+            validateAndPrepare = func(parent: P, arg: Types.AtomicAction<K, C, U>) = PropHelper.getValid<K, C, U, T, StableT>(arg, crudHandler);
+
             
-            asyncEffect = func(arr: [(?Nat, Result.Result<T, UpdateError>)]): async [(?Nat, Result.Result<(), UpdateError>)] {
-                if(arg.testing) return PropHelper.runNoAsync<T>(arr);
+            asyncEffect = func(arr: [(?K, A, Result.Result<T, UpdateError>)]): async [Result.Result<(), UpdateError>] {
+                if(arg.testing) return PropHelper.runNoAsync<K, A, T>(arr);
                 switch(action){
                     case(#Create(_)) await bulkTransferFromSeller(marketplace.collectionId, arr);
                     case(#Update(_)) PropHelper.runNoAsync(arr);//Call no async effect here
@@ -444,43 +465,54 @@ module {
                 };
             };
 
-            applyAsyncEffects = func(id: ?Nat, res: Result.Result<T, Types.UpdateError>): [(?Nat, Result.Result<StableT, UpdateError>)]{
+            applyAsyncEffects = func(id: ?K, res: Result.Result<T, Types.UpdateError>): [(?K, Result.Result<StableT, UpdateError>)]{
                 switch(id, res){
                     case(null, _) return [(null, #err(#InvalidElementId))];
                     case(?id, #ok(el)) return [(?id, #ok(Stables.toStableListing(el)))];
                     case(?id, #err(e)) return [(?id, #err(e))];
                 };
             };
+            applyUpdate = func(id: ?K, arg:A, el: StableT) = PropHelper.applyUpdate<K, C, U, T, StableT>(arg, id, el, crudHandler);
 
-            applyUpdate = func(id: ?Nat, el: StableT) = PropHelper.applyUpdate(action, id, el, crudHandler);
-
-            getUpdate = func() = #NFTMarketplace(Stables.fromPartialStableNftMarketplace(marketplace));
-
-            finalAsync = func(arr: [Result.Result<?Nat, (?Nat, UpdateError)>]): async (){
+            finalAsync = func(arr: [(A, [Result.Result<?Nat, (?Nat, UpdateError)>])]): async (){
                 if(arg.testing) return;
-                switch(action){
-                    case(#Create(_) or #Update(_)) await createTimers(arg, marketplace, arr, true);
-                    case(#Delete(_)) await createTimers(arg, marketplace, arr, false);
+                for((args, res) in arr.vals()){
+                    switch(args){
+                        case(#Create(_) or #Update(_)) ignore createTimers(arg, marketplace, res, true);
+                        case(#Delete(_)) ignore createTimers(arg, marketplace, res, false);
+                    }
                 }
             };
+            toStruct = PropHelper.toStruct<P, K, C, U, T, StableT>(func(stableT: ?StableT) = #NftMarketplace(stableT), func(property: Property) = property.nftMarketplace.listings, Nat.equal);
+            applyParentUpdate = func(property: P): P {{property with nftMarketplace = Stables.fromPartialStableNftMarketplace(marketplace)}};
+            updateParentEventLog = PropHelper.updatePropertyEventLog;
+            toArgDomain = PropHelper.atomicActionToWhat(func(a: Types.Actions<C,U>): Types.What = #NftMarketplace(#Auction(a)));
         };
-
-        await PropHelper.applyHandler<T, StableT>(arg, handler);
+        await PropHelper.applyHandler<P, K, A, T, StableT>(arg, PropHelper.makeAutomicAction(action, map.size()), handler);
     };
 
     public func createLaunchHandlers(arg: Arg, action: Actions<Types.LaunchCArg, Types.LaunchUArg>): async UpdateResult {
+        type P = Property;
+        type K = Nat;
         type C = Types.LaunchCArg;
         type U = Types.LaunchUArg;
+        type A = Types.AtomicAction<K, C, U>;
         type T = ListingUnstable;
         type StableT = Listing;
-        let marketplace = Stables.toPartialStableNftMarketplace(arg.property.nftMarketplace);
+        type S = UnstableTypes.NftMarketplacePartialUnstable;
+        let marketplace = Stables.toPartialStableNftMarketplace(arg.parent.nftMarketplace);
         let parentChildId = HashMap.HashMap<Nat, Buffer.Buffer<Nat>>(0, Nat.equal, PropHelper.natToHash);
+        let map = marketplace.listings;
+        var tempId = marketplace.listId + 1;
 
-
-        let crudHandler : CrudHandler<C, U, T, StableT> = {
-            map = marketplace.listings;
-            var id = marketplace.listId;
-            setId = func(id: Nat) = marketplace.listId := id;
+        let crudHandler : CrudHandler<K, C, U, T, StableT> = {
+            map;
+            getId = func() = marketplace.listId;
+            createTempId = func(){
+              tempId += 1;
+              tempId;
+            };
+            incrementId = func(){marketplace.listId += 1;};
             
             assignId = func(id: Nat, el: StableT): (Nat, StableT){
                 switch(el){
@@ -602,21 +634,21 @@ module {
         };
 
 
-        let handler: Handler<T, StableT> = {
-            toStruct = PropHelper.toStruct<C, U, T, StableT>(action, crudHandler, func(stableT: ?StableT) = #NftMarketplace(stableT), func(property: Property) = property.nftMarketplace.listings);
-            validateAndPrepare = func() = PropHelper.getValid(action, crudHandler);
+        let handler: Handler<P, K, A, T, StableT> = {
+            isConflict =  PropHelper.isConflictOnNatId();
+            validateAndPrepare = func(parent: P, arg: Types.AtomicAction<K, C, U>) = PropHelper.getValid<K, C, U, T, StableT>(arg, crudHandler);
             
-            asyncEffect = func(arr: [(?Nat, Result.Result<T, UpdateError>)]): async [(?Nat, Result.Result<(), UpdateError>)] {
-                if(arg.testing) return PropHelper.runNoAsync<T>(arr);
+            asyncEffect = func(arr: [(?K, A, Result.Result<T, UpdateError>)]): async [Result.Result<(), UpdateError>] {
+                if(arg.testing) return PropHelper.runNoAsync<K, A, T>(arr);
                 switch(action){
-                    case(#Create(_)) await bulkTransferToLaunch(marketplace.collectionId, arr, addChildren);
+                    case(#Create(_)) await bulkTransferToLaunch<A>(marketplace.collectionId, arr, addChildren);
                     case(#Update(_)) PropHelper.runNoAsync(arr);//Call no async effect here
                     case(#Delete(_)) PropHelper.runNoAsync(arr);
                 };
             };
 
-            applyAsyncEffects = func(id: ?Nat, res: Result.Result<T, Types.UpdateError>): [(?Nat, Result.Result<StableT, UpdateError>)]{
-                let elements = Buffer.Buffer<(?Nat, Result.Result<StableT, UpdateError>)>(0);
+            applyAsyncEffects = func(id: ?K, res: Result.Result<T, Types.UpdateError>): [(?K, Result.Result<StableT, UpdateError>)]{
+                let elements = Buffer.Buffer<(?K, Result.Result<StableT, UpdateError>)>(0);
                 switch(id, res, action){
                     case(null, _, _) elements.add((null, #err(#InvalidElementId)));
                     case(?parentId, #ok(#LaunchedProperty(launch)), #Create(_)){
@@ -683,48 +715,54 @@ module {
                 Buffer.toArray(elements);
             };
 
-            applyUpdate = func(id: ?Nat, el: StableT) = PropHelper.applyUpdate(action, id, el, crudHandler);
+            applyUpdate = func(id: ?K, arg:A, el: StableT) = PropHelper.applyUpdate<K, C, U, T, StableT>(arg, id, el, crudHandler);
 
-            getUpdate = func() = #NFTMarketplace(Stables.fromPartialStableNftMarketplace(marketplace));
-
-            finalAsync = func(arr: [Result.Result<?Nat, (?Nat, UpdateError)>]): async (){
+            finalAsync = func(arr: [(A, [Result.Result<?K, (?K, UpdateError)>])]): async (){
                 if(arg.testing) return;
-                switch(action){
-                    case(#Create(_)){
-                        await createTimers(arg, marketplace, arr, true);
-                        var launched :?Types.Launch = null;
-                        let buffer = Buffer.Buffer<Nat>(0);
-                        for(res in arr.vals()){
-                            switch(res){
-                                case(#ok(?id)){
-                                    switch(marketplace.listings.get(id)){
-                                        case(?#LaunchedProperty(launch)) launched := ?launch;
-                                        case(_) buffer.add(id);
+                for((args, res) in arr.vals()){
+                    switch(args){
+                        case(#Create(_)){
+                            await createTimers(arg, marketplace, res, true);
+                            var launched :?Types.Launch = null;
+                            let buffer = Buffer.Buffer<Nat>(0);
+                            for(result in res.vals()){
+                                switch(result){
+                                    case(#ok(?id)){
+                                        switch(marketplace.listings.get(id)){
+                                            case(?#LaunchedProperty(launch)) launched := ?launch;
+                                            case(_) buffer.add(id);
+                                        };
                                     };
+                                    case(_){};
                                 };
-                                case(_){};
                             };
-                        };
-                        switch(launched){
-                            case(?launch) marketplace.listings.put(launch.id, #LaunchedProperty({launch with listIds = Buffer.toArray(buffer)}));
-                            case(null){};
-                        };
-                        
-                    }; 
-                    case(#Update(_)) await createTimers(arg, marketplace, arr, true);
-                    case(#Delete(_)) await createTimers(arg, marketplace, arr, false);
+                            switch(launched){
+                                case(?launch) marketplace.listings.put(launch.id, #LaunchedProperty({launch with listIds = Buffer.toArray(buffer)}));
+                                case(null){};
+                            };
+
+                        }; 
+                        case(#Update(_)) await createTimers(arg, marketplace, res, true);
+                        case(#Delete(_)) await createTimers(arg, marketplace, res, false);
+                    }
                 }
             };
+            toStruct = PropHelper.toStruct<P, K, C, U, T, StableT>(func(stableT: ?StableT) = #NftMarketplace(stableT), func(property: Property) = property.nftMarketplace.listings, Nat.equal);
+            applyParentUpdate = func(property: P): P {{property with nftMarketplace = Stables.fromPartialStableNftMarketplace(marketplace)}};
+            updateParentEventLog = PropHelper.updatePropertyEventLog;
+            toArgDomain = PropHelper.atomicActionToWhat(func(a: Types.Actions<C,U>): Types.What = #NftMarketplace(#Launch(a)));
         };
 
-        await PropHelper.applyHandler<T, StableT>(arg, handler);
+        await PropHelper.applyHandler<P, K, A, T, StableT>(arg, PropHelper.makeAutomicAction(action, map.size()), handler);
     };
 
     public func createBidHandlers(arg: Arg, args: BidArg): async UpdateResult {
-        type C = BidArg;
+        type P = Property;
+        type K = Nat;
+        type A = BidArg;
         type T = ListingUnstable;
         type StableT = Listing;
-        let marketplace = Stables.toPartialStableNftMarketplace(arg.property.nftMarketplace);
+        let marketplace = Stables.toPartialStableNftMarketplace(arg.parent.nftMarketplace);
         let previousHighestBidder = HashMap.HashMap<Nat, Bid>(0, Nat.equal, PropHelper.natToHash);
 
         func verifyBid(arg: BidArg, bidMin: Nat, seller: Account, caller: Principal, endsAt: ?Int): Result.Result<Bid, UpdateError> {
@@ -736,18 +774,13 @@ module {
             #ok(bid)
         };
 
-        let handler: Handler<T, StableT> = {
-            toStruct = func(property: Property, idOpt: ?Nat, beforeOrAfter: UnstableTypes.BeforeOrAfter): Types.ToStruct {
-                let id = switch(idOpt){case(null) return #Err(idOpt, #NullId); case(?id) id;};
-                switch(marketplace.listings.get(id)){
-                    case(null) return #Err(idOpt, #InvalidElementId);
-                    case(?listing) return #NftMarketplace(?listing)
-                }
-            };
-            validateAndPrepare = func(): [(?Nat, Result.Result<T, Types.UpdateError>)]{
-                let createSoldFixedPrice = func(fixed: FixedPrice): Result.Result<SoldFixedPrice, [(?Nat, Result.Result<T, Types.UpdateError>)]> {
+        let handler: Handler<P, K, A, T, StableT> = {
+            isConflict =  func(arg1: A, arg2: A):Bool = arg1.listingId == arg2.listingId;
+            
+            validateAndPrepare = func(parent: P, args: A): (?K, A, Result.Result<T, Types.UpdateError>){
+                let createSoldFixedPrice = func(fixed: FixedPrice): Result.Result<SoldFixedPrice, (?K, A, Result.Result<T, Types.UpdateError>)> {
                     switch(verifyBid(args, fixed.price, fixed.seller, arg.caller, fixed.expiresAt)){
-                        case(#err(e)) return #err([(?args.listingId, #err(e))]);
+                        case(#err(e)) return #err(?args.listingId, args, #err(e));
                         case(#ok(bid)){
                             return #ok({
                                 fixed with
@@ -765,7 +798,7 @@ module {
                         switch(auction.highestBid){case(null){}; case(?bid)previousHighestBidder.put(args.listingId, bid)};
                         let minBidAmount = switch(auction.highestBid){case(?bid) bid.bidAmount + auction.bidIncrement; case(null) auction.startingPrice};
                         switch(verifyBid(args, minBidAmount, auction.seller, arg.caller, ?auction.endsAt)){
-                            case(#err(e)) return [(?args.listingId, #err(e))];
+                            case(#err(e)) return (?args.listingId,args, #err(e));
                             case(#ok(bid)){
                                 if(auction.buyNowPrice == ?bid.bidAmount){
                                     #SoldAuction({
@@ -787,14 +820,14 @@ module {
                             }
                         }
                     };
-                    case(null) return [(?args.listingId, #err(#InvalidElementId))];
-                    case(_) return [(?args.listingId, #err(#InvalidType))];
+                    case(null) return (?args.listingId, args, #err(#InvalidElementId));
+                    case(_) return (?args.listingId, args, #err(#InvalidType));
                 };
-                [(?args.listingId, #ok(Stables.fromStableListing(listing)))];
+                (?args.listingId, args, #ok(Stables.fromStableListing(listing)));
             };
             
-            asyncEffect = func(arr: [(?Nat, Result.Result<T, UpdateError>)]): async [(?Nat, Result.Result<(), UpdateError>)] {
-                if(arg.testing) return PropHelper.runNoAsync<T>(arr);
+            asyncEffect = func(arr: [(?K, A, Result.Result<T, UpdateError>)]): async [Result.Result<(), UpdateError>] {
+                if(arg.testing) return PropHelper.runNoAsync<K, A, T>(arr);
                 let calculateAmount = func(amount: Nat, royalty: ?Nat): Nat {
                     switch(royalty){
                         case(?royalty) if(amount > royalty) Nat.sub(amount, royalty) else 0;
@@ -807,8 +840,8 @@ module {
                     switch(await Tokens.transferFrom(asset, amount, seller, buyer)){case(#Ok(_)) {}; case(#Err(e)) return #err(#Transfer(?e))};
                     switch(await NFT.transfer(marketplace.collectionId, null, buyer, tokenId)){case(?#Ok(_)) return #ok(); case(?#Err(e)) return #err(#Transfer(?e)); case(null) return #err(#Transfer(null))};
                 };
-                let buffer = Buffer.Buffer<(?Nat, Result.Result<(), UpdateError>)>(0);
-                label processing for((id, res) in arr.vals()){
+                let buffer = Buffer.Buffer<Result.Result<(), UpdateError>>(0);
+                label processing for((id, args, res) in arr.vals()){
                     let result = switch(res){
                         case(#ok(#SoldLaunchFixedPrice(sold))) await soldTransfers(sold.bid.buyer, sold.tokenId, sold.quoteAsset, calculateAmount(sold.bid.bidAmount, sold.royaltyBps), sold.seller);
                         case(#ok(#SoldFixedPrice(sold))) await soldTransfers(sold.bid.buyer, sold.tokenId, sold.quoteAsset, calculateAmount(sold.bid.bidAmount, sold.royaltyBps), sold.seller);
@@ -822,31 +855,30 @@ module {
                         case(#ok(_)) #err(#InvalidType);
                         case(#err(e)) #err(e);
                     };
-                    buffer.add((id, result));
+                    buffer.add(result);
                 };
                 Buffer.toArray(buffer);
             };
 
-            applyAsyncEffects = func(id: ?Nat, res: Result.Result<T, Types.UpdateError>): [(?Nat, Result.Result<StableT, UpdateError>)]{
+            applyAsyncEffects = func(id: ?K, res: Result.Result<T, Types.UpdateError>): [(?K, Result.Result<StableT, UpdateError>)]{
                 switch(res){
                     case(#err(e)) [(id, #err(e))];
                     case(#ok(el)) [(id, #ok(Stables.toStableListing(el)))];
                 };
             };
 
-            applyUpdate = func(idOpt: ?Nat, el: StableT) : ?Nat {
+            applyUpdate = func(idOpt: ?K, args: A, el: StableT) : ?K {
                 switch(idOpt){
                     case(?id) {
-                        marketplace.listings.put(id, el);
-                        idOpt;
+                        marketplace.listings.put(args.listingId, el);
+                        ?args.listingId;
                     };
-                    case(null) idOpt;
+                    case(null) ?args.listingId;
                 }
             };
 
-            getUpdate = func() = #NFTMarketplace(Stables.fromPartialStableNftMarketplace(marketplace));
 
-            finalAsync = func(arr: [Result.Result<?Nat, (?Nat, UpdateError)>]): async (){
+            finalAsync = func(arr: [(A, [Result.Result<?Nat, (?Nat, UpdateError)>])]): async (){
                 if(arg.testing) return;
                 func createRefund(id: Nat, asset: AcceptedCryptos, to: Account, amount: Nat): async Types.Refund {
                     let result = await Tokens.transferFromBackend(asset, amount, to, null);
@@ -866,36 +898,46 @@ module {
                     };
                 };
 
-                for(res in arr.vals()){
-                    switch(res){
-                        case(#ok(?id)){
-                            switch(previousHighestBidder.get(id), marketplace.listings.get(id)){
-                                case(?previousBid, ?#LiveAuction(auction)){
-                                    let refund = await createRefund(auction.refunds.size(), auction.quoteAsset, previousBid.buyer, previousBid.bidAmount);
-                                    let updatedAuction = #LiveAuction({
-                                        auction with 
-                                        refunds = Array.append(auction.refunds, [refund]);
-                                    });
-                                    marketplace.listings.put(id, updatedAuction);
+                for((args, res) in arr.vals()){
+                    for(result in res.vals()){
+                        switch(result){
+                            case(#ok(?id)){
+                                switch(previousHighestBidder.get(id), marketplace.listings.get(id)){
+                                    case(?previousBid, ?#LiveAuction(auction)){
+                                        let refund = await createRefund(auction.refunds.size(), auction.quoteAsset, previousBid.buyer, previousBid.bidAmount);
+                                        let updatedAuction = #LiveAuction({
+                                            auction with 
+                                            refunds = Array.append(auction.refunds, [refund]);
+                                        });
+                                        marketplace.listings.put(id, updatedAuction);
+                                    };
+                                    case(?previousBid, ?#SoldAuction(auction)){
+                                        let refund = await createRefund(auction.refunds.size(), auction.quoteAsset, previousBid.buyer, previousBid.bidAmount);
+                                        let updatedAuction = #SoldAuction({
+                                            auction with 
+                                            refunds = Array.append(auction.refunds, [refund]);
+                                        });
+                                        marketplace.listings.put(id, updatedAuction);
+                                    };
+                                    case(_){};
                                 };
-                                case(?previousBid, ?#SoldAuction(auction)){
-                                    let refund = await createRefund(auction.refunds.size(), auction.quoteAsset, previousBid.buyer, previousBid.bidAmount);
-                                    let updatedAuction = #SoldAuction({
-                                        auction with 
-                                        refunds = Array.append(auction.refunds, [refund]);
-                                    });
-                                    marketplace.listings.put(id, updatedAuction);
-                                };
-                                case(_){};
                             };
-                        };
-                        case(_){};
+                            case(_){};
+                        }
                     }
                 }
             };
+            toStruct = func(property: Property, idOpt: ?K, beforeOrAfter: UnstableTypes.BeforeOrAfter): Types.ToStruct<K> {
+                switch(idOpt){
+                    case(?id) #NFTMarketplace(PropHelper.getElementByKey(property.nftMarketplace.listings, id, Nat.equal));
+                    case(null) #Err(idOpt, #NullId);
+                }
+            };
+            applyParentUpdate = func(property: P): P {{property with nftMarketplace = Stables.fromPartialStableNftMarketplace(marketplace)}};
+            updateParentEventLog = PropHelper.updatePropertyEventLog;
+            toArgDomain = func(a:A): Types.What = #Nftarketplace(#Bid(a));
         };
-
-        await PropHelper.applyHandler<T, StableT>(arg, handler);
+        await PropHelper.applyHandler<P, K, A, T, StableT>(arg, [args], handler);
     };
 
 

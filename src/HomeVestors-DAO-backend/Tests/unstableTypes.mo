@@ -13,24 +13,28 @@ module {
     public type BeforeOrAfter = {#Before; #After};
 
 
-    public type Handler<T, StableT> = {
-        toStruct: (Types.Property, ?Nat, BeforeOrAfter) -> Types.ToStruct;
-        validateAndPrepare: () -> [(?Nat, Result.Result<T, Types.UpdateError>)];
-        asyncEffect:  [(?Nat, Result.Result<T, UpdateError>)] -> async [(?Nat, Result.Result<(), UpdateError>)];
-        applyAsyncEffects: (?Nat, Result.Result<T, Types.UpdateError>) -> [(?Nat, Result.Result<StableT, Types.UpdateError>)];
-        applyUpdate: (?Nat, StableT) -> ?Nat;
-        getUpdate: () -> Update;
-        finalAsync: [Result.Result<?Nat, (?Nat, UpdateError)>] -> async ();
+    public type Handler<P, K, A, T, StableT> = {
+        isConflict: (A, A) -> Bool;
+        validateAndPrepare: (P, A) -> (?K, A, Result.Result<T, Types.UpdateError>);
+        asyncEffect:  [(?K, A, Result.Result<T, UpdateError>)] -> async [Result.Result<(), UpdateError>];
+        applyAsyncEffects: (?K, Result.Result<T, Types.UpdateError>) -> [(?K, Result.Result<StableT, Types.UpdateError>)];
+        applyUpdate: (?K, A, StableT) -> ?K;
+        finalAsync: [(A, [Result.Result<?K, (?K, UpdateError)>])] -> async ();
+        applyParentUpdate : P -> P;
+        toStruct: (P, ?K, BeforeOrAfter) -> Types.ToStruct<K>;
+        updateParentEventLog: (P, [Types.BeforeVsAfter<K>]) -> Types.UpdateResult;
+        toArgDomain: A -> What;
     };
 
-    public type CrudHandler<C, U, T, StableT> = {
-        map: HashMap.HashMap<Nat, StableT>;
-        var id: Nat;
-        setId: Nat -> ();
-        assignId: (Nat, StableT) -> (Nat, StableT); //increment property id, assign id to el, return (id, el)
-        delete: (Nat, StableT) -> ();
+    public type CrudHandler<K, C, U, T, StableT> = {
+        map: HashMap.HashMap<K, StableT>;
+        getId: () -> K;
+        createTempId: () -> K;
+        incrementId: () -> ();
+        assignId: (K, StableT) -> (K, StableT); //increment property id, assign id to el, return (id, el)
+        delete: (K, StableT) -> ();
         fromStable: StableT -> T;
-        create: (C, Nat) -> T;
+        create: (C, K) -> T;
         mutate: (U, T) -> T;
         validate: ?T -> Result.Result<T, UpdateError>;
     };
@@ -50,7 +54,7 @@ module {
         var operational: OperationalInfoUnstable;
         var nftMarketplace: NFTMarketplaceUnstable;
         var governance: GovernanceUnstable;
-        var updates: Buffer.Buffer<[Types.BeforeVsAfter]>;
+        var updates: Buffer.Buffer<[Types.BeforeVsAfter<Nat>]>;
     };
 
     public type PropertyDetailsUnstable = {

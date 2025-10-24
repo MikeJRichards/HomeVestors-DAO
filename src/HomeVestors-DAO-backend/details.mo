@@ -5,7 +5,7 @@ import Result "mo:base/Result";
 import PropHelper "propHelper";
 module {
     type SimpleHandler<T> = UnstableTypes.SimpleHandler<T>;
-    type Handler<T, StableT> = UnstableTypes.Handler<T, StableT>;
+    type Handler<P, K, A, T, StableT> = UnstableTypes.Handler<P, K, A, T, StableT>;
     type AdditionalDetails = Types.AdditionalDetails;
     type PhysicalDetails = Types.PhysicalDetails;
     type PropertyDetails = Types.PropertyDetails;
@@ -13,13 +13,20 @@ module {
     type Property = Types.Property;
     type PropertyUnstable = UnstableTypes.PropertyUnstable;
     type UpdateError = Types.UpdateError;
+    type Arg = Types.Arg<Property>;
+    type Actions<C,U> = Types.Actions<C,U>;
+    type CrudHandler<K, C, U, T, StableT> = UnstableTypes.CrudHandler<K, C, U, T, StableT>;
 
-  public func additionalDetailsHandler(args: Arg, arg: Types.AdditionalDetailsUArg): async UpdateResult {
-    type U = Types.AdditionalDetailsUArg;
+  public func additionalDetailsHandler(args: Arg,  arg: Types.AdditionalDetailsUArg): async UpdateResult {
+    type P = Property;
+    type K = Nat;
+    type A = Types.AdditionalDetailsUArg;
     type T = UnstableTypes.AdditionalDetailsUnstable;
     type StableT = AdditionalDetails;
+    var details = Stables.fromStableAdditionalDetails(args.parent.details.additional);
 
-    func mutateAdditionalDetails(arg: U, details: T): T {
+    func mutateAdditionalDetails(arg: A, property: P): T {
+      details := Stables.fromStableAdditionalDetails(property.details.additional);
       details.crimeScore := PropHelper.get(arg.crimeScore, details.crimeScore);
       details.schoolScore := PropHelper.get(arg.schoolScore, details.schoolScore);
       details.affordability := PropHelper.get(arg.affordability, details.affordability);
@@ -33,25 +40,29 @@ module {
       #ok(details);
     };
     
-    let handler = PropHelper.makeFlatHandler<U, T, StableT>(
-      arg,
-      Stables.fromStableAdditionalDetails(args.property.details.additional),
+    let handler = PropHelper.makeFlatHandler<P, K, A, T, StableT>(
       mutateAdditionalDetails,
       validateAdditionalDetails,
       Stables.toStableAdditionalDetails,
-      func(el: StableT) = #Details({ args.property.details with additional =el}),
-      func(property: Property) = #AdditionalDetails(?property.details.additional)
+      func(p: P):Types.ToStruct<K>{#AdditionalDetails(?p.details.additional)},
+      null,
+      func(p: P):P {{p with details = {p.details with additional = Stables.toStableAdditionalDetails(details)}}},
+      PropHelper.updatePropertyEventLog,
+      func(arg: A) = #AdditionalDetails(arg)
     );
     
-    await PropHelper.applyHandler(args, handler);
+    await PropHelper.applyHandler(args, [arg], handler);
   };
 
   public func physicalDetailsHandler(args: Arg, arg: Types.PhysicalDetailsUArg): async UpdateResult {
-    type U = Types.PhysicalDetailsUArg;
+    type P = Property;
+    type K = Nat;
+    type A = Types.PhysicalDetailsUArg;
     type T = UnstableTypes.PhysicalDetailsUnstable;
     type StableT = PhysicalDetails;
-    
-    let mutate = func(arg: U, details: T): T{
+    var details = Stables.fromStablePhysicalDetails(args.parent.details.physical);
+    let mutate = func(arg: A, property: P): T{
+      details := Stables.fromStablePhysicalDetails(property.details.physical);
       details.lastRenovation := PropHelper.get(arg.lastRenovation, details.lastRenovation);
       details.yearBuilt := PropHelper.get(arg.yearBuilt, details.yearBuilt);
       details.squareFootage := PropHelper.get(arg.squareFootage, details.squareFootage);
@@ -67,25 +78,30 @@ module {
       return #ok(physicalDetails);
     };
 
-    let handler = PropHelper.makeFlatHandler<U, T, StableT>(
-      arg,
-      Stables.fromStablePhysicalDetails(args.property.details.physical),
+    let handler = PropHelper.makeFlatHandler<P,K, A, T, StableT>(
       mutate,
       validate,
       Stables.toStablePhysicalDetails,
-      func(el: StableT) = #Details({ args.property.details with physical =el}),
-      func(property: Property) = #PhysicalDetails(?property.details.physical)
+      func(p: P):Types.ToStruct<K>{#PhysicalDetails(?p.details.physical)},
+      null,
+      func(p: P):P {{p with details = {p.details with physical = Stables.toStablePhysicalDetails(details)}}},
+      PropHelper.updatePropertyEventLog,
+      func(arg: A) = #PhysicalDetails(arg)
     );
 
-    await PropHelper.applyHandler(args, handler);
+    await PropHelper.applyHandler(args, [arg], handler);
   };
 
     public func descriptionHandler(args: Arg, arg: Text): async UpdateResult {
-      type U = Text;
+      type P = Property;
+      type K = Nat;
+      type A = Text;
       type T = Text;
       type StableT = Text;
 
-      let mutate = func(arg: U, _:T): T{
+      var description = args.parent.details.misc.description;
+      let mutate = func(arg: A, property: P): T{
+        description := property.details.misc.description;
         arg;
       };
 
@@ -94,35 +110,42 @@ module {
         return #ok(arg);
       };
 
-      let handler = PropHelper.makeFlatHandler<U, T, StableT>(
-        arg,
-        args.property.details.misc.description,
+      let handler = PropHelper.makeFlatHandler<P, K, A, T, StableT>(
         mutate,
         validate,
         func(el:Text) = el,
-        func(el: StableT) = #Details({ args.property.details with misc ={args.property.details.misc with description = el }}),
-        func(property: Property) = #Description(?property.details.misc.description)
+        func(p: P):Types.ToStruct<K>{#Description(?p.details.misc.description)},
+        null,
+        func(p: P):P {{p with details = {p.details with misc = {p.details.misc with description = description}}}},
+        PropHelper.updatePropertyEventLog,
+        func(arg: A) = #Description(arg)
       );
 
-      await PropHelper.applyHandler(args, handler);
+      await PropHelper.applyHandler(args, [arg], handler);
     };
 
 
-    type Arg = Types.Arg;
-    type Actions<C,U> = Types.Actions<C,U>;
-    type CrudHandler<C, U, T, StableT> = UnstableTypes.CrudHandler<C, U, T, StableT>;
+    
     public func createImageHandler(args: Arg, action: Actions<Text, Text>): async UpdateResult {
+      type P = Property;
+      type K = Nat;
       type C = Text;
       type U = Text;
+      type A = Types.AtomicAction<K, C, U>;
       type T = Text;
       type StableT = Text;
       type S = UnstableTypes.MiscellaneousPartialUnstable;
-      let misc = Stables.toPartialStableMiscellaneous(args.property.details.misc);
+      let misc = Stables.toPartialStableMiscellaneous(args.parent.details.misc);
       let map = misc.images;
-      let crudHandler: CrudHandler<C, U, T, StableT> = {
+      var tempId = misc.imageId + 1;
+      let crudHandler: CrudHandler<K, C, U, T, StableT> = {
         map;
-        var id = misc.imageId;
-        setId = func(id: Nat) = misc.imageId := id;
+        getId = func() = misc.imageId;
+        createTempId = func(){
+          tempId += 1;
+          tempId;
+        };
+        incrementId = func(){misc.imageId += 1;};
         assignId = func(id: Nat, el: StableT) = (id, el);
         delete = PropHelper.makeDelete(map);
         fromStable = func(el: T) = el;
@@ -137,8 +160,18 @@ module {
         }
       };      
   
-      let handler = PropHelper.generateGenericHandler<C, U, T, StableT, S>(crudHandler, action, func(el: Text) = el, func(s: S) = #Details({args.property.details with misc = Stables.fromPartialStableMiscellaneous(s)}), misc, func(stableT: ?StableT) = #Images(stableT), func(property: Property) = property.details.misc.images);
-      await PropHelper.applyHandler<T, StableT>(args, handler);
+      let handler = PropHelper.generateGenericHandler<P, Nat, C, U, T, StableT, S>(
+        crudHandler,  
+        func(el: T):StableT{el}, 
+        func(s: ?StableT) = #Images(s), 
+        func(p: P) = p.details.misc.images,
+        func(id1:K, id2:K)= id1 == id2,
+        PropHelper.isConflictOnNatId(),
+        func(property: P){{property with details = {property.details with misc = Stables.fromPartialStableMiscellaneous(misc)}}},
+        PropHelper.updatePropertyEventLog,
+        PropHelper.atomicActionToWhat(func(a: Types.Actions<C,U>): Types.What = #Images(a))
+      );
+      await PropHelper.applyHandler<P, K, A, T, StableT>(args, PropHelper.makeAutomicAction(action, map.size()), handler);
     };
 
 }

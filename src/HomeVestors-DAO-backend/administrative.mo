@@ -12,7 +12,7 @@ import Stables "Tests/stables";
 
 module {
     type AdministrativeInfo = Types.AdministrativeInfo;
-    type Handler<T, StableT> = UnstableTypes.Handler<T, StableT>;
+    type Handler<P, K, A, T, StableT> = UnstableTypes.Handler<P, K, A, T, StableT>;
     type InsurancePolicyCArg = Types.InsurancePolicyCArg;
     type InsurancePolicyUArg = Types.InsurancePolicyUArg;
     type InsurancePolicyUnstable = UnstableTypes.InsurancePolicyUnstable;
@@ -25,6 +25,11 @@ module {
     type Property = Types.Property;
     type PropertyUnstable = UnstableTypes.PropertyUnstable;
     type UpdateError = Types.UpdateError;
+    type Arg = Types.Arg<Property>;
+    type UpdateResult = Types.UpdateResult;
+    type Actions<C,U> = Types.Actions<C,U>;
+    type CrudHandler<K, C, U, T, StableT> = UnstableTypes.CrudHandler<K, C, U, T, StableT>;
+
 
     public func createAdministrativeInfo(): AdministrativeInfo {
         {
@@ -40,25 +45,29 @@ module {
 
     
 
-    type Arg = Types.Arg;
-    type UpdateResult = Types.UpdateResult;
-    type Actions<C,U> = Types.Actions<C,U>;
-    type CrudHandler<C, U, T, StableT> = UnstableTypes.CrudHandler<C, U, T, StableT>;
-
+   
 
 
     public func createInsuranceHandler(args: Arg, action: Actions<InsurancePolicyCArg, InsurancePolicyUArg>): async UpdateResult {
+      type P = Property;
+      type K = Nat;
       type C = InsurancePolicyCArg;
       type U = InsurancePolicyUArg;
+      type A = Types.AtomicAction<K, C, U>;
       type T = InsurancePolicyUnstable;
       type StableT = Types.InsurancePolicy;
       type S = UnstableTypes.AdministrativeInfoPartialUnstable;
-      let administrative = Stables.toPartialStableAdministrativeInfo(args.property.administrative);
+      let administrative = Stables.toPartialStableAdministrativeInfo(args.parent.administrative);
       let map = administrative.insurance;
-      let crudHandler: CrudHandler<C, U, T, StableT> = {
+      var tempId = administrative.insuranceId;
+      let crudHandler: CrudHandler<K, C, U, T, StableT> = {
         map;
-        var id = administrative.insuranceId;
-        setId = func(id: Nat) = administrative.insuranceId := id;
+        getId = func() = administrative.insuranceId;
+        createTempId = func(){
+          tempId += 1;
+          tempId;
+        };
+        incrementId = func(){administrative.insuranceId += 1};
         assignId = func(id: Nat, el: StableT) = (id, {el with id = id;});
         delete = PropHelper.makeDelete(map);
         fromStable = Stables.fromStableInsurancePolicy;
@@ -100,22 +109,40 @@ module {
         }
       };      
   
-      let handler = PropHelper.generateGenericHandler<C, U, T, StableT, S>(crudHandler, action, Stables.toStableInsurancePolicy, func(s: S) = #Administrative(Stables.fromPartialStableAdministrativeInfo(s)), administrative, func(stableT: ?StableT) = #Insurance(stableT), func(property: Property) = property.administrative.insurance);
-      await PropHelper.applyHandler<T, StableT>(args, handler);
+      let handler = PropHelper.generateGenericHandler<P, K, C, U, T, StableT, S>(
+        crudHandler, 
+        func(t: T): StableT = Stables.toStableInsurancePolicy(t),             // toStable
+        func(st: ?StableT) = #Insurance(st),                                  // wrapStableT
+        func(p: P): [(K, StableT)] = p.administrative.insurance,              // toArray
+        func(id1:K, id2:K): Bool = id1 == id2,
+        PropHelper.isConflictOnNatId(),
+        func(property: P){{property with administrative = Stables.fromPartialStableAdministrativeInfo(administrative)}},
+        PropHelper.updatePropertyEventLog,
+        PropHelper.atomicActionToWhat(func(a: Types.Actions<C,U>): Types.What = #Insurance(a))
+      );
+      await PropHelper.applyHandler<P, K, A, T, StableT>(args, PropHelper.makeAutomicAction(action, map.size()), handler);
     };
 
     public func createDocumentHandler(args: Arg, action: Actions<DocumentCArg, DocumentUArg>): async UpdateResult {
+      type P = Property;
+      type K = Nat;
       type C = DocumentCArg;
       type U = DocumentUArg;
+      type A = Types.AtomicAction<K, C, U>;
       type T = DocumentUnstable;
       type StableT = Types.Document;
       type S = UnstableTypes.AdministrativeInfoPartialUnstable;
-      let administrative : S = Stables.toPartialStableAdministrativeInfo(args.property.administrative);
+      let administrative : S = Stables.toPartialStableAdministrativeInfo(args.parent.administrative);
       let map = administrative.documents;
-      let crudHandler: CrudHandler<C, U, T, StableT> = {
+      var tempId = administrative.documentId + 1;
+      let crudHandler: CrudHandler<K, C, U, T, StableT> = {
         map;
-        var id = administrative.documentId;
-        setId = func(id: Nat) = administrative.documentId := id;
+        getId = func() = administrative.documentId;
+        createTempId = func(){
+          tempId += 1;
+          tempId;
+        };
+        incrementId = func() = administrative.documentId += 1;
         assignId = func(id: Nat, el: StableT) = (id, {el with id = id;});
         delete = PropHelper.makeDelete(map);
         fromStable = Stables.fromStableDocument;
@@ -147,23 +174,41 @@ module {
         }
       };      
   
-      let handler = PropHelper.generateGenericHandler<C, U, T, StableT, S>(crudHandler, action, Stables.toStableDocument, func(s: S) = #Administrative(Stables.fromPartialStableAdministrativeInfo(s)), administrative, func(stableT: ?StableT) = #Document(stableT), func(property: Property) = property.administrative.documents);
-      await PropHelper.applyHandler<T, StableT>(args, handler);
+      let handler = PropHelper.generateGenericHandler<P, K, C, U, T, StableT, S>(
+        crudHandler, 
+        func(t: T): StableT = Stables.toStableDocument(t),             // toStable
+        func(st: ?StableT) = #Document(st),                                  // wrapStableT
+        func(p: P): [(K, StableT)] = p.administrative.documents,              // toArray
+        func(id1:K, id2:K): Bool = id1 == id2,
+        PropHelper.isConflictOnNatId(),
+        func(property: P){{property with administrative = Stables.fromPartialStableAdministrativeInfo(administrative)}},
+        PropHelper.updatePropertyEventLog,
+        PropHelper.atomicActionToWhat(func(a: Types.Actions<C,U>): Types.What = #Document(a))
+      );
+      await PropHelper.applyHandler<P, K, A, T, StableT>(args, PropHelper.makeAutomicAction(action, map.size()), handler);
     };
 
     public func createNoteHandler(args: Arg, action: Actions<NoteCArg, NoteUArg>): async UpdateResult {
+      type P = Property;
+      type K = Nat;
       type C = NoteCArg;
       type U = NoteUArg;
+      type A = Types.AtomicAction<K, C, U>;
       type T = NoteUnstable;
       type StableT = Types.Note;
       type S = UnstableTypes.AdministrativeInfoPartialUnstable;
-      let administrative : S = Stables.toPartialStableAdministrativeInfo(args.property.administrative);
+      let administrative : S = Stables.toPartialStableAdministrativeInfo(args.parent.administrative);
       let map = administrative.notes;
+      var tempId = administrative.notesId + 1;
       //Debug.print("MAP: "# debug_show(args.property.administrative.notes));
-      let crudHandler: CrudHandler<C, U, T, StableT> = {
+      let crudHandler: CrudHandler<K, C, U, T, StableT> = {
         map;
-        var id = administrative.notesId;
-        setId = func(id: Nat) = administrative.notesId := id;
+        getId = func() = administrative.notesId;
+        createTempId = func(){
+          tempId += 1;
+          tempId;
+        };
+        incrementId = func(){administrative.notesId += 1;};
         assignId = func(id: Nat, el: StableT) = (id, {el with id = id;});
         delete = PropHelper.makeDelete(map);
         fromStable = Stables.fromStableNote;
@@ -194,7 +239,17 @@ module {
         }
       };      
   
-      let handler = PropHelper.generateGenericHandler<C, U, T, StableT, S>(crudHandler, action, Stables.toStableNote, func(s: S) = #Administrative(Stables.fromPartialStableAdministrativeInfo(s)), administrative, func(stableT: ?StableT) = #Note(stableT), func(property: Property) = property.administrative.notes);
-      await PropHelper.applyHandler<T, StableT>(args, handler);
+      let handler = PropHelper.generateGenericHandler<P, K, C, U, T, StableT, S>(
+        crudHandler, 
+        func(t: T): StableT = Stables.toStableNote(t),             // toStable
+        func(st: ?StableT) = #Note(st),                                  // wrapStableT
+        func(p: P): [(K, StableT)] = p.administrative.notes,              // toArray
+        func(id1:K, id2:K): Bool = id1 == id2,
+        PropHelper.isConflictOnNatId(),
+        func(property: P){{property with administrative = Stables.fromPartialStableAdministrativeInfo(administrative)}},
+        PropHelper.updatePropertyEventLog,
+        PropHelper.atomicActionToWhat(func(a: Types.Actions<C,U>): Types.What = #Note(a))
+      );
+      await PropHelper.applyHandler<P, K, A, T, StableT>(args, PropHelper.makeAutomicAction(action, map.size()), handler);
     };
 }

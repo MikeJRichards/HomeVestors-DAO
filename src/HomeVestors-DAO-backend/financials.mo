@@ -5,9 +5,8 @@ import PropHelper "propHelper";
 import Float "mo:base/Float";
 import Result "mo:base/Result";
 import Time "mo:base/Time";
-import IC "ic:aaaaa-aa";
 import JSON "mo:json";
-import ExperimentalCycles "mo:base/ExperimentalCycles";
+import IC "mo:ic"; // Updated to use ic@3.2.0 structure
 import Int "mo:base/Int";
 import Blob "mo:base/Blob";
 import Text "mo:base/Text";
@@ -15,13 +14,12 @@ import Nat "mo:base/Nat";
 import Sha256 "mo:sha2/Sha256";
 import Principal "mo:base/Principal";
 
-
 module {
   type CreateFinancialsArg = Types.CreateFinancialsArg;
   type InvestmentDetails = Types.InvestmentDetails;
   type Financials = Types.Financials;
-  type Handler<T, StableT> = UnstableTypes.Handler<T, StableT>;
-  type CrudHandler<C, U, T, StableT> = UnstableTypes.CrudHandler<C, U, T, StableT>;
+  type Handler<P, K, A, T, StableT> = UnstableTypes.Handler<P, K, A, T, StableT>;
+  type CrudHandler<K, C, U, T, StableT> = UnstableTypes.CrudHandler<K, C, U, T, StableT>;
   type ValuationRecordCArg = Types.ValuationRecordCArg; 
   type ValuationRecordUArg = Types.ValuationRecordUArg; 
   type ValuationRecordUnstable = UnstableTypes.ValuationRecordUnstable;
@@ -33,10 +31,9 @@ module {
   type What = Types.What;
   type PropertyUnstable = UnstableTypes.PropertyUnstable;
   type FinancialsArg = Types.FinancialsArg;
-  type Arg = Types.Arg;
+  type Arg = Types.Arg<Property>;
   type Actions<C,U> = Types.Actions<C,U>;
     
-
   func createInvestmentDetails (arg: CreateFinancialsArg): InvestmentDetails {
       return {
           totalInvestmentValue = arg.reserve + arg.purchasePrice + arg.platformFee;
@@ -67,17 +64,25 @@ module {
   };
 
   public func createValuationHandler(args: Arg, action: Actions<ValuationRecordCArg, ValuationRecordUArg>): async UpdateResult {
+    type P = Property;
+    type K = Nat;
     type C = ValuationRecordCArg;
     type U = ValuationRecordUArg;
+    type A = Types.AtomicAction<K, C, U>;
     type T = ValuationRecordUnstable;
     type StableT = Types.ValuationRecord;
     type S = UnstableTypes.FinancialsPartialUnstable;
-    let financials = Stables.toPartialStableFinancials(args.property.financials);
+    let financials = Stables.toPartialStableFinancials(args.parent.financials);
     let map = financials.valuations;
-    let crudHandler: CrudHandler<C, U, T, StableT> = {
+    var tempId = financials.valuationId;
+    let crudHandler: CrudHandler<K, C, U, T, StableT> = {
       map;
-      var id = financials.valuationId;
-      setId = func(id: Nat) = financials.valuationId := id;
+      getId = func() = financials.valuationId;
+      createTempId = func(){
+        tempId += 1;
+        tempId;
+      };
+      incrementId = func(){financials.valuationId += 1;}; // Fixed typo: was misc.imageId
       assignId = func(id: Nat, el: StableT) = (id, {el with id = id;});
       delete = PropHelper.makeDelete(map);
       fromStable = Stables.fromStableValuationRecord;
@@ -105,16 +110,30 @@ module {
       }
     };      
 
-    let handler = PropHelper.generateGenericHandler<C, U, T, StableT, S>(crudHandler, action, Stables.toStableValuationRecord, func(s: S) = #Financials(Stables.fromPartialStableFinancials(financials)), financials, func(stableT: ?StableT) = #Valuations(stableT), func(property: Property) = property.financials.valuations);
-    await PropHelper.applyHandler<T, StableT>(args, handler);
+    let handler = PropHelper.generateGenericHandler<P, K, C, U, T, StableT, S>(
+      crudHandler, 
+      func(t: T): StableT = Stables.toStableValuationRecord(t),             // toStable
+      func(st: ?StableT) = #Valuations(st),                                  // wrapStableT
+      func(p: P): [(K, StableT)] = p.financials.valuations,              // toArray
+      func(id1:K, id2:K): Bool = id1 == id2,
+      PropHelper.isConflictOnNatId(),
+      func(property: P){{property with financials = Stables.fromPartialStableFinancials(financials)}},
+      PropHelper.updatePropertyEventLog,
+      PropHelper.atomicActionToWhat(func(a: Types.Actions<C,U>): Types.What = #Valuations(a))
+    );
+    await PropHelper.applyHandler<P, K, A, T, StableT>(args, PropHelper.makeAutomicAction(action, map.size()), handler);
   };
 
   public func monthlyRentHandler(args: Arg, arg: Nat): async UpdateResult {
-    type U = Nat;
+    type P = Property;
+    type K = Nat;
+    type A = Nat;
     type T = UnstableTypes.FinancialsPartialUnstable;
     type StableT = Financials;
+    var financials = Stables.toPartialStableFinancials(args.parent.financials);
     
-    let mutate = func(arg: U, financials: T): T{
+    let mutate = func(arg: A, property: P): T{
+      financials := Stables.toPartialStableFinancials(property.financials);
       financials.monthlyRent := arg;
       financials.yield := Float.fromInt(arg * 12) / Float.fromInt(financials.currentValue);
       financials;
@@ -125,33 +144,32 @@ module {
       #ok(arg);
     };
 
-    let handler = PropHelper.makeFlatHandler<U, T, StableT>(
-      arg,
-      Stables.toPartialStableFinancials(args.property.financials),
+    let handler = PropHelper.makeFlatHandler<P, K, A, T, StableT>(
       mutate,
       validate,
       Stables.fromPartialStableFinancials,
-      func(el: StableT) = #Financials(
-        {
-          args.property.financials with
-          monthlyRent = el.monthlyRent; 
-          yield = el.yield;
-        }
-      ), 
-      func(property: Property) = #Financials(?property.financials)
+      func(p: P):Types.ToStruct<K>{#MonthlyRent(?p.financials.monthlyRent)},
+      null,
+      func(p: P): P {{p with financials = Stables.fromPartialStableFinancials(financials)}},
+      PropHelper.updatePropertyEventLog,
+      func(arg:A) = #MonthlyRent(arg)
     );
 
-    await PropHelper.applyHandler(args, handler);
+    await PropHelper.applyHandler(args, [arg], handler);
   };
 
   public func currentValueHandler(args: Arg, arg: FinancialsArg): async UpdateResult {
-    type U = FinancialsArg;
+    type P = Property;
+    type K = Nat;
+    type A = FinancialsArg;
     type T = UnstableTypes.FinancialsPartialUnstable;
     type StableT = Financials;
+    var financials = Stables.toPartialStableFinancials(args.parent.financials);
     
-    let mutate = func(arg: U, financials: T): T{
+    let mutate = func(arg: A, property: P): T{
+      financials := Stables.toPartialStableFinancials(property.financials);
       financials.currentValue := arg.currentValue;
-      financials.pricePerSqFoot := arg.currentValue / args.property.details.physical.squareFootage;
+      financials.pricePerSqFoot := arg.currentValue / args.parent.details.physical.squareFootage;
       financials;
     };
 
@@ -160,26 +178,18 @@ module {
       #ok(arg);
     };
 
-    let handler = PropHelper.makeFlatHandler<U, T, StableT>(
-      arg,
-      Stables.toPartialStableFinancials(args.property.financials),
+    let handler = PropHelper.makeFlatHandler<P, K, A, T, StableT>(
       mutate,
       validate,
       Stables.fromPartialStableFinancials,
-      func(el: StableT) = #Financials(
-        {
-          args.property.financials with 
-          currentValue = el.currentValue; 
-          pricePerSqFoot = el.pricePerSqFoot;
-        }
-      ),
-      func(property: Property) = #Value(?{
-        currentValue = property.financials.currentValue; 
-        pricePerSqFoot = property.financials.pricePerSqFoot
-      })
+      func(p: P):Types.ToStruct<K>{#Value(?{currentValue = p.financials.currentValue; pricePerSqFoot = p.financials.pricePerSqFoot})},
+      null,
+      func(p: P): P {{p with financials = Stables.fromPartialStableFinancials(financials)}},
+      PropHelper.updatePropertyEventLog,
+      func(arg:A) = #Financials(arg)
     );
 
-    await PropHelper.applyHandler(args, handler);
+    await PropHelper.applyHandler(args, [arg], handler);
   };
 
   public func createURL(property: Property): Text {
@@ -189,7 +199,6 @@ module {
     let bedrooms = Nat.toText(property.details.physical.beds);
     let bathrooms = Nat.toText(property.details.physical.baths);
     
-    // 🟢 Simple logic to pick enums (these can be improved later)
     let construction_date = if (property.details.physical.yearBuilt < 1914) {
       "pre_1914"
     } else if (property.details.physical.yearBuilt <= 2000) {
@@ -198,10 +207,10 @@ module {
       "2000_onwards"
     };
     
-    let property_type = "semi-detached_house"; // 🟢 Default for now
-    let finish_quality = "average";       // 🟢 Default for now
-    let outdoor_space = "garden";         // 🟢 Default for now
-    let off_street_parking = "0";         // 🟢 Default for now
+    let property_type = "semi-detached_house";
+    let finish_quality = "average";
+    let outdoor_space = "garden";
+    let off_street_parking = "0";
     
     let url = "https://property-valuations.fly.dev"
       # "?property_id=" # propertyId
@@ -217,13 +226,13 @@ module {
     return url;
   };
 
-  public func fetchValuation(property: Property, transform: query ({context : Blob; response : IC.http_request_result;}) -> async IC.http_request_result) : async Result.Result<What, [(?Nat, UpdateError)]> {
-  
+  public func fetchValuation(property: Property, transform: query ({context : Blob; response : IC.HttpRequestResult}) -> async IC.HttpRequestResult) : async Result.Result<What, [(?Nat, UpdateError)]> {
     let url = createURL(property);
-    let req : IC.http_request_args = {
+    let req : IC.HttpRequestArgs = {
       url = url;
       method = #get;
       headers = [];
+      is_replicated = ?false;
       body = null;
       max_response_bytes = ?3000;
       transform = ?{
@@ -232,15 +241,13 @@ module {
       };
     };
 
-    // First HTTP outcall (ignored result)
-    ExperimentalCycles.add<system>(100_000_000_000);
-    let _ = await IC.http_request(req);
+    // First HTTP outcall (ignored result, warmup)
+    let _ = await IC.ic.http_request(req); // Using IC.httpRequest
 
     // Second HTTP outcall (actual result)
-    ExperimentalCycles.add<system>(100_000_000_000);
-    let res = await IC.http_request(req);
+    let res = await IC.ic.http_request(req); // Using IC.httpRequest
 
-    let bodyText = switch (Text.decodeUtf8(res.body)) {
+    let bodyText = switch (Text.decodeUtf8(res.body)) { // res.body is Blob
         case (?text) text;
         case null return #err([(?property.id, #InvalidData{field = "valuation"; reason = #FailedToDecodeResponseBody})]);
       };
@@ -256,16 +263,11 @@ module {
         case (_) return #err([(?property.id, #InvalidData{field = "valuation"; reason = #CannotBeNull})]);
       };
 
-
     let valuation = {
       value = estimate;
       method = #Online;
     };
 
     return #ok(#Valuations(#Create([valuation])));
-};
-
-
-
-
+  };
 }

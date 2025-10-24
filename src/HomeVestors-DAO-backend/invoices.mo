@@ -22,8 +22,8 @@ module {
     type CreateFinancialsArg = Types.CreateFinancialsArg;
     type InvestmentDetails = Types.InvestmentDetails;
     type Financials = Types.Financials;
-    type Handler<T, StableT> = UnstableTypes.Handler<T, StableT>;
-    type CrudHandler<C, U, T, StableT> = UnstableTypes.CrudHandler<C, U, T, StableT>;
+    type Handler<P, K, A, T, StableT> = UnstableTypes.Handler<P, K, A, T, StableT>;
+    type CrudHandler<K, C, U, T, StableT> = UnstableTypes.CrudHandler<K, C, U, T, StableT>;
     type ValuationRecordCArg = Types.ValuationRecordCArg; 
     type ValuationRecordUArg = Types.ValuationRecordUArg; 
     type ValuationRecordUnstable = UnstableTypes.ValuationRecordUnstable;
@@ -35,23 +35,31 @@ module {
     type What = Types.What;
     type PropertyUnstable = UnstableTypes.PropertyUnstable;
     type FinancialsArg = Types.FinancialsArg;
-    type Arg = Types.Arg;
+    type Arg = Types.Arg<Property>;
     type Actions<C,U> = Types.Actions<C,U>;
     type InvoiceCArg = Types.InvoiceCArg;
     type InvoiceUArg = Types.InvoiceUArg;
 
     public func createInvoiceHandler(args: Arg, action: Actions<InvoiceCArg, InvoiceUArg>): async UpdateResult {
+        type P = Property;
+        type K = Nat;
         type C = InvoiceCArg;
         type U = InvoiceUArg;
+        type A = Types.AtomicAction<K, C, U>;
         type T = UnstableTypes.InvoiceUnstable;
         type StableT = Types.Invoice;
         type S = UnstableTypes.FinancialsPartialUnstable;
-        let financials = Stables.toPartialStableFinancials(args.property.financials);
+        let financials = Stables.toPartialStableFinancials(args.parent.financials);
         let map = financials.invoices;
-        let crudHandler: CrudHandler<C, U, T, StableT> = {
+        var tempId = financials.invoiceId + 1;
+        let crudHandler: CrudHandler<K, C, U, T, StableT> = {
             map;
-            var id = financials.invoiceId;
-            setId = func(id: Nat) = financials.invoiceId := id;
+            getId = func() = financials.invoiceId;
+            createTempId = func(){
+              tempId += 1;
+              tempId;
+            };
+            incrementId = func(){financials.invoiceId += 1;};
             assignId = func(id: Nat, el: StableT) = (id, {el with id = id;});
             fromStable = Stables.fromStableInvoice;
 
@@ -106,7 +114,7 @@ module {
               switch(el.status, el.direction){
                   case(#Pending, #Incoming(_)) financials.invoices.put(id, {el with status = #Approved});
                   case(#Pending, #Outgoing(outgoing)){
-                      switch(Governance.isAccepted(Stables.fromStableProperty(args.property), outgoing.proposalId)){
+                      switch(Governance.isAccepted(Stables.fromStableProperty(args.parent), outgoing.proposalId)){
                           case(?true) financials.invoices.put(id, {el with status = #Approved});
                           case(?false) financials.invoices.put(id, {el with status = #Rejected});
                           case(null){};
@@ -135,14 +143,14 @@ module {
                     if (Principal.isAnonymous(outgoing.to.owner)) return #err(#InvalidData { field = "direction.to"; reason = #Anonymous });
                     if(args.testing == false){
                         var exists = false;
-                        for((id, _) in args.property.governance.proposals.vals()) if(id == outgoing.proposalId) exists := true;
+                        for((id, _) in args.parent.governance.proposals.vals()) if(id == outgoing.proposalId) exists := true;
                         if(exists == false) return #err(#InvalidData{field = "direction to"; reason = #NonExistentProposal})
                     }
                   };
                   case(#ToInvestors(arg)){
                     if(args.testing == false){
                         var exists = false;
-                        for((id, _) in args.property.governance.proposals.vals()) if(id == arg.proposalId) exists := true;
+                        for((id, _) in args.parent.governance.proposals.vals()) if(id == arg.proposalId) exists := true;
                         if(exists == false) return #err(#InvalidData{field = "direction to"; reason = #NonExistentProposal})
                     }
                   }
@@ -175,13 +183,12 @@ module {
         };
         let transactionIds = HashMap.HashMap<Nat, AsyncType>(0, Nat.equal, PropHelper.natToHash);
 
-        let handler: Handler<T, StableT> = {
-                toStruct = PropHelper.toStruct<C, U, T, StableT>(action, crudHandler, func(stableT: ?StableT) = #Invoice(stableT), func(property: Property) = property.financials.invoices);
+        let handler: Handler<P, K, A, T, StableT> = {
+                isConflict = PropHelper.isConflictOnNatId();
+                validateAndPrepare = func(parent: P, arg: Types.AtomicAction<K, C, U>) = PropHelper.getValid<K, C, U, T, StableT>(arg, crudHandler);
 
-                validateAndPrepare = func () = PropHelper.getValid<C, U, T, StableT>(action, crudHandler);
-
-                asyncEffect = func(arr: [(?Nat, Result.Result<T, UpdateError>)]): async [(?Nat, Result.Result<(), UpdateError>)] {
-                    if(args.testing) return PropHelper.runNoAsync<T>(arr);
+                asyncEffect = func(arr: [(?K, A, Result.Result<T, UpdateError>)]): async [Result.Result<(), UpdateError>] {
+                    if(args.testing) return PropHelper.runNoAsync<K, A, T>(arr);
                     let transferFrom = func (id: Nat, token: Types.AcceptedCryptos, amount: Nat, from: Types.Account): async Result.Result<(), Types.UpdateError>{
                       switch(await Tokens.transferFrom(token, amount, financials.account, from)){
                         case(#Ok(transactionId)){
@@ -203,11 +210,11 @@ module {
                     };
 
                     let transferToInvestors = func(id: Nat, token: Types.AcceptedCryptos, totalAmount: Nat): async (){
-                        let (allAccounts, totalNFTs) = await NFT.getAllAccounts(args.property.nftMarketplace.collectionId);
+                        let (allAccounts, totalNFTs) = await NFT.getAllAccounts(args.parent.nftMarketplace.collectionId);
                         let transferResults = Buffer.Buffer<(Account, async Tokens.TransferResult)>(0);
                         for((account, count) in allAccounts.vals()){
                             let amount = totalAmount * count / totalNFTs;
-                            let fromSubaccount = args.property.financials.account.subaccount;
+                            let fromSubaccount = args.parent.financials.account.subaccount;
                             transferResults.add((account, Tokens.transfer(token, fromSubaccount, account, amount)));
                         };
                         let results = Buffer.Buffer<Types.InvestorTransfer>(transferResults.size());
@@ -227,7 +234,7 @@ module {
                     
 
                     let results = Buffer.Buffer<(?Nat, async Result.Result<(), UpdateError>)>(arr.size());
-                    for((idOpt, res) in arr.vals()){
+                    for((idOpt, arg, res) in arr.vals()){
                         switch(idOpt, res){
                             case(?id, #ok(invoice)){
                                 switch(invoice.status, invoice.direction){
@@ -245,8 +252,8 @@ module {
                         }
                     };
 
-                    let finalResult = Buffer.Buffer<(?Nat, Result.Result<(), UpdateError>)>(results.size());
-                    for((idOpt, res) in results.vals())finalResult.add((idOpt, await res));
+                    let finalResult = Buffer.Buffer<Result.Result<(), UpdateError>>(results.size());
+                    for((idOpt, res) in results.vals())finalResult.add(await res);
                     Buffer.toArray(finalResult);
                 };
 
@@ -338,11 +345,9 @@ module {
                     Buffer.toArray(buff);
                 };
 
-                applyUpdate = func(id: ?Nat, el: StableT) = PropHelper.applyUpdate<C, U, T, StableT>(action, id, el, crudHandler);
+                applyUpdate = func(id: ?K, arg: A, el: StableT) = PropHelper.applyUpdate<K, C, U, T, StableT>(arg, id, el, crudHandler);
 
-                getUpdate = func() = #Financials(Stables.fromPartialStableFinancials(financials));
-
-                finalAsync = func(arr: [Result.Result<?Nat, (?Nat, UpdateError)>]): async (){
+                finalAsync = func(arr: [(A, [Result.Result<?Nat, (?Nat, UpdateError)>])]): async (){
                     if(args.testing) return;
                     let addTimer = func<system>(id: Nat, invoice: StableT): (){
                         switch(invoice.paymentStatus){case(#Pending({timerId})) switch(timerId){case(?id) cancelTimer(id); case(_){}}; case(_){}};
@@ -352,7 +357,7 @@ module {
                                     let delay = Int.abs(invoice.due - Time.now());
                                     let timerId = setTimer<system>(#nanoseconds delay, func () : async () {
                                         let updateInvoice: Types.WhatWithPropertyId = {
-                                            propertyId = args.property.id;
+                                            propertyId = args.parent.id;
                                             what = #Invoice(#Delete([id]));
                                         };
                                         ignore args.handlePropertyUpdate(updateInvoice, args.caller);
@@ -364,21 +369,27 @@ module {
                             case(_){};
                         };
                     };
-                    for(res in arr.vals()){
-                        switch(res){
-                            case(#ok(?id)){
-                                switch(financials.invoices.get(id)){
-                                    case(?invoice) addTimer<system>(id, invoice);
-                                    case(_){};
-                                }
+                    for((arg, res) in arr.vals()){
+                        for(result in res.vals()){
+                            switch(result){
+                                case(#ok(?id)){
+                                    switch(financials.invoices.get(id)){
+                                        case(?invoice) addTimer<system>(id, invoice);
+                                        case(_){};
+                                    }
+                                };
+                                case(_){};
                             };
-                            case(_){};
                         };
                     };
                 };
+                toStruct = PropHelper.toStruct<P, K, C, U, T, StableT>(func(stableT: ?StableT) = #Invoice(stableT), func(property: Property) = property.financials.invoices, Nat.equal);
+                applyParentUpdate = func(property: P): P {{property with financials = Stables.fromPartialStableFinancials(financials)}};
+                updateParentEventLog = PropHelper.updatePropertyEventLog;
+                toArgDomain = PropHelper.atomicActionToWhat(func(a: Types.Actions<C,U>): Types.What = #Invoice(a));
             };
 
-        await PropHelper.applyHandler<T, StableT>(args, handler);
+        await PropHelper.applyHandler<P, K, A, T, StableT>(args, PropHelper.makeAutomicAction(action, map.size()), handler);
     };
     type Invoice = Types.Invoice;
     type Account = Types.Account;

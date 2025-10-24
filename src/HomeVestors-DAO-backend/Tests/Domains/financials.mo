@@ -9,7 +9,6 @@ import Iter "mo:base/Iter";
 
 module{
     type Actions<C,U> = Types.Actions<C,U>;
-
     type PropertyUnstable = UnstableTypes.PropertyUnstable;
     type WhatWithPropertyId = Types.WhatWithPropertyId;
     type UpdateResult = Types.UpdateResult;
