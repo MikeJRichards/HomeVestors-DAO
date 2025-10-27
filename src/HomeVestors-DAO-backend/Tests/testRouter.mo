@@ -17,7 +17,7 @@ import Debug "mo:base/Debug";
 
 
 module {
-    public func runTestsForOption(option: TestTypes.TestOption, handleUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResultBeforeVsAfter) : async [[Text]] {
+    public func runTestsForOption(option: TestTypes.TestOption, handleUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResultExternal) : async [[Text]] {
         let buf = Buffer.Buffer<[Text]>(0);
         var property = TProp.createBlankProperty();
 

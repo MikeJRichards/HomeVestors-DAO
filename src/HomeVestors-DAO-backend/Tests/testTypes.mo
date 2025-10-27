@@ -15,7 +15,7 @@ module TestTypes {
     showMap: HashMap.HashMap<Nat, T> -> Text;
     toWhat: C -> What;
     checkUpdate: (T, T, C) -> Text;
-    handlePropertyUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResultBeforeVsAfter;
+    handlePropertyUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResultExternal;
     seedCreate: (Text, PropertyUnstable) -> [What];
     validForTest: (Text, T) -> ?Bool;
     toCaller: (Text, Nat, PropertyUnstable) -> Principal;
@@ -31,7 +31,7 @@ module TestTypes {
     checkCreate: T -> Text;
     checkUpdate: (T, T, U) -> Text;
     checkDelete: (T, ?T, Nat, PropertyUnstable, PropertyUnstable, PreTestHandler<C,U,T>) -> Text;
-    handlePropertyUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResultBeforeVsAfter;
+    handlePropertyUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResultExternal;
     seedCreate: (Text, Nat, Actions<C,U> ->What) -> [What];
     validForTest: (Text, T) -> ?Bool;
   };
@@ -40,7 +40,7 @@ module TestTypes {
     toStruct: PropertyUnstable -> T;
     toWhat: U -> What;
     checkUpdate: (PropertyUnstable, PropertyUnstable, U) -> Text;
-    handlePropertyUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResultBeforeVsAfter;
+    handlePropertyUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResultExternal;
   };
 
   public type Callers = {

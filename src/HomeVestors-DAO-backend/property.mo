@@ -39,9 +39,9 @@ module Property {
     type InspectionRecord = Types.InspectionRecord;
     type Miscellaneous = Types.Miscellaneous;
     type SimpleHandler<T> = UnstableTypes.SimpleHandler<T>;
-    type Arg = Types.Arg;
+    type Arg<P> = Types.Arg<P>;
     type Actions<C,U> = Types.Actions<C,U>;
-    type Handler<C,U> = UnstableTypes.Handler<C,U>;
+    type Handler<P, K, A, T, StableT> = UnstableTypes.Handler<P, K, A, T, StableT>;
     type InsurancePolicyCArg = Types.InsurancePolicyCArg;
     type InsurancePolicyUArg = Types.InsurancePolicyUArg;
     type InsurancePolicyUnstable = UnstableTypes.InsurancePolicyUnstable;
@@ -118,7 +118,7 @@ module Property {
         }
     };
 
-    public func updateProperty(arg: Arg): async UpdateResult {
+    public func updateProperty(arg: Arg<Property>): async UpdateResult {
         switch(arg.what){
             case(#Insurance(action)) await Administrative.createInsuranceHandler(arg, action);
             case(#Document(action)) await Administrative.createDocumentHandler(arg, action);
@@ -250,7 +250,7 @@ module Property {
             switch(id){
                 case(#err(id)) buff.add({id; value = #Err(#ArrayIndexOutOfBounds)});
                 case(#ok(id)){
-                    let value = switch(handler.filter, PropHelper.getElementByKey(arr, id)){
+                    let value = switch(handler.filter, PropHelper.getElementByKey(arr, id, Nat.equal)){
                         case(_, null) #Err(#InvalidElementId); 
                         case(null, ?val) handler.cond(val);
                         case(?filter, ?val){
@@ -335,7 +335,7 @@ module Property {
                 let buff = Buffer.Buffer<(Nat, T)>(ids.size());
                 for(id in ids.vals()){
                     let idx = if(id > 0) id else arr.size() + id;
-                    switch(PropHelper.getElementByKey(arr, Int.abs(idx))){
+                    switch(PropHelper.getElementByKey(arr, Int.abs(idx), Nat.equal)){
                         case(null){}; 
                         case(?el) buff.add((Int.abs(idx), el))
                     };
@@ -352,9 +352,9 @@ module Property {
         }
     };
 
-    func updatesReadHandler(arg: {#All; #Err; #Ok}): SimpleReadHandler<[[Types.BeforeVsAfter]]>{
+    func updatesReadHandler(_arg: {#All; #Err; #Ok}): SimpleReadHandler<[[Types.BeforeVsAfter<Nat>]]>{
         {
-            toEl = func(p: Property) : [[Types.BeforeVsAfter]] = p.updates;
+            toEl = func(p: Property) : [[Types.BeforeVsAfter<Nat>]] = p.updates;
             cond = func(arr) = #Ok(arr);
         }
     };
@@ -483,7 +483,7 @@ module Property {
                 case(#Financials(arg)) #Financials(returnPropertyElement<Financials>(args, arg, simpleReadHandler(getFinancials)));
                 case(#MonthlyRent(arg)) #MonthlyRent(returnPropertyElement<Nat>(args, arg, simpleReadHandler(getRent)));
                 case(#Listings(arg)) #Listings(applyReadArgs<Listing>(args, arg.base, listingsReadHandler(arg.conditionals))); 
-                case(#UpdateResults(arg)) #UpdateResults(returnPropertyElement<[[Types.BeforeVsAfter]]>(args, arg.selected, updatesReadHandler(arg.conditional))); 
+                case(#UpdateResults(arg)) #UpdateResults(returnPropertyElement<[[Types.BeforeVsAfter<Nat>]]>(args, arg.selected, updatesReadHandler(arg.conditional))); 
                 case(#Refunds(arg)) #Refunds(applyReadArgs<[Refund]>(args, arg.nested, refundsReadHandler(arg.conditionals))); 
                 case(#Proposals(arg)) #Proposals(applyReadArgs<Proposal>(args, arg.base, proposalReadHandler(arg.conditionals))); 
                 case(#Invoices(arg)) #Invoices(applyReadArgs<Invoice>(args, arg.base, invoiceReadHandler(arg.conditionals))); 

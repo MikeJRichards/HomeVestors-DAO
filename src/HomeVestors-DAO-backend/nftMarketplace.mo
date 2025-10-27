@@ -1,10 +1,6 @@
 import Types "types";
 import Stables "./Tests/stables";
-import { setTimer } = "mo:base/Timer";
 import UnstableTypes "./Tests/unstableTypes";
-import FixedPrice "./marketplace/fixedPrice";
-import Auction "./marketplace/auction";
-import Utils "./marketplace/utils";
 import NFT "nft";
 import Tokens "token";
 import PropHelper "propHelper";
@@ -17,6 +13,8 @@ import Int "mo:base/Int";
 import Buffer "mo:base/Buffer";
 import Nat "mo:base/Nat";
 import HashMap "mo:base/HashMap";
+import { setTimer; cancelTimer } = "mo:base/Timer";
+
 
 module {
    // type TransferFromArg = Types.TransferFromArg;
@@ -70,19 +68,19 @@ module {
                     switch(m.listings.get(id)){
                         case(?#LiveFixedPrice(fixedPrice)){
                             switch(fixedPrice.expiresAt){
-                                case(null) Utils.cancelListingTimer(m, id);
+                                case(null) cancelListingTimer(m, id);
                                 case(?expiresAt){
-                                    Utils.cancelListingTimer(m, id);
+                                    cancelListingTimer(m, id);
                                     if(create) addTimer<system>(id, Int.abs(expiresAt - Time.now()), #NftMarketplace(#FixedPrice(#Delete([id]))));
                                 }
                             };
                         };
                         case(?#LiveAuction(auction)){
-                            Utils.cancelListingTimer(m, id);
+                            cancelListingTimer(m, id);
                             if(create) addTimer<system>(id, Int.abs(auction.endsAt - Time.now()), #NftMarketplace(#Auction(#Delete([id]))));
                         };
                         case(?#LaunchedProperty(launch)){
-                            Utils.cancelListingTimer(m, id);
+                            cancelListingTimer(m, id);
                             switch(launch.endsAt){case(null){}; case(?endsAt) if(create) addTimer<system>(id, Int.abs(endsAt - Time.now()), #NftMarketplace(#Launch(#Delete([id]))))};
                         };
                         case(_){};
@@ -90,6 +88,13 @@ module {
                 };
                 case(_){};
             }
+        };
+    };
+
+    public func cancelListingTimer(m: NftMarketplacePartialUnstable, listId: Nat): (){
+        switch(m.timerIds.get(listId)){
+            case(null){}; 
+            case(?id) cancelTimer(id)
         };
     };
 
@@ -242,14 +247,20 @@ module {
             };
 
             delete =  func(id: Nat, el: StableT): (){
+                let determineCancelledReason = func(fixedPrice: FixedPrice, caller: ?Principal): ?Types.CancelledReason {
+                    let cancelledBySeller = caller == ?fixedPrice.seller.owner;
+                    let cancelledByAdmin = caller == ?PropHelper.getAdmin(); 
+                    let expired = switch(fixedPrice.expiresAt){case(null) false; case(?e) Time.now() > e ;};
+                    return if(expired) ?#Expired else if (cancelledBySeller) ?#CancelledBySeller else if (cancelledByAdmin) ?#CalledByAdmin else null;
+                };
                 switch(el){
                     case(#LiveFixedPrice(fixedPrice)){
                         let resolvedCaller = switch(fixedPrice.expiresAt){case(null) ?arg.caller; case(?e) if(Time.now() > e) null else ?arg.caller};
-                        let cancelledReason = FixedPrice.determineCancelledReason(fixedPrice, resolvedCaller);
+                        let cancelledReason = determineCancelledReason(fixedPrice, resolvedCaller);
                         switch(cancelledReason){
                             case(null) marketplace.listings.put(id, el);
                             case(?reason){
-                                Utils.cancelListingTimer(marketplace, id);
+                                cancelListingTimer(marketplace, id);
                                 let cancelled = #CancelledFixedPrice({
                                     fixedPrice with
                                     cancelledBy = {owner = arg.caller; subaccount = null};
@@ -375,13 +386,23 @@ module {
             };
 
             delete =  func(id: Nat, el: StableT): (){
+                let determineCancelledReason = func(auction: Auction, caller: ?Principal): ?Types.CancelledReason {
+                    let cancelledBySeller = caller == ?auction.seller.owner;
+                    let cancelledByAdmin = caller == ?PropHelper.getAdmin(); 
+                    let expired = Time.now() > auction.endsAt;
+                    switch(auction.highestBid, auction.reservePrice){
+                        case(?bid, ?reservePrice) if(reservePrice > bid.bidAmount and expired) ?#ReserveNotMet else if(cancelledByAdmin) ?#CalledByAdmin else null;
+                        case(?_, null) if(cancelledByAdmin) ?#CalledByAdmin else null;
+                        case(null, _) if(expired) ?#Expired else if(cancelledBySeller) ?#CancelledBySeller else if(cancelledByAdmin) ?#CalledByAdmin else null;
+                    }
+                };
                 switch(el){
                     case(#LiveAuction(auction)){
-                        let cancelledReason = Auction.determineCancelledReason(auction, ?arg.caller);
+                        let cancelledReason = determineCancelledReason(auction, ?arg.caller);
                         switch(cancelledReason){
                             case(null) marketplace.listings.put(id, el);
                             case(?reason){
-                                Utils.cancelListingTimer(marketplace, id);
+                                cancelListingTimer(marketplace, id);
                                 let cancelled = #CancelledAuction({
                                     auction with
                                     cancelledBy = {owner = arg.caller; subaccount = null};
@@ -541,7 +562,7 @@ module {
             delete =  func(id: Nat, el: StableT): (){
                 switch(el){
                     case(#LaunchedProperty(launch)){
-                        Utils.cancelListingTimer(marketplace, id);
+                        cancelListingTimer(marketplace, id);
                         let cancelled = #CancelledLaunchedProperty({
                             launch with
                             cancelledBy = {owner = arg.caller; subaccount = null};
@@ -551,7 +572,7 @@ module {
                         marketplace.listings.put(id, cancelled);
                     };
                     case(#LaunchFixedPrice(fixed)){
-                        Utils.cancelListingTimer(marketplace, id);
+                        cancelListingTimer(marketplace, id);
                         let cancelled = #CancelledLaunch({
                             fixed with
                             cancelledBy = {owner = arg.caller; subaccount = null};
@@ -929,13 +950,13 @@ module {
             };
             toStruct = func(property: Property, idOpt: ?K, beforeOrAfter: UnstableTypes.BeforeOrAfter): Types.ToStruct<K> {
                 switch(idOpt){
-                    case(?id) #NFTMarketplace(PropHelper.getElementByKey(property.nftMarketplace.listings, id, Nat.equal));
+                    case(?id) #NftMarketplace(PropHelper.getElementByKey(property.nftMarketplace.listings, id, Nat.equal));
                     case(null) #Err(idOpt, #NullId);
                 }
             };
             applyParentUpdate = func(property: P): P {{property with nftMarketplace = Stables.fromPartialStableNftMarketplace(marketplace)}};
             updateParentEventLog = PropHelper.updatePropertyEventLog;
-            toArgDomain = func(a:A): Types.What = #Nftarketplace(#Bid(a));
+            toArgDomain = func(a:A): Types.What = #NftMarketplace(#Bid(a));
         };
         await PropHelper.applyHandler<P, K, A, T, StableT>(arg, [args], handler);
     };

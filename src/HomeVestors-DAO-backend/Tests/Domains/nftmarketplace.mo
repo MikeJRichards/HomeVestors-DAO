@@ -20,7 +20,7 @@ module{
     type SingleActionPreTestHandler<U, T> = TestTypes.SingleActionPreTestHandler<U, T>;
 
     // ====================== FIXED PRICE ======================
-public func createFixedPriceTestType2(property: PropertyUnstable, handlePropertyUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResultBeforeVsAfter): async [Text] {
+public func createFixedPriceTestType2(property: PropertyUnstable, handlePropertyUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResultExternal): async [Text] {
     type C = Types.FixedPriceCArg;
     type U = Types.FixedPriceUArg;
     type T = Types.Listing;
@@ -104,7 +104,7 @@ public func createFixedPriceTestType2(property: PropertyUnstable, handleProperty
 
 
 // ====================== AUCTION ======================
-public func createAuctionTestType2(property: PropertyUnstable, handlePropertyUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResultBeforeVsAfter): async [Text] {
+public func createAuctionTestType2(property: PropertyUnstable, handlePropertyUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResultExternal): async [Text] {
     type C = Types.AuctionCArg;
     type U = Types.AuctionUArg;
     type T = Types.Listing;
@@ -194,7 +194,7 @@ public func createAuctionTestType2(property: PropertyUnstable, handlePropertyUpd
     await Utils.runGenericCases<C,U,T>(property, handler, auctionCases)
 };
 
-public func createBidHandlersTest(property: PropertyUnstable, handleUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResultBeforeVsAfter): async [Text] {
+public func createBidHandlersTest(property: PropertyUnstable, handleUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResultExternal): async [Text] {
     type C = Types.BidArg;
     type T = Types.Listing;
     func createBidArg(): C {

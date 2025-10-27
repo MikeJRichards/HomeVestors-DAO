@@ -7,7 +7,7 @@ import { Principal } from "@dfinity/principal";
 let currentSortOrder = "Newest"; // default
 
 setupModal("createProposalBtn", "createProp-Modal", "closeModalProp");
-await selectProperty("propertyDropdown", true);
+selectProperty("propertyDropdown", true);
 selectProperty("propertyDropdownModal", false);
 wireConnect("connect_btn", "NavWallet");
 setupToggle("filters-btn", "filtersBar", "filters-btn");

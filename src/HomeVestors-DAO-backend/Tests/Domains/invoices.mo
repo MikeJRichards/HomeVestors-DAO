@@ -16,7 +16,7 @@ module{
     type  PreTestHandler<C, U, T> = TestTypes. PreTestHandler<C, U, T>;
 
     // ====================== INVOICES ======================
-    public func createInvoiceTestType2(property: PropertyUnstable, handlePropertyUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResultBeforeVsAfter): async [Text] {
+    public func createInvoiceTestType2(property: PropertyUnstable, handlePropertyUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResultExternal): async [Text] {
         type C = Types.InvoiceCArg;
         type U = Types.InvoiceUArg;
         type T = UnstableTypes.InvoiceUnstable;

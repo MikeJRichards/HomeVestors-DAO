@@ -14,7 +14,7 @@ module{
     type UpdateResult = Types.UpdateResult;
     type  PreTestHandler<C, U, T> = TestTypes. PreTestHandler<C, U, T>;
 
-    public func createNoteTestType2(property: PropertyUnstable, handlePropertyUpdate: (WhatWithPropertyId, Principal) -> async Types.UpdateResultBeforeVsAfter): async [Text] {
+    public func createNoteTestType2(property: PropertyUnstable, handlePropertyUpdate: (WhatWithPropertyId, Principal) -> async Types.UpdateResultExternal): async [Text] {
         type C = Types.NoteCArg;
         type U = Types.NoteUArg;
         type T = UnstableTypes.NoteUnstable;
@@ -84,7 +84,7 @@ module{
         await Utils.runGenericCases<C, U, T>(property, handler, noteCases);
     };
 
-public func createInsuranceTestType(property: PropertyUnstable, handlePropertyUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResultBeforeVsAfter): async [Text] {
+public func createInsuranceTestType(property: PropertyUnstable, handlePropertyUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResultExternal): async [Text] {
     type C = Types.InsurancePolicyCArg;
     type U = Types.InsurancePolicyUArg;
     type T = UnstableTypes.InsurancePolicyUnstable;
@@ -158,7 +158,7 @@ public func createInsuranceTestType(property: PropertyUnstable, handlePropertyUp
     await Utils.runGenericCases<C, U, T>(property, handler, insuranceCases);
 };
 
-public func createDocumentTestType2(property: PropertyUnstable, handlePropertyUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResultBeforeVsAfter): async [Text] {
+public func createDocumentTestType2(property: PropertyUnstable, handlePropertyUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResultExternal): async [Text] {
     type C = Types.DocumentCArg;
     type U = Types.DocumentUArg;
     type T = UnstableTypes.DocumentUnstable;

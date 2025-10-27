@@ -392,12 +392,12 @@ module PropertiesHelper {
           case (#ok(el), #ok()) #ok(el);
         };
       };
-      if (validationArray.size() != asyncArray.size()) return Array.map(validationArray, func((idOpt, arg, _)) = (arg, [(idOpt, #err(#ArraySizeMisMatch))]));
+      let arrayError = if (validationArray.size() != asyncArray.size()) true else false;
       let results = Buffer.Buffer<(A, [(?K,Result.Result<StableT, UpdateError>)])>(validationArray.size());
       for(i in validationArray.keys()){
             let (idOpt, arg, vres) = validationArray[i];
-            let (ares) = asyncArray[i];
-            results.add((arg, handler.applyAsyncEffects(idOpt, combinedRes(vres, ares))));
+            if(arrayError) results.add((arg, [(idOpt, #err(#ArraySizeMisMatch))])) 
+            else results.add((arg, handler.applyAsyncEffects(idOpt, combinedRes(vres, asyncArray[i]))));
       };
       /// Returns: [ per-arg group [ per-child result (key, arg, finalResult) ] ]
       return Buffer.toArray(results);

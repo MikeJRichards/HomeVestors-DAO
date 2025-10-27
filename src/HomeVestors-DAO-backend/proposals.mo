@@ -61,7 +61,7 @@ module {
                     case(#Executed(executed)){
                         switch(executed.outcome){
                             case(#Accepted(_)){
-                                let results = Buffer.Buffer<UpdateResultBeforeVsAfter>(proposal.actions.size());
+                                let results = Buffer.Buffer<Types.UpdateResultExternal>(proposal.actions.size());
                                 for(what in proposal.actions.vals()){
                                     let whatWithPropertyId: Types.WhatWithPropertyId = {
                                         propertyId = arg.parent.id;
@@ -359,8 +359,6 @@ module {
         type StableT = Proposal;
         type S = UnstableTypes.GovernanceUnstable;
         let governance = Stables.toPartialStableGovernance(args.parent.governance);
-        let map = governance.proposals;
-        let tempId = governance.proposalId + 1;
         let requiresTenantApproval = func(category: Types.ProposalCategory): Bool {
             switch(category){
                 case(#Maintenance(arg) or #Tenancy(arg) or #Rent(arg)) not arg.tenantApproved;

@@ -18,7 +18,7 @@ module{
     type FlatPreTestHandler<U,T> = TestTypes.FlatPreTestHandler<U,T>;
     type What = Types.What;
     // ====================== PROPOSALS ======================
-    public func createProposalTestType2(property: PropertyUnstable, handlePropertyUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResultBeforeVsAfter) : async [Text] {
+    public func createProposalTestType2(property: PropertyUnstable, handlePropertyUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResultExternal) : async [Text] {
         type C = Types.ProposalCArg;
         type U = Types.ProposalUArg;
         type T = Types.Proposal;
@@ -172,7 +172,7 @@ module{
         await Utils.runGenericCases<C,U,T>(property, handler, proposalCases)
     };
 
-    public func createVoteHandlersTest(property: PropertyUnstable, handleUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResultBeforeVsAfter) : async [Text] {
+    public func createVoteHandlersTest(property: PropertyUnstable, handleUpdate: (Types.WhatWithPropertyId, Principal) -> async Types.UpdateResultExternal) : async [Text] {
     type C = Types.VoteArgs;
     type T = Types.Proposal;
 

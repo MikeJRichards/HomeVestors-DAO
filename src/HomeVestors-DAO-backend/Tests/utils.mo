@@ -136,7 +136,7 @@ module{
 
     public func assertError<R>(output: Text, testCase: Text, result: UpdateResult): Text{
       switch(result) {
-        case (#Ok(_)) return output # "\n ❌ " # debug_show(testCase) # " failed okay was returned ";
+        case (#Property(_)) return output # "\n ❌ " # debug_show(testCase) # " failed okay was returned ";
         case (#Err(_))  output # "\n ✅ " # debug_show(testCase);
       };
     };
@@ -226,15 +226,15 @@ module{
         if(ids.size() == 0){
 
             for(what in handler.seedCreate(labels, handler.toId(property) + 1, handler.toWhat).vals()){
-                let arg: Types.Arg = {
+                let arg: Types.Arg<Types.Property> = {
                     what;
                     caller = getCaller(labels); 
-                    property = stableProp; 
+                    parent = stableProp; 
                     handlePropertyUpdate = handler.handlePropertyUpdate; 
                     testing = handler.testing;
                 };
                 switch(await Property.updateProperty(arg)){
-                    case(#Ok(propAfter)) stableProp := propAfter;
+                    case(#Property(propAfter)) stableProp := propAfter.parent;
                     case(#Err(_e)){};// Debug.print(labels # debug_show(e));
                 };
             };
@@ -262,9 +262,9 @@ module{
               };
             };
             
-            let arg: Types.Arg = {
+            let arg: Types.Arg<Types.Property> = {
                 what = handler.toWhat(updatedAction);
-                property; 
+                parent = property; 
                 caller = getCaller(labels); 
                 handlePropertyUpdate = handler.handlePropertyUpdate; 
                 testing = handler.testing;
@@ -272,15 +272,15 @@ module{
             propertyBefore := Stables.fromStableProperty(property);
             let res : UpdateResult = await Property.updateProperty(arg);
             let out = switch (res, shouldSucceed, updatedAction) {
-                case (#Ok(propAfter), true, #Create(_)) assertCreated2<C, U, T>(labels, propertyBefore, propAfter, handler);
-                case (#Ok(propAfter), true, #Update(arg, ids)) handleUpdate<C, U, T>(labels, propertyBefore, propAfter, handler, ids, arg);
-                case (#Ok(propAfter), true, #Delete(ids)) assertDeleted2<C, U, T>(labels, propertyBefore, propAfter, handler, ids);
+                case (#Property(res), true, #Create(_)) assertCreated2<C, U, T>(labels, propertyBefore, res.parent, handler);
+                case (#Property(res), true, #Update(arg, ids)) handleUpdate<C, U, T>(labels, propertyBefore, res.parent, handler, ids, arg);
+                case (#Property(res), true, #Delete(ids)) assertDeleted2<C, U, T>(labels, propertyBefore, res.parent, handler, ids);
                 case (#Err(e), true, _) "\n ❌ " # debug_show(labels) # " expected ok, got err " # debug_show(e) # "\n map before: "# debug_show(handler.showMap(handler.toHashMap(propertyBefore))) # " args were: " # debug_show(arg.what);
                 case (#Err(_), false, _) "\n ✅ " # debug_show(labels);
-                case (#Ok(propAfter), false, _) "\n ❌ " # debug_show(labels) # " expected failure but succeeded" # printMaps(handler.toHashMap(propertyBefore), handler.toHashMap(Stables.fromStableProperty(propAfter)), handler)  # " args were: " # debug_show(arg.what);
+                case (#Property(res), false, _) "\n ❌ " # debug_show(labels) # " expected failure but succeeded" # printMaps(handler.toHashMap(propertyBefore), handler.toHashMap(Stables.fromStableProperty(res.parent)), handler)  # " args were: " # debug_show(arg.what);
             };
             switch(res){
-                case(#Ok(propAfter)) propertyBefore := Stables.fromStableProperty(propAfter);
+                case(#Property(res)) propertyBefore := Stables.fromStableProperty(res.parent);
                 case(_){};
             };
             results.add(out);
@@ -311,15 +311,15 @@ module{
             case(?id) return (id, stableProp);
             case(null){
                 for(what in handler.seedCreate(labels, Stables.fromStableProperty(stableProp)).vals()){
-                    let arg: Types.Arg = {
+                    let arg: Types.Arg<Types.Property> = {
                         what;
                         caller = getCaller(labels); 
-                        property = stableProp; 
+                        parent = stableProp; 
                         handlePropertyUpdate = handler.handlePropertyUpdate; 
                         testing = handler.testing;
                     };
                     switch(await Property.updateProperty(arg)){
-                        case(#Ok(propAfter)) stableProp := propAfter;
+                        case(#Property(res)) stableProp := res.parent;
                         case(#Err(e)) Debug.print(labels # debug_show(e));
                     };
                 };
@@ -344,9 +344,9 @@ module{
         for ((labels, cArg, shouldSucceed) in cases.vals()) {
             let (id, property) = await getDependentId(propertyBefore, labels, handler);
             let updatedArg = handler.setId(id, cArg);
-            let arg: Types.Arg = {
+            let arg: Types.Arg<Types.Property> = {
                 what = handler.toWhat(updatedArg);
-                property; 
+                parent = property; 
                 caller = handler.toCaller(labels, id, Stables.fromStableProperty(property)); 
                 handlePropertyUpdate = handler.handlePropertyUpdate; 
                 testing = handler.testing;
@@ -354,8 +354,8 @@ module{
             propertyBefore := Stables.fromStableProperty(property);
             let res : UpdateResult = await Property.updateProperty(arg);
             let out = switch (res, shouldSucceed) {
-                case (#Ok(propAfter), true){
-                    let unstablePropAfter = Stables.fromStableProperty(propAfter);
+                case (#Property(res), true){
+                    let unstablePropAfter = Stables.fromStableProperty(res.parent);
                     let mapBefore = handler.toHashMap(propertyBefore);
                     let mapAfter = handler.toHashMap(unstablePropAfter);
                     let out = switch(mapBefore.get(id), mapAfter.get(id)){
@@ -372,7 +372,7 @@ module{
                 }; 
                 case (#Err(e), true) "\n ❌ " # debug_show(labels) # " expected ok, got err " # debug_show(e) # "\n map before: "# debug_show(handler.showMap(handler.toHashMap(propertyBefore))) # " args were: " # debug_show(arg.what);
                 case (#Err(_), false) "\n ✅ " # debug_show(labels);
-                case (#Ok(propAfter), false) "\n ❌ " # debug_show(labels) # " expected failure but succeeded";
+                case (#Property(res), false) "\n ❌ " # debug_show(labels) # " expected failure but succeeded";
                 // # printMaps(handler.toHashMap(propertyBefore), handler.toHashMap(Stables.fromStableProperty(propAfter)), handler)  # " args were: " # debug_show(arg.what);
             };
             results.add(out);
@@ -387,23 +387,23 @@ module{
         var propertyBefore = property;
         var results = Buffer.Buffer<Text>(cases.size());
         for ((labels, uarg, shouldSucceed) in cases.vals()) {
-            let arg: Types.Arg = {
+            let arg: Types.Arg<Types.Property> = {
                 what = handler.toWhat(uarg); 
                 caller = getCaller(labels); 
-                property = Stables.toStableProperty(propertyBefore); 
+                parent = Stables.toStableProperty(propertyBefore); 
                 handlePropertyUpdate = handler.handlePropertyUpdate; 
                 testing = true;
             };
             let out = switch (await Property.updateProperty(arg), shouldSucceed) {
-                case (#Ok(propAfter), true){
-                    let unstablePropAfter = Stables.fromStableProperty(propAfter);
+                case (#Property(res), true){
+                    let unstablePropAfter = Stables.fromStableProperty(res.parent);
                     propertyBefore := unstablePropAfter;
                     let string = handler.checkUpdate(propertyBefore, unstablePropAfter, uarg);
                     if(string == "") "\n ✅ " # debug_show(labels) else "\n ❌ " # debug_show(labels) # " failed \n"#string;
                 }; 
                 case (#Err(e), true) "\n ❌ " # debug_show(labels) # " expected ok, got err " # debug_show(e);
                 case (#Err(_), false) "\n ✅ " # debug_show(labels);
-                case (#Ok(_), false) "\n ❌ " # debug_show(labels) # " expected failure but succeeded";
+                case (#Property(_), false) "\n ❌ " # debug_show(labels) # " expected failure but succeeded";
             };
             results.add(out);
         };

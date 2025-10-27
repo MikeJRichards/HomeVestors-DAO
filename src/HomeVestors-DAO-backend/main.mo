@@ -16,7 +16,7 @@ import Array "mo:base/Array";
 import Blob "mo:base/Blob";
 import Time "mo:base/Time";
 import Nat64 "mo:base/Nat64";
-import IC "ic:aaaaa-aa";
+import IC "mo:ic"; // Updated to use ic@3.2.0 structure
 import Buffer "mo:base/Buffer";
 
 persistent actor {
@@ -65,28 +65,31 @@ persistent actor {
     Prop.removeProperty(id, properties);
   };
 
-  func handlePropertyUpdate(action: WhatWithPropertyId, caller: Principal): async UpdateResultBeforeVsAfter {
-    let property = switch(properties.get(action.propertyId)){case(?p) p; case(null) return #Err([(?action.propertyId, #InvalidPropertyId)])};
-    switch(await Prop.updateProperty({what = action.what; caller; property; handlePropertyUpdate; testing = false})){
-      case(#Ok(updatedProperty)){
-        properties.put(action.propertyId, updatedProperty);
-        let updatedNotifications = await UserNotifications.addUserNotification(action, userNotifications, updatedProperty.nftMarketplace.collectionId);
+  func handlePropertyUpdate(action: WhatWithPropertyId, caller: Principal): async Types.UpdateResultExternal {
+    let parent = switch(properties.get(action.propertyId)){case(?p) p; case(null) return #Err([(?action.propertyId, #InvalidPropertyId)])};
+    switch(await Prop.updateProperty({what = action.what; caller; parent; handlePropertyUpdate; testing = false})){
+      case(#Property(res)){
+        properties.put(action.propertyId, res.parent);
+        let updatedNotifications = await UserNotifications.addUserNotification(action, userNotifications, res.parent.nftMarketplace.collectionId);
         userNotifications := HashMap.fromIter(updatedNotifications.vals(), 0, NFT.accountEqual, NFT.accountHash);
-        ignore NFT.handleNFTMetadataUpdate(action.what, updatedProperty);
-        let thisUpdate = if(updatedProperty.updates.size() == 0) [] else updatedProperty.updates[updatedProperty.updates.size() - 1];
-        return #Ok(thisUpdate);
+        ignore NFT.handleNFTMetadataUpdate(action.what, res.parent);
+        return #Ok({
+          okCount = res.okCount;
+          errCount = res.errCount;
+          diffs = res.diffs;
+        });
       };
       case(#Err(e)) return #Err(e);
     };
   };
 
-  public shared ({caller}) func updateProperty(action: WhatWithPropertyId): async UpdateResultBeforeVsAfter {
+  public shared ({caller}) func updateProperty(action: WhatWithPropertyId): async Types.UpdateResultExternal {
     await handlePropertyUpdate(action, caller);
   };
 
   type UpdateResultNat = Types.UpdateResultNat;
-  public shared ({caller}) func bulkPropertyUpdate(args: [WhatWithPropertyId]): async [UpdateResultBeforeVsAfter]{
-    var results = Buffer.Buffer<UpdateResultBeforeVsAfter>(args.size());
+  public shared ({caller}) func bulkPropertyUpdate(args: [WhatWithPropertyId]): async [Types.UpdateResultExternal]{
+    var results = Buffer.Buffer<Types.UpdateResultExternal>(args.size());
     for(i in args.keys()) results.add(await handlePropertyUpdate(args[i], caller));
     return Buffer.toArray(results);
   };
@@ -181,7 +184,7 @@ public func verifyNFTTransfer(propertyId: Nat, to: Account, token_id: Nat): asyn
   type TransferFromResult = Tokens.TransferFromResult;
   public func verifyTokenTransferFrom(propertyId: Nat, listingId: Nat, from: Account): async ?TransferFromResult {
     let property = switch(properties.get(propertyId)){case(null)return null; case(?property)property};
-    switch(PropHelper.getElementByKey(property.nftMarketplace.listings, listingId)){
+    switch(PropHelper.getElementByKey(property.nftMarketplace.listings, listingId, Nat.equal)){
       case(null)return null;
       case(?#LaunchFixedPrice(arg)){
         let result = await Tokens.transferFrom(arg.quoteAsset, arg.price, {owner = arg.seller.owner; subaccount = ?Principal.toBlob(Principal.fromText("vq2za-kqaaa-aaaas-amlvq-cai"))}, from);
@@ -195,7 +198,7 @@ public func verifyNFTTransfer(propertyId: Nat, to: Account, token_id: Nat): asyn
   type TransferResult = Types.TransferResult;
   public func transferNFT(to: Account, listId: Nat, propertyId: Nat, tokenId:Nat): async ?TransferResult {
     let property = switch(properties.get(propertyId)){case(?prop) prop; case(null){return ?#Err(#InvalidRecipient)}};
-    switch(PropHelper.getElementByKey(property.nftMarketplace.listings, listId)){
+    switch(PropHelper.getElementByKey(property.nftMarketplace.listings, listId, Nat.equal)){
       case(null) return null;
       case(?#LaunchFixedPrice(arg)){
         await NFT.transfer(property.nftMarketplace.collectionId, arg.seller.subaccount, to, tokenId);
@@ -233,7 +236,7 @@ public func transferNFTBulk(): async [?TransferResult] {
   ////HTTP Outcall
   //////////////////////
   // Required for consensus — strips response headers
-   public query func transform({context : Blob; response : IC.http_request_result;}) : async IC.http_request_result {
+   public query func transform({context : Blob; response : IC.HttpRequestResult;}) : async IC.HttpRequestResult {
     {
         status = response.status;
         body = response.body;
@@ -241,8 +244,8 @@ public func transferNFTBulk(): async [?TransferResult] {
     };
   };
 
-  public shared ({caller}) func updatePropertyValuations(): async [UpdateResultBeforeVsAfter]{
-    let results = Buffer.Buffer<UpdateResultBeforeVsAfter>(properties.size());
+  public shared ({caller}) func updatePropertyValuations(): async [Types.UpdateResultExternal]{
+    let results = Buffer.Buffer<Types.UpdateResultExternal>(properties.size());
     for(property in properties.vals()){
       switch(await Financial.fetchValuation(property, transform)){
         case(#ok(what)){

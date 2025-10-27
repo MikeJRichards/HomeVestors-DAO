@@ -6,7 +6,7 @@ module {
         what: What;
         caller: Principal;
         parent: P;
-        handlePropertyUpdate: (WhatWithPropertyId, Principal) -> async UpdateResultBeforeVsAfter;
+        handlePropertyUpdate: (WhatWithPropertyId, Principal) -> async UpdateResultExternal;
         testing: Bool;
     };
 
@@ -780,6 +780,17 @@ module {
         parent: P;
     };
 
+    public type UpdateResultInstanceWithoutParent<K> = {
+        okCount: Nat;
+        errCount: Nat;
+        diffs: [BeforeVsAfter<K>];
+    };
+
+    public type UpdateResultExternal = {
+        #Ok: UpdateResultInstanceWithoutParent<Nat>;
+        #Err: [(?Nat, UpdateError)];
+    };
+
     public type UpdateResult = {
         #Property: UpdateResultInstance<Property, Nat>; 
         #Err : [(?Nat, UpdateError)];
@@ -1178,7 +1189,7 @@ public type ExecutedProposalArgs = {
 type ProposalOutcome = {
     #Refused: Text;
     #AwaitingTenantApproval;
-    #Accepted: [UpdateResultBeforeVsAfter];
+    #Accepted: [UpdateResultExternal];
 };
 
 public type ProposalOutcomeFlag = {
