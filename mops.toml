@@ -1,5 +1,8 @@
 [dependencies]
-base = "0.14.0"
+base = "0.16.0"
 json = "1.2.1"
 sha2 = "0.1.2"
 ic = "3.2.0"
+core = "1.0.0"
+ic-certification = "1.1.0"
+cbor = "4.1.0"

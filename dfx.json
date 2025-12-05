@@ -13,6 +13,30 @@
       ],
       "type": "assets",
       "workspace": "HomeVestors-DAO-frontend"
+    },
+    "marketplace_vault": {
+      "type": "motoko",
+      "main": "src/marketplace_vault/main.mo"
+    }, 
+    "property_dao": {
+      "type": "motoko",
+      "main": "src/property_dao/main.mo"
+    }, 
+    "action_dictionary": {
+      "type": "motoko",
+      "main": "src/action_dictionary/main.mo"
+    },
+    "marketplace": {
+      "type": "motoko",
+      "main": "src/marketplace/main.mo"
+    },
+    "HUSD": {
+      "type": "motoko",
+      "main": "src/HUSD/main.mo"
+    },
+    "property_indexer": {
+      "type": "motoko",
+      "main": "src/property_indexer/main.mo"
     }
   },
   "defaults": {
